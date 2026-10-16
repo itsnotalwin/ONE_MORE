@@ -1,12 +1,11 @@
 'use strict';
 /* ============================================================
-   ONE MORE — tuning constants, ink-beast roster, upgrade pool
-   Edit this file to rebalance the arena.
+   ONE MORE — tuning constants, ink-beast roster, upgrade pool,
+   the three scrolls (areas) and the endless paper.
+   Edit this file to rebalance the world.
    ============================================================ */
 
 const CFG = {
-  arenaInset: 14,
-
   player: {
     r: 10,
     speed: 250,        // px/s
@@ -18,54 +17,113 @@ const CFG = {
     spread: 0.13,      // rad between extra droplets
   },
 
-  wave: {
-    budget: w => 7 + w * 4,                      // spawn points per wave
-    surgeEvery: 5,                               // every Nth wave is a SURGE
-    surgeMult: 1.6,                              // budget multiplier on surges
-    groupInterval: w => Math.max(0.45, 1.5 - w * 0.07),
-    groupSize: w => 3 + Math.floor(w / 3),
-    concurrentCap: w => Math.min(40, 12 + w * 2),
-    hpScale: (base, w, intro) => Math.max(1, Math.round(base * (1 + 0.09 * (w - intro)))),
-    spScale: (w, intro) => Math.min(1.35, 1 + 0.008 * (w - intro)),
+  /* the world is unbounded — the brush walks an endless sheet */
+  world: {
+    spawnPad: 90,      // how far beyond the screen edge beasts are born
+    stainCap: 430,     // max dried stains kept on the paper
+    stainFade: 0.075,  // alpha lost per second (dried ink fades)
+    decoCell: 260,     // world-cell size for ambient paper marks
   },
+
+  wave: {
+    wavesPerArea: 10,
+    budget: (wInArea, areaIdx) => 7 + wInArea * 3.2 + areaIdx * 2.2,
+    surgeEvery: 5,                               // every Nth wave of an area is a SURGE
+    surgeMult: 1.5,
+    groupInterval: w => Math.max(0.4, 1.45 - w * 0.06),
+    groupSize: (w, areaIdx) => 3 + Math.floor(w / 3) + areaIdx,
+    concurrentCap: (w, areaIdx) => Math.min(64, 14 + w * 2 + areaIdx * 8),
+    hpScale: (base, w, intro) => Math.max(1, Math.round(base * (1 + 0.085 * (w - intro)))),
+    spScale: (w, intro) => Math.min(1.32, 1 + 0.007 * (w - intro)),
+    eliteHpMult: 5.2,
+    eliteR: 1.62,
+  },
+
+  /* the endless paper keeps growing teeth */
+  endless: { hpGrowth: 1.14, spGrowth: 1.012, budgetGrowth: 1.16 },
 
   shockwave: { radius: 230, knock: 420 },
   adrenaline: { mult: 1.22, dur: lv => 1.4 + 0.45 * (lv - 1) },
 
-  /* new brush skills */
+  /* brush skills */
   orbit:   { radius: lv => 40 + lv * 5, speed: 2.7, dmgCd: 0.45 },
   nova:    { period: lv => 6.6 - 0.9 * (lv - 1), radius: lv => 165 + lv * 38, knock: 330, stun: 0.4 },
   ward:    { cd: 22 },
   slow:    { dur: 1.6, mult: 0.55 },
   crit:    { chance: lv => 0.16 * lv },
 
-  /* enemy ink globs (the spitter's volley) */
-  glob:    { speed: 215, life: 2.4, r: 5 },
+  /* new weapons */
+  fan:    { period: lv => 3.4 - 0.35 * (lv - 1), count: lv => 4 + lv, speed: 430, life: 0.62, spread: 1.15, dmg: 1 },
+  trail:  { gap: lv => 0.5 - 0.08 * (lv - 1), radius: lv => 26 + lv * 7, life: 2.7, tick: 0.42, dmg: 1 },
+  spirit: { period: lv => 3.1 - 0.3 * (lv - 1), count: lv => 1 + lv, speed: 300, turn: 7.5, life: 3.2, dmg: 1 },
+  hanko:  { period: lv => 6.4 - 0.8 * (lv - 1), radius: lv => 92 + lv * 22, dmg: lv => 2 + lv, stun: 0.3 },
 
-  // waves cleared → rank, else 'D'
-  ranks: [[15, 'S'], [11, 'A'], [7, 'B'], [3, 'C']],
+  /* enemy ink globs and needles */
+  glob:   { speed: 215, life: 2.4, r: 5 },
+  needle: { speed: 470, life: 1.7, r: 3 },
+
+  // total waves cleared → rank, else 'D'
+  ranks: [[24, 'S'], [18, 'A'], [12, 'B'], [5, 'C']],
 
   /* ---- ink engine knobs (consumed by render.js) ---- */
   ink: {
     boilRate: 0.115,        // s per hand-drawn frame (line boil)
-    stainFadePerSec: 0.055, // how fast dried ink fades from the paper
+    stainFadePerSec: 0.055, // legacy knob (world stains use world.stainFade)
     trailGap: 0.085,        // s between player ink-trail stamps
   },
 };
 
 /* The ink-born. Every creature is a living blot of sumi ink. */
 const ENEMIES = {
-  pulse:     { name: 'BLOT',  trait: 'DRIFTER', cost: 1, intro: 1,  hp: 2,  r: 12, speed: 92,  score: 10, shape: 'circle'  },
-  dart:      { name: 'SPEAR', trait: 'LUNGER',  cost: 2, intro: 2,  hp: 1,  r: 9,  speed: 80,  score: 15, shape: 'tri'     },
-  spit:      { name: 'SPIT',  trait: 'GUNNER',  cost: 3, intro: 4,  hp: 2,  r: 11, speed: 74,  score: 25, shape: 'spit'    },
-  moth:      { name: 'MOTH',  trait: 'ERRATIC', cost: 2, intro: 5,  hp: 2,  r: 10, speed: 122, score: 20, shape: 'moth'    },
-  split:     { name: 'DRIP',  trait: 'DIVIDER', cost: 2, intro: 6,  hp: 3,  r: 12, speed: 95,  score: 15, shape: 'diamond' },
-  slab:      { name: 'BRUTE', trait: 'BRUISER', cost: 3, intro: 8,  hp: 8,  r: 17, speed: 42,  score: 30, shape: 'square'  },
-  shade:     { name: 'SHADE', trait: 'PHANTOM', cost: 3, intro: 7,  hp: 3,  r: 12, speed: 88,  score: 35, shape: 'shade'   },
-  wraith:    { name: 'WISP',  trait: 'WEAVER',  cost: 2, intro: 10, hp: 2,  r: 11, speed: 105, score: 20, shape: 'ring'    },
-  titan:     { name: 'TITAN', trait: 'MOTHER',  cost: 5, intro: 12, hp: 18, r: 28, speed: 24,  score: 90, shape: 'titan'   },
-  pulseling: { name: 'BLIP',  trait: 'SHARD',   cost: 0, intro: 6,  hp: 1,  r: 6,  speed: 150, score: 5,  shape: 'dot'     },
+  pulse:     { name: 'BLOT',   trait: 'DRIFTER',  cost: 1, intro: 1,  hp: 2,  r: 12, speed: 92,  score: 10, shape: 'circle'  },
+  dart:      { name: 'SPEAR',  trait: 'LUNGER',   cost: 2, intro: 2,  hp: 1,  r: 9,  speed: 80,  score: 15, shape: 'tri'     },
+  spit:      { name: 'SPIT',   trait: 'GUNNER',   cost: 3, intro: 4,  hp: 2,  r: 11, speed: 74,  score: 25, shape: 'spit'    },
+  moth:      { name: 'MOTH',   trait: 'ERRATIC',  cost: 2, intro: 5,  hp: 2,  r: 10, speed: 122, score: 20, shape: 'moth'    },
+  split:     { name: 'DRIP',   trait: 'DIVIDER',  cost: 2, intro: 6,  hp: 3,  r: 12, speed: 95,  score: 15, shape: 'diamond' },
+  slab:      { name: 'BRUTE',  trait: 'BRUISER',  cost: 3, intro: 8,  hp: 8,  r: 17, speed: 42,  score: 30, shape: 'square'  },
+  shade:     { name: 'SHADE',  trait: 'PHANTOM',  cost: 3, intro: 7,  hp: 3,  r: 12, speed: 88,  score: 35, shape: 'shade'   },
+  wraith:    { name: 'WISP',   trait: 'WEAVER',   cost: 2, intro: 10, hp: 2,  r: 11, speed: 105, score: 20, shape: 'ring'    },
+  titan:     { name: 'TITAN',  trait: 'MOTHER',   cost: 5, intro: 12, hp: 18, r: 28, speed: 24,  score: 90, shape: 'titan'   },
+  pulseling: { name: 'BLIP',   trait: 'SHARD',    cost: 1, intro: 6,  hp: 1,  r: 6,  speed: 150, score: 5,  shape: 'dot'     },
+  kage:      { name: 'KAGE',   trait: 'STALKER',  cost: 3, intro: 11, hp: 3,  r: 12, speed: 118, score: 40, shape: 'kage'    },
+  stilt:     { name: 'STILT',  trait: 'SNIPER',   cost: 3, intro: 12, hp: 2,  r: 11, speed: 62,  score: 45, shape: 'stilt'   },
+  oni:       { name: 'ONI',    trait: 'CHARGER',  cost: 4, intro: 21, hp: 10, r: 18, speed: 44,  score: 60, shape: 'oni'     },
+  crane:     { name: 'CRANE',  trait: 'SWOOPER',  cost: 2, intro: 22, hp: 2,  r: 11, speed: 205, score: 25, shape: 'crane'   },
 };
+
+/* default weights used by the spawn roll (per roster enemy) */
+const ENEMY_WEIGHTS = {
+  pulse: 5, dart: 3, spit: 2.2, moth: 2.4, split: 2.1, slab: 1.5,
+  shade: 1.7, wraith: 1.9, titan: 0.8, kage: 1.6, stilt: 1.4, oni: 1.2, crane: 1.8,
+};
+
+/* ------------------------------------------------------------
+   THE THREE SCROLLS — each area is a different sheet of paper.
+   Ten waves a sheet; the tenth bears a Guardian.
+   ------------------------------------------------------------ */
+const AREAS = [
+  {
+    id: 'I', name: 'FIRST WASH', kanji: '一', theme: 'pale',
+    desc: 'Fresh washi. The first strokes land soft.',
+    mult: { hp: 1, sp: 1, budget: 1 },
+    roster: ['pulse', 'dart', 'spit', 'moth', 'split', 'wraith', 'slab'],
+    elite: 'slab',
+  },
+  {
+    id: 'II', name: 'NIGHT SCROLL', kanji: '夜', theme: 'dark',
+    desc: 'The ink deepens. Things move inside it.',
+    mult: { hp: 1.55, sp: 1.05, budget: 1.35 },
+    roster: ['wraith', 'shade', 'moth', 'kage', 'stilt', 'dart', 'pulseling'],
+    elite: 'shade',
+  },
+  {
+    id: 'III', name: 'CINNABAR FIELD', kanji: '紅', theme: 'red',
+    desc: 'A vermillion wash dries underfoot. The last stroke is heaviest.',
+    mult: { hp: 2.35, sp: 1.1, budget: 1.75 },
+    roster: ['slab', 'spit', 'oni', 'crane', 'split', 'titan', 'kage'],
+    elite: 'oni',
+  },
+];
 
 const UPGRADES = [
   { id: 'rapid',  name: 'Quick Hand',   desc: '−15% time between volleys. The brush barely lifts.',         max: 5, apply: s => { s.fireCdMult *= 0.85; } },
@@ -83,4 +141,9 @@ const UPGRADES = [
   { id: 'slow',   name: 'Wet Paper',    desc: 'Struck beasts wade through soaked paper — slowed briefly.',  max: 2, apply: s => { s.slow += 1; } },
   { id: 'crit',   name: 'Crimson Tip',  desc: 'One stroke in six bites twice as deep. Deeper per rank.',    max: 2, apply: s => { s.crit += 1; } },
   { id: 'ward',   name: 'Paper Ward',   desc: 'A dry talisman swallows one hit whole, then reforms.',       max: 1, apply: s => { s.ward = true; } },
+  /* ---- new weapons ---- */
+  { id: 'fan',    name: 'Folded Fan',   desc: 'Every few breaths the fan snaps open — a spray of paper blades.', max: 4, weapon: true, apply: s => { s.fan += 1; } },
+  { id: 'trail',  name: 'Ink Trail',    desc: 'Wherever you walk, the ink you leave still bites. Smears linger.', max: 3, weapon: true, apply: s => { s.trailW += 1; } },
+  { id: 'spirit', name: 'Spirit Scribes',desc: 'Lesser brushes wake and hunt on their own, seeking the nearest blot.', max: 3, weapon: true, apply: s => { s.spirit += 1; } },
+  { id: 'hanko',  name: 'Crimson Hanko',desc: 'A great red seal slams down on the nearest horde and crushes it.', max: 3, weapon: true, apply: s => { s.hanko += 1; } },
 ];

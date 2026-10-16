@@ -1,6 +1,8 @@
 'use strict';
 /* ============================================================
-   ONE MORE — game core: state, waves, entities, collisions
+   ONE MORE — game core: state, areas, waves, entities, weapons
+   The world is an unbounded sheet of paper; the camera follows
+   the brush. Three scrolls of ten waves, then the endless sheet.
    ============================================================ */
 
 const G = (() => {
@@ -16,17 +18,21 @@ const G = (() => {
   const S = {
     mode: 'title',
     W: 0, H: 0, dpr: 1,
-    arena: { x: 0, y: 0, w: 0, h: 0 },
     reduced: false,
 
     player: { x: 0, y: 0, r: CFG.player.r, aim: 0, fireT: 0, recoil: 0 },
+    cam: { x: 0, y: 0 },
     stats: null,
+    runMode: 'journey',            // 'journey' | 'endless'
+    areaIdx: 0,
 
     bullets: [], ebullets: [], enemies: [], markers: [], particles: [], popups: [], rings: [], idle: [],
+    puddles: [], spirits: [], stamps: [],
     stainQueue: [],
     queue: [], waveInitial: 0, waveActive: false, spawnTimer: 0, clearedT: 0,
 
     invulnT: 0, adrenT: 0, shake: 0, dyingT: 0, novaT: 0, clockT: 0,
+    fanT: 2.2, spiritT: 1.6, hankoT: 4.0, trailT: 0,
     choices: [], selected: null,
 
     joy: null,
@@ -39,6 +45,7 @@ const G = (() => {
       maxHp: CFG.player.hp, hp: CFG.player.hp, bulletSpeedMult: 1,
       adren: 0, shock: false, levels: {},
       echo: 0, orb: 0, nova: 0, slow: 0, crit: 0, ward: false, wardCd: 0,
+      fan: 0, trailW: 0, spirit: 0, hanko: 0,
       score: 0, kills: 0, time: 0, wave: 0,
     };
   }
@@ -56,30 +63,39 @@ const G = (() => {
     return a;
   }
 
-  function clampToArena(o, pad = 2) {
-    o.x = clamp(o.x, S.arena.x + o.r + pad, S.arena.x + S.arena.w - o.r - pad);
-    o.y = clamp(o.y, S.arena.y + o.r + pad, S.arena.y + S.arena.h - o.r - pad);
-  }
-
-  function clampAll() {
-    if (S.player) clampToArena(S.player);
-    for (const e of S.enemies) clampToArena(e);
-    for (const d of S.idle) { d.x = clamp(d.x, S.arena.x + d.r, S.arena.x + S.arena.w - d.r); d.y = clamp(d.y, S.arena.y + d.r, S.arena.y + S.arena.h - d.r); }
-  }
-
-  function edgePoint(sideHint) {
-    const a = S.arena, m = 26;
-    for (let tries = 0; tries < 12; tries++) {
-      const side = (sideHint != null && tries < 2) ? sideHint : Math.floor(Math.random() * 4);
-      let x, y;
-      if (side === 0) { x = rand(a.x + m, a.x + a.w - m); y = a.y + m; }
-      else if (side === 1) { x = a.x + a.w - m; y = rand(a.y + m, a.y + a.h - m); }
-      else if (side === 2) { x = rand(a.x + m, a.x + a.w - m); y = a.y + a.h - m; }
-      else { x = a.x + m; y = rand(a.y + m, a.y + a.h - m); }
-      const dx = x - S.player.x, dy = y - S.player.y;
-      if (dx * dx + dy * dy > 150 * 150) return { x, y };
+  /* which scroll are we on, and how hard has the endless paper grown */
+  function areaStateFor(w) {
+    const per = CFG.wave.wavesPerArea;
+    const cycle = Math.floor((w - 1) / per);
+    const waveInArea = ((w - 1) % per) + 1;
+    const themeIdx = S.runMode === 'endless'
+      ? cycle % AREAS.length
+      : Math.min(cycle, AREAS.length - 1);
+    const area = AREAS[themeIdx];
+    let hp = area.mult.hp, sp = area.mult.sp, budget = area.mult.budget;
+    if (S.runMode === 'endless' && cycle >= AREAS.length) {
+      const k = cycle - (AREAS.length - 1);
+      hp *= Math.pow(CFG.endless.hpGrowth, k);
+      sp *= Math.pow(CFG.endless.spGrowth, k);
+      budget *= Math.pow(CFG.endless.budgetGrowth, k);
     }
-    return { x: S.arena.x + m, y: S.arena.y + m };
+    return { cycle, waveInArea, themeIdx, area, hp, sp, budget, isElite: waveInArea === per };
+  }
+
+  /* a birth point just past the edge of the eye — measured to the
+     view RECTANGLE, so spawns always land off-screen on every side */
+  function edgePoint(sideHint) {
+    const pad = CFG.world.spawnPad;
+    for (let tries = 0; tries < 10; tries++) {
+      const a = (sideHint != null && tries < 2)
+        ? sideHint * (Math.PI / 2) + rand(-0.35, 0.35)
+        : rand(0, TAU);
+      const cx = Math.cos(a), cy = Math.sin(a);
+      const ax = Math.abs(cx) > 1e-4 ? (S.W / 2 + pad) / Math.abs(cx) : Infinity;
+      const ay = Math.abs(cy) > 1e-4 ? (S.H / 2 + pad) / Math.abs(cy) : Infinity;
+      const t = Math.min(ax, ay) + rand(10, 130);
+      return { x: S.player.x + cx * t, y: S.player.y + cy * t };
+    }
   }
 
   function burst(x, y, r, big) {
@@ -101,37 +117,56 @@ const G = (() => {
   }
 
   /* ---------------- enemies ---------------- */
-  function spawnEnemy(type, x, y) {
+  function spawnEnemy(type, x, y, opts = {}) {
     const def = ENEMIES[type];
     const w = S.stats.wave;
-    const hp = CFG.wave.hpScale(def.hp, w, def.intro);
+    const st = areaStateFor(w);
+    let hp = CFG.wave.hpScale(def.hp, w, def.intro) * st.hp;
+    let r = def.r;
+    let speed = def.speed * CFG.wave.spScale(w, def.intro) * st.sp;
+    if (opts.elite) {
+      hp = Math.round(hp * CFG.wave.eliteHpMult);
+      r = Math.round(r * CFG.wave.eliteR);
+      speed *= 0.86;
+    }
+    hp = Math.max(1, Math.round(hp));
     const e = {
-      type, x, y, r: def.r, hp, maxHp: hp,
-      speed: def.speed * CFG.wave.spScale(w, def.intro),
+      type, x, y, r, hp, maxHp: hp,
+      speed, elite: !!opts.elite,
       ang: Math.atan2(S.player.y - y, S.player.x - x),
       t: rand(0, 10), hitFlash: 0, kbx: 0, kby: 0,
       state: 'cruise', stateT: rand(0.3, 1.5), seed: rand(0, 6.28), stun: 0,
       slowT: 0, orbCd: 0, dirT: 0, spawnT: type === 'titan' ? 2.5 : 0,
+      px: 0, py: 0, // kage perch / crane pass target
     };
     S.enemies.push(e);
-    S.rings.push({ x, y, max: def.r * 2.4, life: 0.3, maxLife: 0.3 });
+    S.rings.push({ x, y, max: r * 2.4, life: 0.3, maxLife: 0.3 });
     return e;
   }
 
   function killEnemy(e) {
     const def = ENEMIES[e.type];
     const mult = 1 + 0.15 * Math.max(0, S.stats.wave - 1);
-    const pts = Math.round((def.score * mult) / 5) * 5;
+    const pts = Math.round((def.score * mult * (e.elite ? 6 : 1)) / 5) * 5;
     S.stats.score += pts;
     S.stats.kills++;
     UI.setScore(S.stats.score);
-    S.popups.push({ x: e.x, y: e.y - e.r - 4, txt: '+' + pts, life: 0.7, max: 0.7, red: false });
-    burst(e.x, e.y, e.r, e.type === 'titan');
-    S.stainQueue.push({ x: e.x, y: e.y, r: e.r * 1.45, alpha: e.type === 'titan' ? 0.62 : 0.5 });
-    if (e.type === 'slab' || e.type === 'titan') SFX.bigKill(); else SFX.kill();
+    S.popups.push({
+      x: e.x, y: e.y - e.r - 4,
+      txt: e.elite ? 'GUARDIAN +' + pts : '+' + pts,
+      life: e.elite ? 1.4 : 0.7, max: e.elite ? 1.4 : 0.7, red: e.elite,
+    });
+    burst(e.x, e.y, e.r, e.type === 'titan' || e.elite);
+    S.stainQueue.push({
+      x: e.x, y: e.y, r: e.r * (e.elite ? 2.2 : 1.45),
+      alpha: e.elite ? 0.6 : 0.5,
+      red: e.elite || e.type === 'oni',
+    });
+    if (e.type === 'slab' || e.type === 'titan' || e.type === 'oni' || e.elite) SFX.bigKill(); else SFX.kill();
+    if (e.elite) { S.shake = Math.max(S.shake, 9); }
     if (e.type === 'split') {
       for (const s of [-1, 1]) {
-        const c = spawnEnemy('pulseling', clamp(e.x + s * 10, S.arena.x + 10, S.arena.x + S.arena.w - 10), e.y + rand(-6, 6));
+        const c = spawnEnemy('pulseling', e.x + s * 10, e.y + rand(-6, 6));
         c.kbx = s * 190; c.kby = rand(-70, 70);
       }
     }
@@ -139,16 +174,16 @@ const G = (() => {
       /* the mother bursts — her brood scatters */
       for (let i = 0; i < 3; i++) {
         const a = rand(0, 6.28);
-        const c = spawnEnemy('pulseling', clamp(e.x + Math.cos(a) * 20, S.arena.x + 10, S.arena.x + S.arena.w - 10), clamp(e.y + Math.sin(a) * 20, S.arena.y + 10, S.arena.y + S.arena.h - 10));
+        const c = spawnEnemy('pulseling', e.x + Math.cos(a) * 20, e.y + Math.sin(a) * 20);
         c.kbx = Math.cos(a) * 230; c.kby = Math.sin(a) * 230;
       }
     }
     if (S.stats.adren > 0) S.adrenT = CFG.adrenaline.dur(S.stats.adren);
   }
 
-  function nearestEnemy() {
-    const p = S.player;
-    let best = null, bd = Infinity;
+  function nearestEnemy(x, y, maxD) {
+    const p = (x == null) ? S.player : { x, y };
+    let best = null, bd = maxD != null ? maxD * maxD : Infinity;
     for (const e of S.enemies) {
       const dx = e.x - p.x, dy = e.y - p.y, d = dx * dx + dy * dy;
       if (d < bd) { bd = d; best = e; }
@@ -157,18 +192,17 @@ const G = (() => {
   }
 
   /* ---------------- waves ---------------- */
-  function buildQueue(budget, wave) {
-    const pool = Object.keys(ENEMIES).filter(k => ENEMIES[k].cost > 0 && ENEMIES[k].intro <= wave);
-    const weights = { pulse: 5, dart: 3, spit: 2.2, moth: 2.5, split: 2.2, slab: 1.5, shade: 1.7, wraith: 1.9, titan: 0.85 };
+  function buildQueue(budget, wave, roster) {
+    const pool = roster.filter(k => ENEMIES[k].cost > 0 && ENEMIES[k].intro <= wave);
     const q = [];
     let guard = 0;
-    while (budget > 0 && guard++ < 600) {
+    while (budget > 0 && guard++ < 700) {
       const avail = pool.filter(k => ENEMIES[k].cost <= budget);
       if (!avail.length) break;
       let total = 0;
-      for (const k of avail) total += weights[k] || 1;
+      for (const k of avail) total += (ENEMY_WEIGHTS[k] || 1);
       let r = Math.random() * total, pick = avail[0];
-      for (const k of avail) { r -= weights[k] || 1; if (r <= 0) { pick = k; break; } }
+      for (const k of avail) { r -= (ENEMY_WEIGHTS[k] || 1); if (r <= 0) { pick = k; break; } }
       q.push(pick);
       budget -= ENEMIES[pick].cost;
     }
@@ -178,17 +212,33 @@ const G = (() => {
   function startWave(n) {
     const st = S.stats;
     st.wave = n;
-    const surge = n > 1 && n % CFG.wave.surgeEvery === 0;
-    const budget = Math.round(CFG.wave.budget(n) * (surge ? CFG.wave.surgeMult : 1));
-    S.queue = buildQueue(budget, n);
-    S.waveInitial = S.queue.length;
+    const as = areaStateFor(n);
+    S.areaIdx = as.themeIdx;
+    const surge = !as.isElite && as.waveInArea % CFG.wave.surgeEvery === 0;
+    let budget = CFG.wave.budget(as.waveInArea, as.cycle) * as.budget;
+    if (surge) budget *= CFG.wave.surgeMult;
+    if (as.isElite) budget *= 1.2;
+    S.queue = buildQueue(Math.round(budget), n, as.area.roster);
+    S.waveInitial = S.queue.length + (as.isElite ? 1 : 0);
     S.waveActive = true;
     S.spawnTimer = 1.0;
     S.clearedT = 0;
-    UI.setWave(n);
+    UI.setWave(as.waveInArea);
+    UI.setArea(as.area, as.waveInArea, as.isElite);
     UI.setProgress(0);
-    UI.banner(n, surge);
-    SFX.wave();
+    if (as.waveInArea === 1) {
+      /* the scroll turns — a new sheet of paper */
+      UI.areaBanner(as.area, as.cycle, S.runMode === 'endless' && as.cycle >= AREAS.length);
+      SFX.gong();
+    } else {
+      UI.banner(as.waveInArea, surge, as.isElite);
+      SFX.wave(surge || as.isElite);
+    }
+    if (as.isElite) {
+      /* the Guardian of the sheet enters */
+      const pt = edgePoint();
+      S.markers.push({ type: as.area.elite, x: pt.x, y: pt.y, t: 1.7, elite: true });
+    }
   }
 
   function pickUpgrades(n) {
@@ -215,33 +265,40 @@ const G = (() => {
     S.ebullets.length = 0;
     S.choices = pickUpgrades(3);
     S.selected = null;
-    UI.setUpgradeHeader(S.stats.wave, S.stats.wave + 1);
+    const as = areaStateFor(S.stats.wave);
+    UI.setUpgradeHeader(as.waveInArea, as.area, S.stats.wave + 1);
     UI.fillUpgrades(S.choices, S.stats.levels);
     UI.markSelected(null);
-    UI.setDeploy(false, S.stats.wave + 1);
+    const nxt = areaStateFor(S.stats.wave + 1);
+    UI.setDeploy(false, nxt.waveInArea === 1 ? nxt.area : null, nxt.waveInArea, nxt.cycle);
     UI.show('upgrade');
     SFX.wave();
   }
 
   /* ---------------- flow ---------------- */
-  function startRun() {
+  function startRun(mode) {
+    S.runMode = mode === 'endless' ? 'endless' : 'journey';
     S.stats = freshStats();
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
+    S.puddles = []; S.spirits = []; S.stamps = [];
     S.queue = []; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
+    S.fanT = 2.2; S.spiritT = 1.6; S.hankoT = 4.0; S.trailT = 0;
     S.choices = []; S.selected = null; S.idle = [];
+    S.areaIdx = 0;
 
     const runs = getRuns() + 1;
     store.set('om_runs_v1', runs);
 
     const p = S.player;
-    p.x = S.arena.x + S.arena.w / 2;
-    p.y = S.arena.y + S.arena.h / 2;
+    p.x = 0; p.y = 0;
     p.fireT = 0.3; p.recoil = 0;
+    S.cam.x = 0; S.cam.y = 0;
 
     UI.show(null);
     UI.hud(true);
+    UI.setMode(S.runMode);
     UI.setScore(0);
     UI.setHp(S.stats.hp, S.stats.maxHp);
     UI.setLoadout({});
@@ -249,10 +306,21 @@ const G = (() => {
     startWave(1);
   }
 
+  function continueEndless() {
+    if (S.mode !== 'over') return;
+    S.runMode = 'endless';
+    UI.setMode(S.runMode);
+    UI.show(null);
+    UI.hud(true);
+    S.mode = 'playing';
+    startWave(S.stats.wave + 1);
+  }
+
   function abandon() {
     S.mode = 'title';
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = []; S.queue = [];
+    S.puddles = []; S.spirits = []; S.stamps = [];
     UI.hud(false);
     UI.show('title');
     UI.setBest(getBest());
@@ -280,7 +348,8 @@ const G = (() => {
     if (S.selected === i) { deploy(); return; }
     S.selected = i;
     UI.markSelected(i);
-    UI.setDeploy(true, S.stats.wave + 1);
+    const nxt = areaStateFor(S.stats.wave + 1);
+    UI.setDeploy(true, nxt.waveInArea === 1 ? nxt.area : null, nxt.waveInArea, nxt.cycle);
     SFX.pick();
   }
 
@@ -302,7 +371,7 @@ const G = (() => {
     SFX.over();
   }
 
-  function showOver() {
+  function showOver(victory) {
     const st = S.stats;
     const cleared = Math.max(0, st.wave - 1);
     let rank = 'D';
@@ -310,9 +379,11 @@ const G = (() => {
     const best = getBest();
     const nb = st.score > (best ? best.score : 0);
     if (nb) store.set('om_best_v1', { score: st.score, wave: cleared });
+    if (victory) SFX.victory();
     UI.showOver({
       run: getRuns(), waves: cleared, kills: st.kills,
       time: st.time, score: st.score, rank, newBest: nb,
+      mode: S.runMode, victory: !!victory,
     });
     UI.hud(false);
     UI.show('over');
@@ -360,6 +431,71 @@ const G = (() => {
     if (st.hp <= 0) die();
   }
 
+  /* ---------------- weapons: the new strokes ---------------- */
+  function fireFan() {
+    const p = S.player, st = S.stats;
+    const n = CFG.fan.count(st.fan);
+    const spread = CFG.fan.spread;
+    for (let i = 0; i < n; i++) {
+      const off = n === 1 ? 0 : -spread / 2 + (spread * i) / (n - 1);
+      const a = p.aim + off;
+      S.bullets.push({
+        x: p.x + Math.cos(a) * 13, y: p.y + Math.sin(a) * 13,
+        vx: Math.cos(a) * CFG.fan.speed, vy: Math.sin(a) * CFG.fan.speed,
+        ang: a, dmg: CFG.fan.dmg, hits: 2, age: 0, life: CFG.fan.life,
+        kind: 'blade', spin: (i % 2 ? 1 : -1) * rand(9, 14),
+      });
+    }
+    SFX.fan();
+  }
+
+  function dropTrail() {
+    const st = S.stats;
+    S.puddles.push({
+      x: S.player.x + rand(-4, 4), y: S.player.y + rand(-4, 4),
+      r: CFG.trail.radius(st.trailW), life: CFG.trail.life, max: CFG.trail.life,
+      tickT: 0.1, seed: (Math.random() * 1e9) | 0,
+    });
+    if (S.puddles.length > 26) S.puddles.shift();
+  }
+
+  function fireSpirits() {
+    const st = S.stats;
+    for (let i = 0; i < CFG.spirit.count(st.spirit); i++) {
+      const a = rand(0, TAU);
+      S.spirits.push({
+        x: S.player.x + Math.cos(a) * 12, y: S.player.y + Math.sin(a) * 12,
+        ang: a, speed: CFG.spirit.speed * rand(0.9, 1.1),
+        age: 0, life: CFG.spirit.life, seed: (Math.random() * 1e9) | 0,
+      });
+    }
+    SFX.spirit();
+  }
+
+  function fireHanko() {
+    const st = S.stats;
+    const tgt = nearestEnemy(S.player.x, S.player.y, 720);
+    if (!tgt) { S.hankoT = 0.8; return; }
+    const rad = CFG.hanko.radius(st.hanko);
+    const dmg = CFG.hanko.dmg(st.hanko);
+    S.stamps.push({ x: tgt.x, y: tgt.y, r: rad, life: 0.5, max: 0.5, seed: (Math.random() * 1e9) | 0 });
+    S.rings.push({ x: tgt.x, y: tgt.y, max: rad, life: 0.4, maxLife: 0.4, red: true });
+    S.stainQueue.push({ x: tgt.x, y: tgt.y, r: rad * 0.34, alpha: 0.34, red: true });
+    S.shake = Math.max(S.shake, 6);
+    for (let k = S.enemies.length - 1; k >= 0; k--) {
+      const e = S.enemies[k];
+      const dx = e.x - tgt.x, dy = e.y - tgt.y;
+      if (dx * dx + dy * dy <= rad * rad) {
+        e.hp -= dmg;
+        e.hitFlash = 0.09;
+        e.stun = Math.max(e.stun, CFG.hanko.stun);
+        e.slowT = Math.max(e.slowT, 0.8);
+        if (e.hp <= 0) { S.enemies.splice(k, 1); killEnemy(e); }
+      }
+    }
+    SFX.hanko();
+  }
+
   /* ---------------- updates ---------------- */
   function updatePlayer(dt) {
     const p = S.player, st = S.stats;
@@ -369,7 +505,12 @@ const G = (() => {
     const sp = CFG.player.speed * st.moveMult * (S.adrenT > 0 ? CFG.adrenaline.mult : 1);
     p.x += vx * sp * dt;
     p.y += vy * sp * dt;
-    clampToArena(p);
+    /* the sheet is endless — nothing clamps the brush */
+
+    /* the camera drifts after the brush */
+    const k = 1 - Math.exp(-7.5 * dt);
+    S.cam.x += (p.x - S.cam.x) * k;
+    S.cam.y += (p.y - S.cam.y) * k;
 
     if (S.adrenT > 0) S.adrenT -= dt;
     if (S.invulnT > 0) S.invulnT -= dt;
@@ -383,6 +524,30 @@ const G = (() => {
       if (S.novaT <= 0) fireNova();
     }
 
+    /* folded fan: a spray of paper blades */
+    if (st.fan > 0) {
+      S.fanT -= dt;
+      if (S.fanT <= 0) { S.fanT = CFG.fan.period(st.fan); if (nearestEnemy()) fireFan(); }
+    }
+
+    /* ink trail: smears that bite */
+    if (st.trailW > 0) {
+      S.trailT -= dt;
+      if (S.trailT <= 0 && m > 0.25) { S.trailT = CFG.trail.gap(st.trailW); dropTrail(); }
+    }
+
+    /* spirit scribes: lesser brushes that hunt alone */
+    if (st.spirit > 0) {
+      S.spiritT -= dt;
+      if (S.spiritT <= 0) { S.spiritT = CFG.spirit.period(st.spirit); if (nearestEnemy()) fireSpirits(); }
+    }
+
+    /* crimson hanko: the great seal falls */
+    if (st.hanko > 0) {
+      S.hankoT -= dt;
+      if (S.hankoT <= 0) fireHanko();
+    }
+
     /* ink orbit: droplets grind what they graze */
     if (st.orb > 0) {
       const orbR = CFG.orbit.radius(st.orb);
@@ -390,8 +555,8 @@ const G = (() => {
       for (let i = 0; i < st.orb; i++) {
         const a = base * CFG.orbit.speed + (i / st.orb) * TAU;
         const ox = p.x + Math.cos(a) * orbR, oy = p.y + Math.sin(a) * orbR;
-        for (let k = S.enemies.length - 1; k >= 0; k--) {
-          const e = S.enemies[k];
+        for (let kk = S.enemies.length - 1; kk >= 0; kk--) {
+          const e = S.enemies[kk];
           if (e.orbCd > 0) continue;
           const dx = e.x - ox, dy = e.y - oy;
           const rr = e.r + 5.5;
@@ -402,7 +567,7 @@ const G = (() => {
             const d = Math.hypot(dx, dy) || 1;
             e.kbx += (dx / d) * 170; e.kby += (dy / d) * 170;
             SFX.hit();
-            if (e.hp <= 0) { S.enemies.splice(k, 1); killEnemy(e); }
+            if (e.hp <= 0) { S.enemies.splice(kk, 1); killEnemy(e); }
             break;
           }
         }
@@ -459,6 +624,7 @@ const G = (() => {
         x: p.x + Math.cos(a) * 13, y: p.y + Math.sin(a) * 13,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
         ang: a, dmg: st.dmg, hits: 1 + st.pierce, age: 0, life: CFG.player.bulletLife,
+        kind: 'drop',
       });
     }
     /* echo stroke: the mirrored volley answers from behind */
@@ -472,6 +638,7 @@ const G = (() => {
           x: p.x + Math.cos(a) * 13, y: p.y + Math.sin(a) * 13,
           vx: Math.cos(a) * spd * 0.92, vy: Math.sin(a) * spd * 0.92,
           ang: a, dmg: st.dmg, hits: 1 + st.pierce, age: 0, life: CFG.player.bulletLife,
+          kind: 'drop',
         });
       }
     }
@@ -480,21 +647,42 @@ const G = (() => {
   }
 
   function moveBullets(dt) {
-    const a = S.arena;
     for (let i = S.bullets.length - 1; i >= 0; i--) {
       const b = S.bullets[i];
       b.x += b.vx * dt; b.y += b.vy * dt; b.age += dt;
-      if (b.age > b.life || b.x < a.x - 6 || b.x > a.x + a.w + 6 || b.y < a.y - 6 || b.y > a.y + a.h + 6) {
+      if (b.age > b.life) {
         S.stainQueue.push({ x: b.x, y: b.y, r: 2.6, alpha: 0.3 });
         S.bullets.splice(i, 1);
       }
     }
   }
 
-  function updateBullets(dt) {
-    moveBullets(dt);
+  function damageEnemy(e, idx, dmg, knock, ang) {
     const st = S.stats;
     const critCh = CFG.crit.chance(st.crit);
+    let d = dmg;
+    if (critCh > 0 && Math.random() < critCh) {
+      d *= 2;
+      S.popups.push({ x: e.x, y: e.y - e.r - 6, txt: '×2', life: 0.55, max: 0.55, red: true });
+    }
+    if (st.slow > 0) e.slowT = CFG.slow.dur;
+    e.hp -= d;
+    e.hitFlash = 0.08;
+    if (knock) {
+      const kf = e.elite ? 0.15 : (e.type === 'slab' || e.type === 'oni' ? 0.12 : 0.55);
+      e.kbx += Math.cos(ang) * 240 * kf;
+      e.kby += Math.sin(ang) * 240 * kf;
+    }
+    if (e.hp <= 0) {
+      S.enemies.splice(idx, 1);
+      killEnemy(e);
+      return true;
+    }
+    return false;
+  }
+
+  function updateBullets(dt) {
+    moveBullets(dt);
     for (let i = S.bullets.length - 1; i >= 0; i--) {
       const b = S.bullets[i];
       for (let j = S.enemies.length - 1; j >= 0; j--) {
@@ -502,26 +690,81 @@ const G = (() => {
         const dx = e.x - b.x, dy = e.y - b.y;
         const rr = e.r + 3;
         if (dx * dx + dy * dy <= rr * rr) {
-          let dmg = b.dmg;
-          if (critCh > 0 && Math.random() < critCh) {
-            dmg *= 2;
-            S.popups.push({ x: e.x, y: e.y - e.r - 6, txt: '×2', life: 0.55, max: 0.55, red: true });
-          }
-          if (st.slow > 0) e.slowT = CFG.slow.dur;
-          e.hp -= dmg;
-          e.hitFlash = 0.08;
-          const bl = Math.hypot(b.vx, b.vy) || 1;
-          const kx = b.vx / bl, ky = b.vy / bl;
-          const kf = e.type === 'slab' ? 0.12 : 0.55;
-          e.kbx += kx * 240 * kf;
-          e.kby += ky * 240 * kf;
+          const ang = Math.atan2(b.vy, b.vx);
           SFX.hit();
           b.hits--;
-          if (e.hp <= 0) {
-            S.enemies.splice(j, 1);
-            killEnemy(e);
+          const dead = damageEnemy(e, j, b.dmg, true, ang);
+          if (b.hits <= 0) {
+            if (b.kind === 'blade') burst(b.x, b.y, 3, false);
+            S.bullets.splice(i, 1);
           }
-          if (b.hits <= 0) S.bullets.splice(i, 1);
+          if (dead) j--;
+          if (b.hits <= 0) break;
+        }
+      }
+    }
+  }
+
+  function updatePuddles(dt) {
+    for (let i = S.puddles.length - 1; i >= 0; i--) {
+      const pd = S.puddles[i];
+      pd.life -= dt;
+      pd.tickT -= dt;
+      if (pd.life <= 0) {
+        S.stainQueue.push({ x: pd.x, y: pd.y, r: pd.r * 0.5, alpha: 0.16 });
+        S.puddles.splice(i, 1);
+        continue;
+      }
+      if (pd.tickT <= 0) {
+        pd.tickT = CFG.trail.tick;
+        let bit = false;
+        for (let j = S.enemies.length - 1; j >= 0; j--) {
+          const e = S.enemies[j];
+          const dx = e.x - pd.x, dy = e.y - pd.y;
+          const rr = e.r + pd.r * 0.85;
+          if (dx * dx + dy * dy <= rr * rr) {
+            e.slowT = Math.max(e.slowT, 0.55);
+            e.hp -= CFG.trail.dmg;
+            e.hitFlash = 0.07;
+            bit = true;
+            if (e.hp <= 0) { S.enemies.splice(j, 1); killEnemy(e); }
+          }
+        }
+        if (bit && Math.random() < 0.5) SFX.hit();
+      }
+    }
+  }
+
+  function updateSpirits(dt) {
+    for (let i = S.spirits.length - 1; i >= 0; i--) {
+      const sp = S.spirits[i];
+      sp.age += dt;
+      if (sp.age > sp.life) {
+        S.stainQueue.push({ x: sp.x, y: sp.y, r: 2.2, alpha: 0.2 });
+        S.spirits.splice(i, 1);
+        continue;
+      }
+      /* home toward the nearest beast */
+      const tgt = nearestEnemy(sp.x, sp.y, 640);
+      if (tgt) {
+        const want = Math.atan2(tgt.y - sp.y, tgt.x - sp.x);
+        let diff = want - sp.ang;
+        while (diff > Math.PI) diff -= TAU;
+        while (diff < -Math.PI) diff += TAU;
+        const turn = CFG.spirit.turn * dt;
+        sp.ang += clamp(diff, -turn, turn);
+      }
+      sp.x += Math.cos(sp.ang) * sp.speed * dt;
+      sp.y += Math.sin(sp.ang) * sp.speed * dt;
+      if (sp.age < 0.12) continue; /* grace period after leaving the brush */
+      for (let j = S.enemies.length - 1; j >= 0; j--) {
+        const e = S.enemies[j];
+        const dx = e.x - sp.x, dy = e.y - sp.y;
+        const rr = e.r + 4;
+        if (dx * dx + dy * dy <= rr * rr) {
+          damageEnemy(e, j, CFG.spirit.dmg, true, sp.ang);
+          burst(sp.x, sp.y, 4, false);
+          S.spirits.splice(i, 1);
           break;
         }
       }
@@ -556,11 +799,11 @@ const G = (() => {
             /* the mother sheds her brood */
             if (e.type === 'titan') {
               e.spawnT -= dt;
-              if (e.spawnT <= 0 && S.enemies.length < CFG.wave.concurrentCap(S.stats.wave)) {
+              if (e.spawnT <= 0 && S.enemies.length < CFG.wave.concurrentCap(S.stats.wave, S.areaIdx)) {
                 e.spawnT = 4.2;
                 for (let i = 0; i < 2; i++) {
                   const a = rand(0, 6.28);
-                  const c = spawnEnemy('pulseling', clamp(e.x + Math.cos(a) * (e.r + 8), S.arena.x + 10, S.arena.x + S.arena.w - 10), clamp(e.y + Math.sin(a) * (e.r + 8), S.arena.y + 10, S.arena.y + S.arena.h - 10));
+                  const c = spawnEnemy('pulseling', e.x + Math.cos(a) * (e.r + 8), e.y + Math.sin(a) * (e.r + 8));
                   c.kbx = Math.cos(a) * 200; c.kby = Math.sin(a) * 200;
                 }
                 S.rings.push({ x: e.x, y: e.y, max: e.r * 2.1, life: 0.4, maxLife: 0.4 });
@@ -602,6 +845,7 @@ const G = (() => {
                 e.state = 'spit'; e.stateT = 0;
                 const ga = Math.atan2(p.y - e.y, p.x - e.x);
                 S.ebullets.push({
+                  kind: 'glob',
                   x: e.x + Math.cos(ga) * (e.r + 4), y: e.y + Math.sin(ga) * (e.r + 4),
                   vx: Math.cos(ga) * CFG.glob.speed, vy: Math.sin(ga) * CFG.glob.speed,
                   ang: ga, age: 0, life: CFG.glob.life,
@@ -639,8 +883,8 @@ const G = (() => {
                 /* the blink: a stain is left where it stood */
                 S.stainQueue.push({ x: e.x, y: e.y, r: e.r * 0.9, alpha: 0.35 });
                 const ba = rand(0, 6.28), bd = rand(56, 96);
-                e.x = clamp(p.x + Math.cos(ba) * bd, S.arena.x + e.r + 2, S.arena.x + S.arena.w - e.r - 2);
-                e.y = clamp(p.y + Math.sin(ba) * bd, S.arena.y + e.r + 2, S.arena.y + S.arena.h - e.r - 2);
+                e.x = p.x + Math.cos(ba) * bd;
+                e.y = p.y + Math.sin(ba) * bd;
                 S.stainQueue.push({ x: e.x, y: e.y, r: e.r * 1.1, alpha: 0.4 });
                 S.rings.push({ x: e.x, y: e.y, max: e.r * 2.2, life: 0.3, maxLife: 0.3 });
                 e.ang = Math.atan2(p.y - e.y, p.x - e.x);
@@ -667,13 +911,122 @@ const G = (() => {
             vx = ux * e.speed * sm; vy = uy * e.speed * sm;
             e.ang += dt * 1.2;
             break;
+          case 'kage': { /* circles you like a stain, then cuts straight through */
+            if (e.state === 'cruise') {
+              /* perch on a ring around the player */
+              const ringD = clamp(d, 150, 240);
+              const tangent = Math.atan2(uy, ux) + (e.seed > 3.14 ? 1 : -1) * Math.PI / 2;
+              const pull = clamp((d - ringD) * 2.2, -60, 60);
+              vx = (Math.cos(tangent) * e.speed + ux * pull) * sm;
+              vy = (Math.sin(tangent) * e.speed + uy * pull) * sm;
+              e.ang = Math.atan2(uy, ux);
+              e.stateT += dt;
+              if (d < 260 && e.stateT > 1.3 + (e.seed % 0.7)) { e.state = 'tele'; e.stateT = 0; SFX.wind(); }
+            } else if (e.state === 'tele') {
+              e.stateT += dt;
+              if (e.stateT > 0.5) {
+                e.ang = Math.atan2(p.y - e.y, p.x - e.x);
+                e.px = Math.cos(e.ang); e.py = Math.sin(e.ang);
+                e.state = 'dash'; e.stateT = 0;
+                SFX.blink();
+              }
+            } else if (e.state === 'dash') {
+              e.stateT += dt;
+              vx = e.px * 540 * sm; vy = e.py * 540 * sm;
+              if (e.stateT > 0.34) { e.state = 'rest'; e.stateT = 0; }
+            } else { /* rest */
+              e.stateT += dt;
+              if (e.stateT > 0.9) { e.state = 'cruise'; e.stateT = 0; }
+            }
+            break;
+          }
+          case 'stilt': { /* keeps far, draws a hair-thin line, then fires a needle */
+            if (e.state === 'cruise') {
+              e.ang = Math.atan2(uy, ux);
+              if (d < 330) { vx = -ux * e.speed * sm; vy = -uy * e.speed * sm; } /* back away */
+              else if (d > 440) { vx = ux * e.speed * sm; vy = uy * e.speed * sm; }
+              else { /* glide sideways along its perch */
+                const sdir = Math.sin(e.seed * 3 + e.t * 0.5) > 0 ? 1 : -1;
+                vx = -uy * e.speed * sm * sdir;
+                vy = ux * e.speed * sm * sdir;
+              }
+              e.stateT += dt;
+              if (d < 520 && e.stateT > 1.7) { e.state = 'aim'; e.stateT = 0; SFX.wind(); }
+            } else if (e.state === 'aim') {
+              e.ang = Math.atan2(p.y - e.y, p.x - e.x);
+              e.stateT += dt;
+              if (e.stateT > 0.66) {
+                e.state = 'fire'; e.stateT = 0;
+                S.ebullets.push({
+                  kind: 'needle',
+                  x: e.x + Math.cos(e.ang) * (e.r + 6), y: e.y + Math.sin(e.ang) * (e.r + 6),
+                  vx: Math.cos(e.ang) * CFG.needle.speed, vy: Math.sin(e.ang) * CFG.needle.speed,
+                  ang: e.ang, age: 0, life: CFG.needle.life,
+                });
+                SFX.needle();
+              }
+            } else if (e.state === 'fire') {
+              e.stateT += dt;
+              if (e.stateT > 0.3) { e.state = 'rest'; e.stateT = 0; }
+            } else { /* rest */
+              e.stateT += dt;
+              if (e.stateT > 0.7) { e.state = 'cruise'; e.stateT = 0; }
+            }
+            break;
+          }
+          case 'oni': { /* a heavy charge: windup, then a straight bulldozer run */
+            if (e.state === 'cruise') {
+              vx = ux * e.speed * sm; vy = uy * e.speed * sm;
+              e.ang = Math.atan2(uy, ux);
+              e.stateT += dt;
+              if (d < 340 && e.stateT > 1.4) { e.state = 'windup'; e.stateT = 0; SFX.wind(); }
+            } else if (e.state === 'windup') {
+              e.stateT += dt;
+              if (e.stateT > 0.62) {
+                e.ang = Math.atan2(p.y - e.y, p.x - e.x);
+                e.px = Math.cos(e.ang); e.py = Math.sin(e.ang);
+                e.state = 'charge'; e.stateT = 0;
+              }
+            } else if (e.state === 'charge') {
+              e.stateT += dt;
+              vx = e.px * 470; vy = e.py * 470;
+              if (e.stateT > 0.6) { e.state = 'skid'; e.stateT = 0; }
+            } else if (e.state === 'skid') {
+              e.stateT += dt;
+              vx = e.px * 120; vy = e.py * 120;
+              if (e.stateT > 0.5) { e.state = 'cruise'; e.stateT = 0; }
+            }
+            break;
+          }
+          case 'crane': { /* swoops past in long arcs, never lingers */
+            if (e.state === 'cruise' || e.state === 'loop') {
+              /* line up the next pass: aim beyond the player */
+              e.dirT -= dt;
+              if (e.dirT <= 0) {
+                e.dirT = 0.4;
+                const side = (e.seed + Math.floor(e.t)) % 2 === 0 ? 1 : -1;
+                const tx = p.x + -uy * 90 * side;
+                const ty = p.y + ux * 90 * side;
+                e.ang = Math.atan2(ty - e.y, tx - e.x);
+                e.state = 'pass';
+              }
+              e.stateT += dt;
+              vx = Math.cos(e.ang) * e.speed * 0.55;
+              vy = Math.sin(e.ang) * e.speed * 0.55;
+            } else if (e.state === 'pass') {
+              e.stateT += dt;
+              vx = Math.cos(e.ang) * e.speed * sm;
+              vy = Math.sin(e.ang) * e.speed * sm;
+              if (e.stateT > 0.9 && d > 220) { e.state = 'loop'; e.stateT = 0; e.dirT = 0.15; }
+            }
+            break;
+          }
         }
         e.x += vx * dt; e.y += vy * dt;
       }
       e.x += e.kbx * dt; e.y += e.kby * dt;
       const decay = Math.exp(-8 * dt);
       e.kbx *= decay; e.kby *= decay;
-      clampToArena(e);
     }
 
     /* soft separation so enemies don't stack */
@@ -702,20 +1055,21 @@ const G = (() => {
     }
   }
 
-  /* the spitter's ink, flying back at you */
+  /* the spitter's ink and the sniper's needles, flying back at you */
   function updateEbullets(dt) {
-    const a = S.arena, p = S.player;
+    const p = S.player;
     for (let i = S.ebullets.length - 1; i >= 0; i--) {
       const b = S.ebullets[i];
       b.x += b.vx * dt; b.y += b.vy * dt; b.age += dt;
-      if (b.age > b.life || b.x < a.x - 6 || b.x > a.x + a.w + 6 || b.y < a.y - 6 || b.y > a.y + a.h + 6) {
+      if (b.age > b.life) {
         S.stainQueue.push({ x: b.x, y: b.y, r: 2.4, alpha: 0.22 });
         S.ebullets.splice(i, 1);
         continue;
       }
       if (S.invulnT <= 0) {
         const dx = b.x - p.x, dy = b.y - p.y;
-        const rr = p.r - 1 + CFG.glob.r;
+        const br = (b.kind === 'needle' ? CFG.needle.r : CFG.glob.r);
+        const rr = p.r - 1 + br;
         if (dx * dx + dy * dy <= rr * rr) {
           S.ebullets.splice(i, 1);
           S.stainQueue.push({ x: b.x, y: b.y, r: 3.4, alpha: 0.4 });
@@ -731,8 +1085,9 @@ const G = (() => {
       mk.t -= dt;
       if (mk.t <= 0) {
         S.markers.splice(i, 1);
-        S.stainQueue.push({ x: mk.x, y: mk.y, r: ENEMIES[mk.type].r * 1.1, alpha: 0.42 });
-        spawnEnemy(mk.type, mk.x, mk.y);
+        S.stainQueue.push({ x: mk.x, y: mk.y, r: ENEMIES[mk.type].r * (mk.elite ? 2 : 1.1), alpha: mk.elite ? 0.55 : 0.42, red: !!mk.elite });
+        spawnEnemy(mk.type, mk.x, mk.y, { elite: !!mk.elite });
+        if (mk.elite) { S.shake = Math.max(S.shake, 7); SFX.elite(); }
       }
     }
   }
@@ -740,11 +1095,11 @@ const G = (() => {
   function updateSpawning(dt) {
     if (!S.waveActive || !S.queue.length) return;
     S.spawnTimer -= dt;
-    const cap = CFG.wave.concurrentCap(S.stats.wave);
+    const cap = CFG.wave.concurrentCap(S.stats.wave, S.areaIdx);
     const alive = S.enemies.length + S.markers.length;
     if (S.spawnTimer <= 0 && S.markers.length < 6 && alive < cap) {
-      const group = Math.min(CFG.wave.groupSize(S.stats.wave), S.queue.length, cap - alive);
-      const sides = shuffle([0, 1, 2, 3]); /* flank: spread each group around the arena */
+      const group = Math.min(CFG.wave.groupSize(S.stats.wave, S.areaIdx), S.queue.length, cap - alive);
+      const sides = shuffle([0, 1, 2, 3]); /* flank: spread each group around the brush */
       for (let i = 0; i < group; i++) {
         const type = S.queue.pop();
         const pt = edgePoint(sides[i % 4]);
@@ -777,6 +1132,11 @@ const G = (() => {
       r.life -= dt;
       if (r.life <= 0) S.rings.splice(i, 1);
     }
+    for (let i = S.stamps.length - 1; i >= 0; i--) {
+      const st = S.stamps[i];
+      st.life -= dt;
+      if (st.life <= 0) S.stamps.splice(i, 1);
+    }
     if (S.shake > 0) S.shake *= Math.exp(-6.5 * dt);
   }
 
@@ -792,6 +1152,8 @@ const G = (() => {
     updateBullets(dt);
     updateEbullets(dt);
     updateEnemies(dt);
+    updatePuddles(dt);
+    updateSpirits(dt);
     updateMarkers(dt);
     updateSpawning(dt);
     updateFx(dt);
@@ -805,7 +1167,14 @@ const G = (() => {
     }
     if (!S.waveActive && S.clearedT > 0) {
       S.clearedT -= dt;
-      if (S.clearedT <= 0) openUpgrade();
+      if (S.clearedT <= 0) {
+        /* the third sheet, washed clean — the scroll ends */
+        if (S.runMode === 'journey' && st.wave >= CFG.wave.wavesPerArea * AREAS.length) {
+          showOver(true);
+        } else {
+          openUpgrade();
+        }
+      }
     }
   }
 
@@ -818,23 +1187,23 @@ const G = (() => {
     }
     updateFx(dt);
     S.dyingT -= dt;
-    if (S.dyingT <= 0) showOver();
+    if (S.dyingT <= 0) showOver(false);
   }
 
-  /* ---------------- attract mode (title backdrop) ---------------- */
+  /* ---------------- attract mode (title backdrop) ----------------
+     beasts drift across an open sheet; the camera rests at the seal */
   function initAttract() {
     S.idle = [];
-    const types = ['pulse', 'dart', 'spit', 'split', 'slab', 'shade', 'wraith', 'moth', 'titan'];
-    const a = S.arena;
-    for (let i = 0; i < 7; i++) {
+    const types = ['pulse', 'dart', 'spit', 'split', 'slab', 'shade', 'wraith', 'moth', 'titan', 'kage', 'crane', 'oni'];
+    for (let i = 0; i < 9; i++) {
       const type = types[Math.floor(rand(0, types.length))];
       const r = ENEMIES[type].r * (type === 'titan' ? 0.7 : 1);
       const ang = rand(0, 6.28);
       const sp = rand(16, 34);
+      const d = rand(60, 330);
       S.idle.push({
         type, r,
-        x: rand(a.x + r + 4, a.x + a.w - r - 4),
-        y: rand(a.y + r + 4, a.y + a.h - r - 4),
+        x: Math.cos(ang) * d, y: Math.sin(ang) * d,
         vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
         ang, t: rand(0, 10), hitFlash: 0, state: 'cruise', seed: rand(0, 6.28),
       });
@@ -842,12 +1211,17 @@ const G = (() => {
   }
 
   function updateIdle(dt) {
-    const a = S.arena;
     for (const d of S.idle) {
       d.x += d.vx * dt; d.y += d.vy * dt; d.t += dt;
       d.ang += dt * 0.25;
-      if (d.x < a.x + d.r || d.x > a.x + a.w - d.r) { d.vx *= -1; d.x = clamp(d.x, a.x + d.r, a.x + a.w - d.r); }
-      if (d.y < a.y + d.r || d.y > a.y + a.h - d.r) { d.vy *= -1; d.y = clamp(d.y, a.y + d.r, a.y + a.h - d.r); }
+      /* a soft pull keeps the wanderers near the seal */
+      const dist = Math.hypot(d.x, d.y);
+      if (dist > 350) {
+        d.vx -= (d.x / dist) * 26 * dt;
+        d.vy -= (d.y / dist) * 26 * dt;
+      }
+      const sp = Math.hypot(d.vx, d.vy);
+      if (sp > 40) { d.vx *= 40 / sp; d.vy *= 40 / sp; }
     }
     updateFx(dt);
   }
@@ -857,8 +1231,8 @@ const G = (() => {
     S,
     get mode() { return S.mode; },
     set mode(m) { S.mode = m; },
-    startRun, abandon, deploy, pickAt,
-    update, updateDying, updateIdle, initAttract, clampAll,
+    startRun, continueEndless, abandon, deploy, pickAt,
+    update, updateDying, updateIdle, initAttract,
     getBest, getRuns,
   };
 })();

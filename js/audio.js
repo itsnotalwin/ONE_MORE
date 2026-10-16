@@ -146,6 +146,45 @@ const SFX = (() => {
       noise({ dur: 0.09, vol: 0.05, hp: 900, lp: 3200, q: 1.4 });
       tone({ f: 520, f2: 1240, type: 'sine', dur: 0.07, vol: 0.035 });
     },
+    /* the scroll turns — a low bronze gong with a breath of shimmer */
+    gong() {
+      tone({ f: 138, f2: 128, type: 'sine', dur: 1.3, vol: 0.3 });
+      tone({ f: 276, f2: 252, type: 'triangle', dur: 0.9, vol: 0.1, delay: 0.02 });
+      tone({ f: 552, f2: 530, type: 'sine', dur: 0.6, vol: 0.045, delay: 0.04 });
+      noise({ dur: 0.5, vol: 0.05, hp: 1800, q: 1.2, delay: 0.02 });
+    },
+    /* the folded fan snaps open */
+    fan() {
+      noise({ dur: 0.07, vol: 0.06, hp: 1400, lp: 5200, q: 1.6 });
+      tone({ f: 740, f2: 1180, type: 'triangle', dur: 0.05, vol: 0.04 });
+    },
+    /* the spirit scribes wake */
+    spirit() {
+      tone({ f: 880, f2: 1320, type: 'sine', dur: 0.12, vol: 0.045 });
+      tone({ f: 1174, type: 'triangle', dur: 0.08, vol: 0.03, delay: 0.07 });
+    },
+    /* the crimson hanko falls — a stamp, a knock, a thud */
+    hanko() {
+      tone({ f: 96, f2: 36, type: 'sine', dur: 0.28, vol: 0.3 });
+      noise({ dur: 0.09, vol: 0.14, lp: 700, q: 1.1 });
+      tone({ f: 1650, type: 'square', dur: 0.03, vol: 0.05, delay: 0.015 });
+    },
+    /* the sniper fires its needle */
+    needle() {
+      tone({ f: 1900, f2: 900, type: 'square', dur: 0.045, vol: 0.04 });
+      noise({ dur: 0.035, vol: 0.035, hp: 2200 });
+    },
+    /* a guardian enters the sheet */
+    elite() {
+      tone({ f: 82, f2: 34, type: 'sine', dur: 0.7, vol: 0.32 });
+      tone({ f: 110, f2: 55, type: 'sine', dur: 0.5, vol: 0.2, delay: 0.22 });
+      noise({ dur: 0.4, vol: 0.1, lp: 300, delay: 0.05 });
+    },
+    /* three sheets painted — the scroll ends */
+    victory() {
+      [523.3, 659.3, 784, 1046.5].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.3, vol: 0.11, delay: i * 0.16 }));
+      tone({ f: 130, f2: 65, type: 'sine', dur: 0.8, vol: 0.2, delay: 0.64 });
+    },
     /* the ink dries — a long, low exhale */
     over() {
       [392, 311, 233, 155].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.3, vol: 0.13, delay: i * 0.2 }));

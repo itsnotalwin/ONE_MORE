@@ -393,9 +393,9 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
 .bh-rule{ width: 58px; height: 1px; background: var(--ink-25); }
 .enemy-legend{
   display: grid;
-  grid-template-columns: repeat(3, auto);
+  grid-template-columns: repeat(5, auto);
   justify-content: center;
-  gap: 11px 44px;
+  gap: 11px 30px;
 }
 .legend-item{
   display: inline-flex; align-items: center; gap: 8px;
@@ -750,6 +750,95 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
 .over-actions .ghost-btn{ flex: 0 0 auto; }
 
 /* ============================================================
+   AREAS & MODES — hud area chip, mode row, endless, guardians
+   ============================================================ */
+.hud-area{ display: flex; align-items: baseline; gap: 7px; }
+.hud-area-kanji{ font-family: var(--display); font-size: 16px; line-height: 1; color: var(--red); transform: rotate(-2deg); }
+.hud-area-name{ font-size: 8.5px; letter-spacing: .28em; color: var(--ink-70); }
+.hud-area-count{ font-size: 8.5px; letter-spacing: .16em; color: var(--ink-45); }
+.hud-mode{
+  align-self: center;
+  font-size: 8px; letter-spacing: .26em; text-indent: .26em;
+  color: var(--ink-45);
+  border: 1px solid var(--ink-25);
+  padding: 3.5px 6px 2.5px;
+  transform: rotate(-2deg);
+  white-space: nowrap;
+}
+.hud-mode.endless{ color: var(--red); border-color: rgba(178,58,43,.45); }
+
+.mode-row{
+  margin-top: 30px;
+  display: flex; gap: 14px; align-items: stretch; justify-content: center;
+  flex-wrap: wrap;
+  animation: riseIn .7s cubic-bezier(.22,.7,.25,1) .66s backwards;
+}
+.mode-row .play-btn{ margin-top: 0; animation: none; }
+.endless-btn{
+  position: relative;
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 15px 26px 15px 14px;
+  font-family: inherit;
+  font-size: 12px; font-weight: 600; letter-spacing: .26em; text-indent: .1em;
+  color: var(--ink);
+  background: none; border: none; cursor: pointer;
+  --tilt: .5deg;
+  transform: rotate(var(--tilt));
+  box-shadow: 4px 4px 0 rgba(26,23,20,.13);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.endless-btn::before{
+  content: '';
+  position: absolute; inset: 0;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-80);
+  filter: var(--rough-soft);
+  pointer-events: none;
+}
+.endless-btn:hover{ transform: rotate(.5deg) translate(-2px, -2px); box-shadow: 7px 7px 0 rgba(26,23,20,.2); }
+.endless-btn:hover .endless-kanji{ transform: rotate(-4deg) scale(1.06); }
+.endless-btn:active{ transform: rotate(.5deg) translate(1px, 1px); box-shadow: 2px 2px 0 rgba(26,23,20,.22); }
+.endless-kanji{
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--paper);
+  background: var(--ink);
+  transform: rotate(3deg);
+  transition: transform .18s ease;
+}
+.mode-note{
+  margin-top: 15px;
+  font-size: 8.5px; letter-spacing: .3em; text-indent: .3em;
+  color: var(--ink-45);
+  animation: riseIn .6s ease .78s backwards;
+}
+
+/* the scroll turns — the sheet-to-sheet banner */
+.wave-banner.area.show{ animation-duration: 2.4s; }
+.wave-banner.area .banner-stroke{ color: var(--red); opacity: .09; }
+.wave-banner.area .ban-kanji{ color: var(--red); font-size: clamp(96px, 17vh, 170px); }
+.wave-banner.area .ban-lat{ font-size: 15px; letter-spacing: .5em; color: var(--ink); }
+
+/* weapon cards carry the vermilion brush mark */
+.up-card.is-weapon .up-glyph{ color: var(--red); }
+.up-wpn{
+  font-family: var(--display);
+  font-size: 11px; line-height: 1;
+  color: var(--paper);
+  background: var(--red);
+  padding: 3px 4px 2px;
+  transform: rotate(-3deg);
+}
+
+/* the endless call on the victory sheet */
+.block-btn.continue{ background: var(--red); color: var(--paper); }
+.block-btn.continue::before{ border-color: rgba(237,231,217,.55); }
+.block-btn.continue .kanji-inline{ color: var(--paper); font-size: 15px; }
+.block-btn.continue:hover{ background: #9c3225; }
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 720px){
@@ -761,7 +850,7 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
   .enso{ width: min(130vw, 620px); top: 47%; }
   .title-word{ font-size: clamp(52px, 15vw, 96px); }
   .swash{ width: 52vw; margin-left: 0; }
-  .enemy-legend{ gap: 8px 18px; }
+  .enemy-legend{ grid-template-columns: repeat(3, auto); gap: 8px 18px; }
   .legend-item{ font-size: 8px; gap: 5px; }
   .legend-item svg{ width: 18px; height: 18px; }
   .legend-item i{ display: none; }
@@ -775,6 +864,11 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
   .hud-tl{ top: 14px; left: 14px; }
   .hud-tr{ top: 12px; right: 14px; }
   .wave-progress{ width: 72px; }
+  .hud-area-name{ display: none; }
+  .hud-mode{ display: none; }
+  .mode-row{ flex-direction: column; align-items: center; gap: 11px; }
+  .mode-row .play-btn, .endless-btn{ width: min(320px, 86vw); justify-content: center; }
+  .mode-note{ font-size: 7.5px; letter-spacing: .22em; }
   .wm{ font-size: 130px; }
 }
 
@@ -787,6 +881,7 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
 
 @media (max-height: 560px){
   .title-sub{ display: none; }
+  .mode-note{ display: none; }
   .enemy-legend{ display: none; }
   .beasts-head{ display: none; }
   .masthead{ display: none; }
@@ -799,9 +894,9 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
 @media (prefers-reduced-motion: reduce){
   .ticker-track{ animation: none; }
   .wave-banner.show{ animation-duration: .8s; }
-  .play-btn, .up-card, .block-btn, .deploy-btn{ transition: none; }
+  .play-btn, .endless-btn, .up-card, .block-btn, .deploy-btn{ transition: none; }
   .enso-main, .enso-echo{ animation: none; stroke-dashoffset: 0; }
   .enso-seal{ animation: none; opacity: .82; }
   .title-chip, .title-word, .swash, .title-sub, .play-btn, .best-line,
-  .masthead, .seal-vert, .title-foot, .ticker{ animation: none; }
+  .masthead, .seal-vert, .title-foot, .ticker, .mode-row, .mode-note{ animation: none; }
 }

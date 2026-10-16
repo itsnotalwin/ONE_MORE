@@ -18,9 +18,6 @@
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
     G.S.W = w; G.S.H = h; G.S.dpr = dpr;
-    const inset = CFG.arenaInset;
-    G.S.arena = { x: inset, y: inset, w: Math.max(80, w - inset * 2), h: Math.max(80, h - inset * 2) };
-    G.clampAll();
   }
   window.addEventListener('resize', resize);
   resize();
@@ -57,10 +54,12 @@
     UI.show(null);
   }
 
-  function start() {
+  let lastMode = 'journey';
+  function start(mode) {
     SFX.ensure();
-    R.resetStains(); /* fresh sheet of paper */
-    G.startRun();
+    R.resetStains(); /* a fresh sheet */
+    G.startRun(mode || lastMode);
+    lastMode = mode || lastMode;
   }
 
   function goMenu() {
@@ -132,8 +131,14 @@
   canvas.addEventListener('pointercancel', endJoy);
 
   /* ---------------- buttons ---------------- */
-  document.getElementById('playBtn').addEventListener('click', start);
-  document.getElementById('againBtn').addEventListener('click', start);
+  document.getElementById('playBtn').addEventListener('click', () => start('journey'));
+  document.getElementById('endlessBtn').addEventListener('click', () => start('endless'));
+  document.getElementById('continueBtn').addEventListener('click', () => {
+    SFX.ensure();
+    /* the same sheet keeps its stains — no fresh paper here */
+    G.continueEndless();
+  });
+  document.getElementById('againBtn').addEventListener('click', () => start());
   document.getElementById('menuBtn').addEventListener('click', goMenu);
   document.getElementById('resumeBtn').addEventListener('click', resume);
   document.getElementById('pauseMenuBtn').addEventListener('click', goMenu);

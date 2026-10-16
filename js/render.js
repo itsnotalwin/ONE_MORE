@@ -1,16 +1,25 @@
 'use strict';
 /* ============================================================
    ONE MORE — sumi-e ink renderer
-   Everything is brushwork: washi paper, living ink blots with
-   line boil, flicked droplets, and a persistent stain layer
-   that turns the arena into a painting of the fight.
+   The world is an endless sheet of washi that scrolls beneath
+   the brush: tiling paper, ambient brush marks, a persistent
+   layer of dried ink stains (sprite-cached), and three paper
+   themes — pale washi, the night scroll, the cinnabar field.
    ============================================================ */
 
 const R = (() => {
-  const INK = '#1a1714';
-  const PAPER = '#ede7d9';
   const RED = '#b23a2b';
   const TAU = Math.PI * 2;
+
+  /* ---------------- paper themes ---------------- */
+  const THEMES = {
+    pale: { paper: '#ede7d9', ink: '#1a1714', vig: '58,52,40'  },
+    dark: { paper: '#17130f', ink: '#e9e2d2', vig: '0,0,0'     },
+    red:  { paper: '#eadbc4', ink: '#1a1714', vig: '122,42,26' },
+  };
+  let INK = THEMES.pale.ink;
+  let PAPER = THEMES.pale.paper;
+  let themeKey = 'pale';
 
   /* ---------------- tiny deterministic rng ---------------- */
   function mulberry(s) {
@@ -23,60 +32,89 @@ const R = (() => {
     };
   }
 
-  /* ---------------- layers ---------------- */
-  let paperC = null, stainC = null, stainCtx = null;
-  let lw = 0, lh = 0, ldpr = 1;
-  let patHatch = null;
-  let lastT = 0, fadeAcc = 0, lastTrailT = -1;
-
-  function ensureLayers(ctx, W, H, dpr) {
-    if (paperC && W === lw && H === lh && dpr === ldpr) return;
-    lw = W; lh = H; ldpr = dpr;
-
-    /* --- washi paper --- */
-    paperC = document.createElement('canvas');
-    paperC.width = Math.round(W * dpr); paperC.height = Math.round(H * dpr);
-    const p = paperC.getContext('2d');
-    p.setTransform(dpr, 0, 0, dpr, 0, 0);
-    makePaper(p, W, H);
-
-    /* --- stain layer --- */
-    stainC = document.createElement('canvas');
-    stainC.width = paperC.width; stainC.height = paperC.height;
-    stainCtx = stainC.getContext('2d');
-    stainCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    /* --- brushed hatch pattern --- */
-    const hc = document.createElement('canvas');
-    hc.width = hc.height = 10;
-    const h = hc.getContext('2d');
-    h.strokeStyle = 'rgba(26,23,20,0.6)';
-    h.lineWidth = 1.4; h.lineCap = 'round';
-    h.beginPath();
-    h.moveTo(-2, 9.5); h.lineTo(9.5, -2);
-    h.moveTo(3, 13); h.lineTo(13, 3);
-    h.stroke();
-    patHatch = ctx.createPattern(hc, 'repeat');
+  function hash2(x, y) {
+    let h = (x * 374761393 + y * 668265263) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
   }
 
-  function makePaper(p, W, H) {
-    const rnd = mulberry(20260101);
-    p.fillStyle = PAPER;
-    p.fillRect(0, 0, W, H);
+  /* ---------------- layers ---------------- */
+  const TILE = 480;
+  let tiles = {};            // theme -> canvas (built lazily)
+  let tileDpr = 0;
+  let patHatchDark = null;   // dark-ink hatch (pale & red sheets)
+  let patHatchPale = null;   // pale-ink hatch (night sheet)
+  let patHatch = null;       // active hatch, follows theme
+  let lw = 0, lh = 0, ldpr = 1;
+  let lastT = 0, lastTrailT = -1;
 
-    /* laid lines — faint horizontal grain */
-    p.strokeStyle = 'rgba(96,88,70,0.028)';
+  /* dried ink lives in world space, each stain its own sprite */
+  let stains = [];
+
+  function ensurePatterns(ctx) {
+    if (patHatchDark) return;
+    const mk = rgba => {
+      const hc = document.createElement('canvas');
+      hc.width = hc.height = 10;
+      const h = hc.getContext('2d');
+      h.strokeStyle = rgba;
+      h.lineWidth = 1.4; h.lineCap = 'round';
+      h.beginPath();
+      h.moveTo(-2, 9.5); h.lineTo(9.5, -2);
+      h.moveTo(3, 13); h.lineTo(13, 3);
+      h.stroke();
+      return ctx.createPattern(hc, 'repeat');
+    };
+    patHatchDark = mk('rgba(26,23,20,0.6)');
+    patHatchPale = mk('rgba(233,226,210,0.5)');
+    patHatch = patHatchDark;
+  }
+
+  function setTheme(key) {
+    if (key === themeKey) return;
+    themeKey = key;
+    const th = THEMES[key];
+    INK = th.ink;
+    PAPER = th.paper;
+    patHatch = key === 'dark' ? patHatchPale : patHatchDark;
+  }
+
+  function activeThemeKey() {
+    const S = G.S;
+    if (S.mode === 'playing' || S.mode === 'paused' || S.mode === 'upgrade' || S.mode === 'dying') {
+      const area = AREAS[S.areaIdx % AREAS.length];
+      return area.theme;
+    }
+    return themeKey; /* title & over keep whatever sheet they lie on */
+  }
+
+  /* ---------------- tiled washi paper ---------------- */
+  function buildTile(key, dpr) {
+    const th = THEMES[key];
+    const c = document.createElement('canvas');
+    c.width = c.height = Math.round(TILE * dpr);
+    const p = c.getContext('2d');
+    p.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const rnd = mulberry(20260101 + key.charCodeAt(0) * 77);
+
+    p.fillStyle = th.paper;
+    p.fillRect(0, 0, TILE, TILE);
+
+    /* laid lines — grain that tiles cleanly (8 divides 480) */
     p.lineWidth = 1;
-    for (let y = 3; y < H; y += 7) {
-      p.beginPath(); p.moveTo(0, y + (rnd() - 0.5)); p.lineTo(W, y + (rnd() - 0.5)); p.stroke();
+    p.strokeStyle = key === 'dark' ? 'rgba(237,231,217,0.03)' : 'rgba(96,88,70,0.03)';
+    for (let y = 4; y < TILE; y += 8) {
+      p.beginPath(); p.moveTo(0, y + (rnd() - 0.5)); p.lineTo(TILE, y + (rnd() - 0.5)); p.stroke();
     }
     /* fibers */
-    const fibers = Math.round((W * H) / 850);
+    const fibers = Math.round((TILE * TILE) / 850);
     for (let i = 0; i < fibers; i++) {
-      const x = rnd() * W, y = rnd() * H;
+      const x = rnd() * TILE, y = rnd() * TILE;
       const a = (rnd() - 0.5) * 0.9 + (rnd() < 0.5 ? 0 : Math.PI / 2);
       const l = 1.5 + rnd() * 3.5;
-      p.strokeStyle = `rgba(${70 + rnd() * 40 | 0},${62 + rnd() * 36 | 0},${48 + rnd() * 28 | 0},${0.03 + rnd() * 0.045})`;
+      const base = key === 'dark' ? [200, 194, 178] : [70 + rnd() * 40 | 0, 62 + rnd() * 36 | 0, 48 + rnd() * 28 | 0];
+      p.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},${0.03 + rnd() * 0.045})`;
       p.lineWidth = 0.7;
       p.beginPath();
       p.moveTo(x, y);
@@ -84,54 +122,59 @@ const R = (() => {
       p.stroke();
     }
     /* speckles */
-    const dots = Math.round((W * H) / 2400);
+    const dots = Math.round((TILE * TILE) / 2400);
     for (let i = 0; i < dots; i++) {
-      p.fillStyle = `rgba(50,45,36,${0.02 + rnd() * 0.05})`;
+      p.fillStyle = key === 'dark'
+        ? `rgba(220,214,198,${0.02 + rnd() * 0.05})`
+        : `rgba(50,45,36,${0.02 + rnd() * 0.05})`;
       p.beginPath();
-      p.arc(rnd() * W, rnd() * H, 0.3 + rnd() * 0.8, 0, TAU);
+      p.arc(rnd() * TILE, rnd() * TILE, 0.3 + rnd() * 0.8, 0, TAU);
       p.fill();
     }
-    /* broad faint washes */
-    const washes = 7;
-    for (let i = 0; i < washes; i++) {
-      const x = rnd() * W, y = rnd() * H;
-      const r = Math.min(W, H) * (0.12 + rnd() * 0.26);
+    /* broad faint washes, kept off the tile rim so seams stay invisible */
+    for (let i = 0; i < 5; i++) {
+      const r = TILE * (0.1 + rnd() * 0.2);
+      const x = r + rnd() * (TILE - r * 2), y = r + rnd() * (TILE - r * 2);
       const g = p.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(112,102,80,${0.02 + rnd() * 0.022})`);
-      g.addColorStop(1, 'rgba(112,102,80,0)');
+      if (key === 'red') {
+        g.addColorStop(0, `rgba(178,58,43,${0.028 + rnd() * 0.035})`);
+        g.addColorStop(1, 'rgba(178,58,43,0)');
+      } else if (key === 'dark') {
+        g.addColorStop(0, `rgba(237,231,217,${0.016 + rnd() * 0.02})`);
+        g.addColorStop(1, 'rgba(237,231,217,0)');
+      } else {
+        g.addColorStop(0, `rgba(112,102,80,${0.02 + rnd() * 0.022})`);
+        g.addColorStop(1, 'rgba(112,102,80,0)');
+      }
       p.fillStyle = g;
       p.fillRect(x - r, y - r, r * 2, r * 2);
     }
-    /* edge burn */
-    const v = p.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.max(W, H) * 0.72);
-    v.addColorStop(0, 'rgba(58,52,40,0)');
-    v.addColorStop(1, 'rgba(58,52,40,0.14)');
-    p.fillStyle = v;
-    p.fillRect(0, 0, W, H);
-  }
-
-  function resetStains() {
-    if (stainCtx) stainCtx.clearRect(0, 0, lw, lh);
-  }
-
-  function stampStains(S) {
-    if (!stainCtx || !S.stainQueue.length) return;
-    for (const q of S.stainQueue) {
-      splatStamp(stainCtx, q.x, q.y, q.r, (Math.random() * 1e9) | 0, q.alpha ?? 0.5);
+    /* a couple of dried drips for the red field */
+    if (key === 'red') {
+      for (let i = 0; i < 2; i++) {
+        const x = 40 + rnd() * (TILE - 80), y = 40 + rnd() * (TILE - 80);
+        const len = 26 + rnd() * 60;
+        inkStroke(p, [
+          { x, y },
+          { x: x + (rnd() - 0.5) * 6, y: y + len * 0.6 },
+          { x: x + (rnd() - 0.5) * 4, y: y + len },
+        ], 2.6, { alpha: 0.1, color: RED });
+        blobPath(p, x + (rnd() - 0.5) * 4, y + len, 3.4, (rnd() * 1e9) | 0, 0.3, 8);
+        p.fillStyle = RED; p.globalAlpha = 0.14; p.fill(); p.globalAlpha = 1;
+      }
     }
-    S.stainQueue.length = 0;
+    return c;
   }
 
-  function fadeStains(dt) {
-    fadeAcc += dt;
-    const step = 0.05;
-    while (fadeAcc > step) {
-      fadeAcc -= step;
-      stainCtx.globalCompositeOperation = 'destination-out';
-      stainCtx.fillStyle = `rgba(0,0,0,${CFG.ink.stainFadePerSec * step})`;
-      stainCtx.fillRect(0, 0, lw, lh);
-      stainCtx.globalCompositeOperation = 'source-over';
-    }
+  function ensureTiles(ctx, dpr) {
+    ensurePatterns(ctx);
+    if (tileDpr === dpr && tiles.pale) return;
+    tileDpr = dpr;
+    tiles = {
+      pale: buildTile('pale', dpr),
+      dark: buildTile('dark', dpr),
+      red: buildTile('red', dpr),
+    };
   }
 
   /* ---------------- brush primitives ---------------- */
@@ -213,10 +256,10 @@ const R = (() => {
     c.closePath();
   }
 
-  function splatStamp(c, x, y, r, seed, alpha = 0.5) {
+  function splatPaint(c, x, y, r, seed, alpha = 0.5, color = INK) {
     const rnd = mulberry(seed);
     c.save();
-    c.fillStyle = INK;
+    c.fillStyle = color;
     c.globalAlpha = alpha;
     blobPath(c, x, y, r * 0.6, seed, 0.42, 10);
     c.fill();
@@ -238,7 +281,7 @@ const R = (() => {
       inkStroke(c, [
         { x: x + Math.cos(a) * r * 0.35, y: y + Math.sin(a) * r * 0.35 },
         { x: x + Math.cos(a) * (r * 0.35 + len), y: y + Math.sin(a) * (r * 0.35 + len) },
-      ], Math.max(1.2, r * 0.14), { alpha: alpha * 0.55 });
+      ], Math.max(1.2, r * 0.14), { alpha: alpha * 0.55, color });
     }
     c.restore();
   }
@@ -262,52 +305,132 @@ const R = (() => {
     c.restore();
   }
 
-  /* ---------------- arena frame: a hand-brushed border ---------------- */
-  function brushFrame(c, a, t, lowHp) {
-    const red = lowHp ? 1 : 0;
-    const pulse = lowHp ? 0.55 + 0.4 * Math.abs(Math.sin(t * 5)) : 1;
-    const col = red
-      ? `rgba(${26 + 152 * red | 0},${23 + 35 * red | 0},${20 + 23 * red | 0},${0.9 * pulse})`
-      : 'rgba(26,23,20,0.9)';
-    const j = 1.3;
-    const seg = 26;
-
-    function edge(x0, y0, x1, y1, seed) {
-      const rnd = mulberry(seed ^ (Math.floor(t / (CFG.ink.boilRate * 3)) * 131));
-      const dx = x1 - x0, dy = y1 - y0;
-      const len = Math.hypot(dx, dy);
-      const nx = -dy / len, ny = dx / len;
-      const n = Math.max(2, Math.round(len / seg));
-      const pts = [];
-      for (let i = 0; i <= n; i++) {
-        const k = i / n;
-        const wob = (i === 0 || i === n) ? 0 : (rnd() * 2 - 1) * j;
-        pts.push({ x: x0 + dx * k + nx * wob, y: y0 + dy * k + ny * wob });
-      }
-      inkStroke(c, pts, 2.6, { color: col, alpha: 0.95, jit: 0.3, dry: true, seed });
+  /* ---------------- stains: dried ink, cached as sprites ---------------- */
+  function stampStains(S) {
+    if (!S.stainQueue.length) return;
+    for (const q of S.stainQueue) {
+      const r = Math.max(2.4, q.r);
+      const scale = 2; /* render sprites at 2x for crisp hidpi */
+      const half = Math.ceil(r * 2.9);
+      const spr = document.createElement('canvas');
+      spr.width = spr.height = half * 2 * scale;
+      const g = spr.getContext('2d');
+      g.setTransform(scale, 0, 0, scale, half * scale, half * scale);
+      splatPaint(g, 0, 0, r, (Math.random() * 1e9) | 0, q.alpha ?? 0.5, q.red ? RED : INK);
+      stains.push({ x: q.x, y: q.y, a: q.alpha ?? 0.5, age: 0, spr, half });
     }
-    const o = 9; // corner overshoot — a stroke that keeps going
-    edge(a.x - o, a.y, a.x + a.w + o, a.y, 11);
-    edge(a.x + a.w, a.y - o, a.x + a.w, a.y + a.h + o, 22);
-    edge(a.x + a.w + o, a.y + a.h, a.x - o, a.y + a.h, 33);
-    edge(a.x, a.y + a.h + o, a.x, a.y - o, 44);
+    S.stainQueue.length = 0;
+    while (stains.length > CFG.world.stainCap) stains.shift();
+  }
 
-    /* corner ticks, like a seal's frame */
-    c.strokeStyle = col;
-    c.lineCap = 'round';
-    c.lineWidth = 2;
-    const cs = [[a.x, a.y, -1, -1], [a.x + a.w, a.y, 1, -1], [a.x, a.y + a.h, -1, 1], [a.x + a.w, a.y + a.h, 1, 1]];
-    for (const [cx, cy, sx, sy] of cs) {
-      c.beginPath();
-      c.moveTo(cx + sx * 5, cy + sy * 12);
-      c.lineTo(cx + sx * 5, cy + sy * 5);
-      c.lineTo(cx + sx * 12, cy + sy * 5);
-      c.stroke();
+  function updateStains(dt) {
+    const fade = CFG.world.stainFade;
+    for (let i = stains.length - 1; i >= 0; i--) {
+      const st = stains[i];
+      st.age += dt;
+      if (st.a * (1 - st.age * fade) <= 0.02) {
+        stains[i] = stains[stains.length - 1];
+        stains.pop();
+      }
+    }
+  }
+
+  function resetStains() { stains.length = 0; }
+
+  /* ---------------- ambient paper marks (world decor) ----------------
+     faint hairs, flecks and ghost seals scattered across the sheet,
+     so the endless paper still feels like a hand-made object */
+  const KANJI_DECO = ['風', '月', '花', '山', '川', '紙', '雲'];
+  function drawDecor(c, x0, y0, x1, y1) {
+    const cell = CFG.world.decoCell;
+    const cx0 = Math.floor(x0 / cell), cx1 = Math.floor(x1 / cell);
+    const cy0 = Math.floor(y0 / cell), cy1 = Math.floor(y1 / cell);
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const r0 = hash2(cx, cy);
+        if (r0 < 0.42) continue;
+        const rx = hash2(cx * 3 + 1, cy * 7 + 2);
+        const ry = hash2(cx * 5 + 9, cy * 11 + 4);
+        const x = cx * cell + rx * cell;
+        const y = cy * cell + ry * cell;
+        const v = Math.floor(r0 * 997) % 6;
+        if (v === 0) { /* a stray hair from the brush */
+          const a = hash2(cx + 13, cy + 17) * TAU;
+          const l = 14 + rx * 22;
+          inkStroke(c, [
+            { x, y },
+            { x: x + Math.cos(a) * l * 0.6, y: y + Math.sin(a) * l * 0.4 + 3 },
+            { x: x + Math.cos(a) * l, y: y + Math.sin(a) * l },
+          ], 1.5, { alpha: 0.09, jit: 0.3, seed: (cx * 31 + cy) | 0 });
+        } else if (v === 1) { /* flecks */
+          c.fillStyle = INK;
+          c.globalAlpha = 0.1;
+          for (let k = 0; k < 3; k++) {
+            c.beginPath();
+            c.arc(x + (hash2(cx + k, cy) - 0.5) * 26, y + (hash2(cx, cy + k) - 0.5) * 26, 0.7 + hash2(cx + k * 3, cy + k) * 1.4, 0, TAU);
+            c.fill();
+          }
+          c.globalAlpha = 1;
+        } else if (v === 2) { /* a faint pool of old ink */
+          c.globalAlpha = 0.045;
+          c.fillStyle = INK;
+          blobPath(c, x, y, 12 + rx * 16, (cx * 97 + cy * 31) | 0, 0.4, 9);
+          c.fill();
+          c.globalAlpha = 1;
+        } else if (v === 3) { /* a ghost droplet */
+          c.save();
+          c.translate(x, y);
+          c.rotate(hash2(cx * 7, cy * 3) * TAU);
+          c.globalAlpha = 0.07;
+          c.fillStyle = INK;
+          teardrop(c, 4 + rx * 5);
+          c.fill();
+          c.restore();
+          c.globalAlpha = 1;
+        } else if (v === 4 && r0 > 0.93) { /* a vermillion ghost seal */
+          c.save();
+          c.translate(x, y);
+          c.rotate(-0.1 + rx * 0.2);
+          c.globalAlpha = 0.06;
+          c.fillStyle = RED;
+          c.fillRect(-7, -7, 14, 14);
+          c.restore();
+          c.globalAlpha = 1;
+        } else if (v === 5 && r0 > 0.9) { /* a huge, faint character */
+          const ch = KANJI_DECO[Math.floor(r0 * 1000) % KANJI_DECO.length];
+          c.save();
+          c.translate(x, y);
+          c.rotate((rx - 0.5) * 0.2);
+          c.globalAlpha = 0.045;
+          c.fillStyle = INK;
+          c.font = `${64 + Math.floor(ry * 56)}px "Zen Antique", serif`;
+          c.textAlign = 'center';
+          c.textBaseline = 'middle';
+          c.fillText(ch, 0, 0);
+          c.restore();
+          c.globalAlpha = 1;
+        }
+      }
     }
   }
 
   /* ---------------- creatures ---------------- */
   function seedFor(e, tick) { return ((e.seed * 8191) | 0) ^ (tick * 7919); }
+
+  /* the guardian's red seal, worn above the beast */
+  function eliteMark(c, r) {
+    c.save();
+    c.translate(0, -r - 15);
+    c.rotate(-0.12 + Math.sin(G.S.clockT * 2.2) * 0.04);
+    c.fillStyle = RED;
+    c.fillRect(-7, -7, 14, 14);
+    c.fillStyle = PAPER;
+    c.font = '10px "Zen Antique", serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('危', 0, 0.5);
+    c.restore();
+  }
 
   function drawEnemy(c, e, t) {
     const S = G.S;
@@ -564,6 +687,189 @@ const R = (() => {
         silhouette = () => blobPath(c, 0, 0, r, sd, 0.34, 9);
         break;
       }
+      case 'kage': { /* KAGE — a stain that circles, then cuts through you */
+        const st = e.state;
+        const ang = Math.atan2(G.S.player.y - e.y, G.S.player.x - e.x);
+        if (st === 'tele') {
+          const jit = (Math.random() - 0.5) * 2;
+          c.translate(jit, jit);
+          c.save();
+          c.rotate(ang); c.scale(1.25, 0.8); c.rotate(-ang);
+          blobPath(c, 0, 0, r, sd, 0.3, 9);
+          c.save(); c.fillStyle = patHatch; c.fill(); c.restore();
+          c.lineWidth = 2; c.stroke();
+          c.restore();
+        } else if (st === 'dash') {
+          const da = Math.atan2(e.py, e.px);
+          /* afterimages behind the cut */
+          for (let g = 2; g >= 1; g--) {
+            c.save();
+            c.globalAlpha = 0.16 / g;
+            c.translate(-Math.cos(da) * g * 15, -Math.sin(da) * g * 15);
+            c.rotate(da); c.scale(1.6, 0.55);
+            blobPath(c, 0, 0, r * 0.9, sd ^ g, 0.3, 9);
+            c.fill();
+            c.restore();
+          }
+          c.rotate(da); c.scale(1.75, 0.55);
+          blobPath(c, 0, 0, r, sd, 0.22, 9);
+          c.fill();
+        } else if (st === 'rest') {
+          c.globalAlpha = 0.55;
+          blobPath(c, 0, 0, r * 0.85, sd, 0.3, 9);
+          c.fill();
+        } else { /* cruise — a low smear with a trailing wisp */
+          c.save();
+          c.globalAlpha = 0.18;
+          c.translate(-Math.cos(e.ang) * 13, -Math.sin(e.ang) * 13);
+          blobPath(c, 0, 0, r * 0.8, sd ^ 41, 0.4, 9);
+          c.fill();
+          c.restore();
+          c.save();
+          c.rotate(ang); c.scale(1.06, 0.92); c.rotate(-ang);
+          blobPath(c, 0, 0, r, sd, 0.26, 10);
+          c.fill();
+          c.restore();
+        }
+        eyeSlits(c, st === 'dash' ? Math.atan2(e.py, e.px) : ang, r, 0.75);
+        silhouette = () => blobPath(c, 0, 0, r * 1.1, sd, 0.28, 9);
+        break;
+      }
+      case 'stilt': { /* STILT — a tall, patient line that draws its own */
+        const st = e.state;
+        const ang = e.state === 'aim' || e.state === 'fire' ? e.ang : Math.atan2(G.S.player.y - e.y, G.S.player.x - e.x);
+        /* the aim line: a hair drawn toward you, pulled taut */
+        if (st === 'aim') {
+          const pr = Math.min(1, e.stateT / 0.66);
+          c.save();
+          c.globalAlpha = 0.1 + 0.42 * pr;
+          c.lineWidth = 0.7 + pr * 1.2;
+          c.strokeStyle = INK;
+          c.beginPath();
+          c.moveTo(Math.cos(ang) * (r + 2), Math.sin(ang) * (r + 2));
+          c.lineTo(Math.cos(ang) * 640, Math.sin(ang) * 640);
+          c.stroke();
+          c.restore();
+        }
+        c.rotate(ang);
+        if (st === 'fire') c.scale(1.28, 0.78); /* the recoil */
+        /* stilts — two long, thin legs trailing behind */
+        const sway = Math.sin(e.t * 2.4 + e.seed) * 2.4;
+        inkStroke(c, [
+          { x: -r * 0.3, y: -r * 0.45 },
+          { x: -r * 1.5, y: -r * 1.05 + sway },
+          { x: -r * 2.4, y: -r * 1.5 + sway },
+        ], 1.7, { alpha: 0.9 });
+        inkStroke(c, [
+          { x: -r * 0.3, y: r * 0.45 },
+          { x: -r * 1.5, y: r * 1.05 - sway },
+          { x: -r * 2.4, y: r * 1.5 - sway },
+        ], 1.7, { alpha: 0.9 });
+        /* body — a small folded diamond, held high */
+        c.beginPath();
+        c.moveTo(r * 1.05, 0);
+        c.lineTo(r * 0.1, -r * 0.62);
+        c.lineTo(-r * 0.75, 0);
+        c.lineTo(r * 0.1, r * 0.62);
+        c.closePath();
+        c.globalAlpha = st === 'aim' ? 0.85 : 0.28;
+        c.fill();
+        c.globalAlpha = 1;
+        c.lineWidth = 1.9;
+        c.stroke();
+        /* a single paper eye */
+        c.strokeStyle = PAPER;
+        c.lineWidth = 1.6;
+        c.beginPath();
+        c.moveTo(r * 0.34, -r * 0.06);
+        c.lineTo(r * 0.62, -r * 0.06);
+        c.stroke();
+        silhouette = () => {
+          c.beginPath();
+          c.moveTo(r * 1.1, 0);
+          c.lineTo(r * 0.1, -r * 0.7);
+          c.lineTo(-r * 0.8, 0);
+          c.lineTo(r * 0.1, r * 0.7);
+          c.closePath();
+        };
+        break;
+      }
+      case 'oni': { /* ONI — a horned mass that bulldozes straight ahead */
+        const st = e.state;
+        const ang = Math.atan2(G.S.player.y - e.y, G.S.player.x - e.x);
+        if (st === 'windup') {
+          const jit = (Math.random() - 0.5) * 2.4;
+          c.translate(jit, jit);
+        }
+        if (st === 'charge') {
+          c.rotate(e.ang);
+          c.scale(1.5, 0.78);
+          blobPath(c, 0, 0, r, sd, 0.13, 13);
+          c.fill();
+          /* speed lines peeling off the shoulders */
+          c.globalAlpha = 0.35;
+          c.lineWidth = 1.6;
+          c.beginPath(); c.moveTo(-r * 1.1, -r * 0.5); c.lineTo(-r * 2.3, -r * 0.7); c.stroke();
+          c.beginPath(); c.moveTo(-r * 1.1, r * 0.5); c.lineTo(-r * 2.3, r * 0.7); c.stroke();
+        } else {
+          c.save();
+          c.rotate(ang);
+          const breathe = 1 + Math.sin(e.t * 2.2 + e.seed) * 0.028;
+          c.scale(breathe, breathe);
+          blobPath(c, 0, 0, r, sd, 0.12, 13);
+          c.fill();
+          if (st === 'windup') {
+            c.save(); c.globalAlpha = 0.5; c.fillStyle = patHatch; c.fill(); c.restore();
+            c.save(); c.globalAlpha = 0.2; c.fillStyle = RED; blobPath(c, 0, 0, r, sd, 0.12, 13); c.fill(); c.restore();
+          }
+          c.lineWidth = 2.4;
+          blobPath(c, 0, 0, r, sd, 0.12, 13);
+          c.stroke();
+          /* the horns */
+          inkStroke(c, [
+            { x: -r * 0.15, y: -r * 0.8 },
+            { x: -r * 0.05, y: -r * 1.25 },
+            { x: r * 0.28, y: -r * 1.45 },
+          ], 2.6, { alpha: 0.95 });
+          inkStroke(c, [
+            { x: -r * 0.15, y: r * 0.8 },
+            { x: -r * 0.05, y: r * 1.25 },
+            { x: r * 0.28, y: r * 1.45 },
+          ], 2.6, { alpha: 0.95 });
+          eyeSlits(c, 0, r, 0.7);
+          c.restore();
+        }
+        silhouette = () => blobPath(c, 0, 0, r * 1.06, sd, 0.13, 13);
+        break;
+      }
+      case 'crane': { /* CRANE — folded paper that swoops past in arcs */
+        const st = e.state;
+        c.rotate(e.ang);
+        const flap = Math.sin(e.t * 10 + e.seed);
+        if (st === 'pass') {
+          /* a ghost of the arc it just cut */
+          c.save();
+          c.globalAlpha = 0.14;
+          c.translate(-14, flap * 3);
+          cranePath(c, r * 0.92, -flap * 0.5);
+          c.stroke();
+          c.restore();
+        }
+        cranePath(c, r, flap);
+        c.globalAlpha = st === 'pass' ? 0.95 : 0.16;
+        c.fill();
+        c.globalAlpha = 1;
+        c.lineWidth = 1.9;
+        cranePath(c, r, flap);
+        c.stroke();
+        /* a red eye-dot, the one fleck of color */
+        c.fillStyle = RED;
+        c.beginPath();
+        c.arc(r * 0.82, -r * 0.1, 1.6, 0, TAU);
+        c.fill();
+        silhouette = () => cranePath(c, r * 1.08, flap);
+        break;
+      }
       default: { /* BLIP — a shard of the drip */
         blobPath(c, 0, 0, r, sd, 0.24, 9);
         c.fill();
@@ -572,6 +878,9 @@ const R = (() => {
         eyeSlits(c, ang, r, 0.7);
       }
     }
+
+    /* the guardian's mark */
+    if (e.elite) eliteMark(c, r);
 
     /* wet paper: slowed creatures wear a drooping halo */
     if (e.slowT > 0 && e.type !== 'shade') {
@@ -596,6 +905,20 @@ const R = (() => {
       c.restore();
     }
     c.restore();
+  }
+
+  /* folded-paper crane silhouette (body + raised wing), flap ∈ [-1,1] */
+  function cranePath(c, r, flap) {
+    const w = r * (0.95 + flap * 0.4);
+    c.beginPath();
+    c.moveTo(r * 1.55, 0);            /* beak */
+    c.lineTo(-r * 0.05, -r * 0.3);    /* neck ridge */
+    c.lineTo(-r * 0.45, -w);          /* wing tip */
+    c.lineTo(-r * 0.95, -r * 0.22);   /* wing root */
+    c.lineTo(-r * 1.5, -r * 0.05);    /* tail point */
+    c.lineTo(-r * 0.6, r * 0.3);      /* under-tail */
+    c.lineTo(r * 0.25, r * 0.4);      /* belly */
+    c.closePath();
   }
 
   /* ---------------- player: the brush spirit ---------------- */
@@ -714,55 +1037,145 @@ const R = (() => {
     c.restore();
   }
 
-  /* ---------------- projectiles, markers, fx ---------------- */
+  /* ---------------- projectiles, zones, fx ---------------- */
   function drawBullet(c, b) {
     c.save();
     c.translate(b.x, b.y);
-    c.rotate(b.ang);
-    c.fillStyle = INK;
-    teardrop(c, 4.2);
-    c.fill();
-    inkStroke(c, [{ x: -5, y: 0 }, { x: -14 - b.age * 8, y: 0.6 }], 2.6, { alpha: 0.4 });
+    if (b.kind === 'blade') { /* a folded paper blade, spinning */
+      c.rotate(b.ang + b.age * b.spin);
+      c.fillStyle = INK;
+      c.beginPath();
+      c.moveTo(9, 0);
+      c.lineTo(-5, 4.6);
+      c.lineTo(-2.2, 0);
+      c.lineTo(-5, -4.6);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = PAPER;
+      c.lineWidth = 0.9;
+      c.beginPath();
+      c.moveTo(6.5, 0); c.lineTo(-3, 0);
+      c.stroke();
+    } else { /* a flicked droplet */
+      c.rotate(b.ang);
+      c.fillStyle = INK;
+      teardrop(c, 4.2);
+      c.fill();
+      inkStroke(c, [{ x: -5, y: 0 }, { x: -14 - b.age * 8, y: 0.6 }], 2.6, { alpha: 0.4 });
+    }
     c.restore();
   }
 
-  /* the spitter's lobbed glob — a hollow ring of ink */
+  /* the spitter's lobbed glob / the sniper's needle */
   function drawEBullet(c, b) {
     c.save();
     c.translate(b.x, b.y);
     c.rotate(b.ang);
-    c.strokeStyle = INK;
+    if (b.kind === 'needle') {
+      c.strokeStyle = INK;
+      c.lineWidth = 1.7;
+      c.beginPath();
+      c.moveTo(7, 0);
+      c.lineTo(-11, 0);
+      c.stroke();
+      c.fillStyle = INK;
+      c.beginPath();
+      c.arc(6.4, 0, 2.1, 0, TAU);
+      c.fill();
+      inkStroke(c, [{ x: -10, y: 0 }, { x: -20 - b.age * 10, y: 0.4 }], 1.5, { alpha: 0.3 });
+    } else {
+      c.strokeStyle = INK;
+      c.fillStyle = INK;
+      c.lineWidth = 1.8;
+      c.beginPath(); c.arc(0, 0, 4.6, 0, TAU); c.stroke();
+      c.beginPath(); c.arc(0, 0, 1.7, 0, TAU); c.fill();
+      inkStroke(c, [{ x: -6, y: 0 }, { x: -15 - b.age * 6, y: 0.5 }], 2.2, { alpha: 0.32 });
+    }
+    c.restore();
+  }
+
+  /* ink trail puddles — smears that bite */
+  function drawPuddle(c, pd) {
+    const age = pd.max - pd.life;
+    const grow = Math.min(1, age / 0.22);
+    const fade = pd.life < 0.45 ? pd.life / 0.45 : 1;
+    c.save();
+    c.translate(pd.x, pd.y);
+    c.scale(1, 0.62);
+    c.globalAlpha = 0.34 * fade;
     c.fillStyle = INK;
-    c.lineWidth = 1.8;
-    c.beginPath(); c.arc(0, 0, 4.6, 0, TAU); c.stroke();
-    c.beginPath(); c.arc(0, 0, 1.7, 0, TAU); c.fill();
-    inkStroke(c, [{ x: -6, y: 0 }, { x: -15 - b.age * 6, y: 0.5 }], 2.2, { alpha: 0.32 });
+    blobPath(c, 0, 0, pd.r * grow, pd.seed, 0.34, 12);
+    c.fill();
+    c.globalAlpha = 0.3 * fade;
+    blobPath(c, 0, 0, pd.r * 0.55 * grow, pd.seed ^ 9, 0.4, 10);
+    c.fill();
+    c.restore();
+  }
+
+  /* the crimson hanko, slamming down */
+  function drawStamp(c, st) {
+    const t = 1 - st.life / st.max;
+    const punch = t < 0.16 ? 1.65 - 0.65 * (t / 0.16) : 1;
+    const alpha = st.life < 0.2 ? st.life / 0.2 : 1;
+    const s = st.r * 0.3 * punch;
+    c.save();
+    c.translate(st.x, st.y);
+    c.rotate(-0.12);
+    c.globalAlpha = alpha * 0.85;
+    c.strokeStyle = RED;
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(0, 0, st.r * punch, 0, TAU);
+    c.stroke();
+    c.fillStyle = RED;
+    c.fillRect(-s, -s, s * 2, s * 2);
+    c.fillStyle = PAPER;
+    c.font = `${Math.round(s * 1.5)}px "Zen Antique", serif`;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.globalAlpha = alpha;
+    c.fillText('一', 0, s * 0.08);
+    c.restore();
+  }
+
+  /* spirit scribes — lesser brushes hunting alone */
+  function drawSpirit(c, sp) {
+    c.save();
+    c.translate(sp.x, sp.y);
+    c.rotate(sp.ang);
+    c.fillStyle = INK;
+    c.globalAlpha = 0.35;
+    inkStroke(c, [{ x: -5, y: 0 }, { x: -15, y: Math.sin(sp.age * 12 + sp.seed) * 2.5 }], 1.8, { alpha: 1 });
+    c.globalAlpha = 0.9;
+    teardrop(c, 3.4);
+    c.fill();
     c.restore();
   }
 
   function drawMarker(c, m) {
     const def = ENEMIES[m.type];
-    const pr = 1 - m.t / 0.62;
-    const tick = Math.floor(G.S.timeNow * 10);
+    const big = m.elite ? CFG.wave.eliteR : 1;
+    const pr = 1 - m.t / (m.elite ? 1.7 : 0.62);
     c.save();
     c.translate(m.x, m.y);
-    c.fillStyle = INK;
     /* puddle spreading */
     c.save();
     c.scale(1, 0.42);
     c.globalAlpha = 0.3 + 0.5 * pr;
-    blobPath(c, 0, 0, def.r * (0.55 + 0.95 * pr), (m.x * 7 + m.y * 13) | 0, 0.35, 10);
+    c.fillStyle = m.elite ? RED : INK;
+    blobPath(c, 0, 0, def.r * big * (0.55 + 0.95 * pr), (m.x * 7 + m.y * 13) | 0, 0.35, 10);
     c.fill();
     c.restore();
     /* droplets falling in */
     for (let k = 0; k < 3; k++) {
-      const dx = (k - 1) * def.r * 0.7;
+      const dx = (k - 1) * def.r * big * 0.7;
       const dy = -(1 - pr) * 74 - 8 - k * 5;
       c.save();
       c.translate(dx, dy);
       c.rotate(Math.PI / 2);
       c.globalAlpha = 0.85;
-      teardrop(c, 2.4 + pr * 2.2);
+      c.fillStyle = m.elite ? RED : INK;
+      teardrop(c, (2.4 + pr * 2.2) * big);
       c.fill();
       c.restore();
     }
@@ -775,7 +1188,7 @@ const R = (() => {
     const rad = Math.max(2, r.max * ease);
     const al = (r.life / r.maxLife);
     c.save();
-    c.strokeStyle = INK;
+    c.strokeStyle = r.red ? RED : INK;
     c.globalAlpha = al * 0.75;
     c.lineWidth = 2;
     blobPath(c, r.x, r.y, rad, (r.x * 13 + r.y * 7) | 0, 0.1, 14);
@@ -784,7 +1197,7 @@ const R = (() => {
       c.globalAlpha = al * 0.4;
       blobPath(c, r.x, r.y, rad * 0.72, ((r.x + r.y) * 3) | 0, 0.14, 12);
       c.stroke();
-      c.fillStyle = INK;
+      c.fillStyle = r.red ? RED : INK;
       c.globalAlpha = al * 0.6;
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * TAU + r.x * 0.01;
@@ -830,46 +1243,30 @@ const R = (() => {
     c.restore();
   }
 
-  function drawJoy(c) {
-    const S = G.S;
-    if (!S.joy || S.mode !== 'playing') return;
-    const j = S.joy;
-    c.save();
-    c.strokeStyle = INK;
-    c.globalAlpha = 0.3;
-    c.lineWidth = 1.6;
-    blobPath(c, j.ax, j.ay, 30, 1234, 0.08, 14);
-    c.stroke();
-    c.globalAlpha = 0.75;
-    c.fillStyle = INK;
-    blobPath(c, j.ax + j.dx, j.ay + j.dy, 12, 4321, 0.2, 9);
-    c.fill();
-    c.restore();
-  }
-
   /* ---------------- ambient ink rain (title & over screens) ----------------
      drops fall from the top of the scroll and stain the paper —
-     the title screen is itself a slow painting. */
+     the quiet screens are themselves slow paintings */
   let drops = [], dropT = 1.2;
   function updateAmbient(dt, S) {
     if (S.mode !== 'title' && S.mode !== 'over') { drops.length = 0; return; }
-    const a = S.arena;
     dropT -= dt;
     if (dropT <= 0 && drops.length < 7) {
       drops.push({
-        x: a.x + 26 + Math.random() * (a.w - 52),
-        y: a.y - 8,
+        x: 26 + Math.random() * (S.W - 52),
+        y: -8,
         v: 46 + Math.random() * 60,
-        ty: a.y + 26 + Math.random() * (a.h - 52),
+        ty: 26 + Math.random() * (S.H - 52),
       });
       dropT = 0.4 + Math.random() * 1.3;
     }
+    const cx = S.mode === 'title' ? 0 : S.cam.x;
+    const cy = S.mode === 'title' ? 0 : S.cam.y;
     for (let i = drops.length - 1; i >= 0; i--) {
       const d = drops[i];
       d.v += 620 * dt;
       d.y += d.v * dt;
       if (d.y >= d.ty) {
-        S.stainQueue.push({ x: d.x, y: d.ty, r: 2.6 + Math.random() * 4.6, alpha: 0.24 + Math.random() * 0.2 });
+        S.stainQueue.push({ x: d.x - S.W / 2 + cx, y: d.ty - S.H / 2 + cy, r: 2.6 + Math.random() * 4.6, alpha: 0.24 + Math.random() * 0.2 });
         drops.splice(i, 1);
       }
     }
@@ -889,36 +1286,111 @@ const R = (() => {
     }
   }
 
+  /* the guardian waits beyond the eye — a red arrow at the rim */
+  function drawEliteArrow(c) {
+    const S = G.S;
+    if (S.mode !== 'playing' || !S.stats) return;
+    let elite = null;
+    for (const e of S.enemies) if (e.elite) { elite = e; break; }
+    if (!elite) for (const m of S.markers) if (m.elite) { elite = m; break; }
+    if (!elite) return;
+    const sx = S.W / 2 + (elite.x - S.cam.x);
+    const sy = S.H / 2 + (elite.y - S.cam.y);
+    const m = 40;
+    if (sx > m && sx < S.W - m && sy > m && sy < S.H - m) return; /* on screen */
+    const a = Math.atan2(sy - S.H / 2, sx - S.W / 2);
+    /* clamp the arrow to the screen rim */
+    const tx = Math.cos(a), ty = Math.sin(a);
+    let t = Infinity;
+    if (tx > 0.001) t = Math.min(t, (S.W / 2 - m) / tx);
+    if (tx < -0.001) t = Math.min(t, (S.W / 2 - m) / -tx);
+    if (ty > 0.001) t = Math.min(t, (S.H / 2 - m) / ty);
+    if (ty < -0.001) t = Math.min(t, (S.H / 2 - m) / -ty);
+    const px = S.W / 2 + tx * t, py = S.H / 2 + ty * t;
+    c.save();
+    c.translate(px, py);
+    c.rotate(a);
+    c.globalAlpha = 0.55 + 0.4 * Math.abs(Math.sin(S.clockT * 4));
+    c.fillStyle = RED;
+    c.beginPath();
+    c.moveTo(12, 0);
+    c.lineTo(-6, -7.5);
+    c.lineTo(-2, 0);
+    c.lineTo(-6, 7.5);
+    c.closePath();
+    c.fill();
+    c.restore();
+  }
+
+  function drawJoy(c) {
+    const S = G.S;
+    if (!S.joy || S.mode !== 'playing') return;
+    const j = S.joy;
+    c.save();
+    c.strokeStyle = INK;
+    c.globalAlpha = 0.3;
+    c.lineWidth = 1.6;
+    blobPath(c, j.ax, j.ay, 30, 1234, 0.08, 14);
+    c.stroke();
+    c.globalAlpha = 0.75;
+    c.fillStyle = INK;
+    blobPath(c, j.ax + j.dx, j.ay + j.dy, 12, 4321, 0.2, 9);
+    c.fill();
+    c.restore();
+  }
+
   /* ---------------- master draw ---------------- */
   function draw(ctx, t) {
     const S = G.S;
     const dt = Math.min(0.05, Math.max(0, t - lastT));
     lastT = t;
     if (!S.W || !S.H) return;
-    ensureLayers(ctx, S.W, S.H, S.dpr);
+    ensureTiles(ctx, S.dpr);
+    setTheme(activeThemeKey());
     stampStains(S);
-    fadeStains(dt);
+    updateStains(dt);
 
-    /* paper */
-    ctx.drawImage(paperC, 0, 0, lw, lh);
+    const playing = S.mode === 'playing' || S.mode === 'paused' || S.mode === 'upgrade' || S.mode === 'dying';
+    /* the camera rests wherever the sheet was last stood upon */
+    const useCam = S.mode !== 'title';
+    const camX = useCam ? S.cam.x : 0;
+    const camY = useCam ? S.cam.y : 0;
 
-    const a = S.arena;
-    const lowHp = S.stats && S.stats.hp === 1 && (S.mode === 'playing' || S.mode === 'paused');
+    ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
 
-    /* world, clipped to the scroll */
+    /* ===== the world ===== */
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(a.x - 1, a.y - 1, a.w + 2, a.h + 2);
-    ctx.clip();
+    let shx = 0, shy = 0;
     if (S.shake > 0.2 && !S.reduced) {
-      ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake);
+      shx = (Math.random() - 0.5) * S.shake;
+      shy = (Math.random() - 0.5) * S.shake;
+    }
+    ctx.translate(S.W / 2 + shx - camX, S.H / 2 + shy - camY);
+
+    /* the endless paper, tiled beneath everything */
+    const vx0 = camX - S.W / 2 - 8, vx1 = camX + S.W / 2 + 8;
+    const vy0 = camY - S.H / 2 - 8, vy1 = camY + S.H / 2 + 8;
+    const tile = tiles[themeKey] || tiles.pale;
+    for (let ty = Math.floor(vy0 / TILE); ty <= Math.floor(vy1 / TILE); ty++) {
+      for (let tx = Math.floor(vx0 / TILE); tx <= Math.floor(vx1 / TILE); tx++) {
+        ctx.drawImage(tile, tx * TILE, ty * TILE, TILE, TILE);
+      }
     }
 
-    /* dried ink from every fight before this moment */
-    ctx.drawImage(stainC, 0, 0, lw, lh);
+    /* faint marks so the sheet feels hand-made and the motion reads */
+    drawDecor(ctx, vx0, vy0, vx1, vy1);
 
-    /* ambient rain of ink on the quiet screens */
-    if (!S.reduced) { updateAmbient(dt, S); drawAmbient(ctx); }
+    /* dried ink from every fight before this moment */
+    const cullM = 80;
+    for (const st of stains) {
+      if (st.x < vx0 - cullM || st.x > vx1 + cullM || st.y < vy0 - cullM || st.y > vy1 + cullM) continue;
+      ctx.globalAlpha = Math.max(0, st.a * (1 - st.age * CFG.world.stainFade));
+      ctx.drawImage(st.spr, st.x - st.half, st.y - st.half, st.half * 2, st.half * 2);
+    }
+    ctx.globalAlpha = 1;
+
+    for (const pd of S.puddles) drawPuddle(ctx, pd);
+    if (!S.reduced) updateAmbient(dt, S);
 
     for (const m of S.markers) drawMarker(ctx, m);
     for (const r of S.rings) drawRing(ctx, r);
@@ -926,15 +1398,30 @@ const R = (() => {
     for (const b of S.ebullets) drawEBullet(ctx, b);
     for (const e of S.enemies) drawEnemy(ctx, e, t);
     for (const d of S.idle) drawEnemy(ctx, d, t);
-    if (S.mode === 'playing' || S.mode === 'paused' || S.mode === 'upgrade') drawPlayer(ctx, t);
+    for (const sp of S.spirits) drawSpirit(ctx, sp);
+    if (playing) drawPlayer(ctx, t);
+    for (const s of S.stamps) drawStamp(ctx, s);
     for (const p of S.particles) drawParticle(ctx, p);
     for (const p of S.popups) drawPopup(ctx, p);
-    drawJoy(ctx);
+
+    /* the ambient rain lives in screen space */
+    ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+    drawAmbient(ctx);
 
     ctx.restore();
 
-    /* the brushed frame — steady while the world shakes */
-    brushFrame(ctx, a, t, lowHp);
+    /* ===== screen space ===== */
+    drawJoy(ctx);
+    drawEliteArrow(ctx);
+
+    /* the rim of the eye: a quiet vignette, deeper when the ink is low */
+    const th = THEMES[themeKey];
+    const lowHp = S.stats && S.stats.hp === 1 && (S.mode === 'playing' || S.mode === 'paused');
+    const vg = ctx.createRadialGradient(S.W / 2, S.H / 2, Math.min(S.W, S.H) * 0.42, S.W / 2, S.H / 2, Math.max(S.W, S.H) * 0.74);
+    vg.addColorStop(0, `rgba(${th.vig},0)`);
+    vg.addColorStop(1, `rgba(${th.vig},${lowHp ? 0.3 : 0.17})`);
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, S.W, S.H);
 
     /* bleeding seal: low integrity stains the edges red */
     if (lowHp) {
