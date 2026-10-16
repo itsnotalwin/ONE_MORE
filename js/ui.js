@@ -1,0 +1,212 @@
+'use strict';
+/* ============================================================
+   ONE MORE — DOM / UI layer (ink scroll edition)
+   ============================================================ */
+
+const UI = (() => {
+  const $ = id => document.getElementById(id);
+
+  const el = {
+    hud: $('hud'), hudWave: $('hudWave'), waveFill: $('waveFill'), hudHp: $('hudHp'),
+    hudScore: $('hudScore'), hudTime: $('hudTime'), muteBtn: $('muteBtn'),
+    banner: $('waveBanner'), bannerKicker: $('bannerKicker'), bannerTitle: $('bannerTitle'),
+    screens: {
+      title: $('screenTitle'), upgrade: $('screenUpgrade'),
+      pause: $('screenPause'), over: $('screenOver'),
+    },
+    runNo: $('runNo'), bestLine: $('bestLine'), enemyLegend: $('enemyLegend'), tickerTrack: $('tickerTrack'),
+    hudLoadout: $('hudLoadout'),
+    upKicker: $('upKicker'), upNext: $('upNext'), upgradeGrid: $('upgradeGrid'), deployBtn: $('deployBtn'),
+    overKicker: $('overKicker'), overRank: $('overRank'),
+    statWaves: $('statWaves'), statKills: $('statKills'), statTime: $('statTime'), statScore: $('statScore'),
+    newBestBadge: $('newBestBadge'), flash: $('flash'),
+  };
+
+  let bannerTimer = null;
+  let flashTimer = null;
+  let lastTimeStr = '';
+
+  const pad2 = n => String(n).padStart(2, '0');
+  const pad3 = n => String(n).padStart(3, '0');
+  const fmtScore = n => n.toLocaleString('en-US').padStart(7, '0');
+  const fmtTime = s => pad2(Math.floor(s / 60)) + ':' + pad2(Math.floor(s % 60));
+
+  /* kanji numerals — the calligraphic count of waves */
+  function toKanji(n) {
+    if (n <= 0) return '〇';
+    if (n > 99) return String(n);
+    const D = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    if (n < 10) return D[n];
+    const t = Math.floor(n / 10), o = n % 10;
+    return (t > 1 ? D[t] : '') + '十' + (o ? D[o] : '');
+  }
+
+  /* hand-brushed creature glyphs */
+  const CREATURE_SVGS = {
+    pulse: '<path d="M12 4.2c3.8-.5 7 2.6 6.8 6.4-.2 4.2-2.7 8-7 8.2-4 .2-6.6-3.4-6.6-7.2C5.2 7.6 8 4.7 12 4.2z" fill="currentColor"/><path d="M9.4 11.2l2.6 1M14.6 11l-2.2 1.4" stroke="#ede7d9" stroke-width="1.4" stroke-linecap="round"/>',
+    dart: '<path d="M19.5 12c-2.2-3.4-6-5.8-9.6-5.2-2.8.5-5 2.4-5.4 5.2.4 2.8 2.6 4.7 5.4 5.2 3.6.6 7.4-1.8 9.6-5.2z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.5 12l-4.2-1.6M19.5 12l-4.2 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    split: '<path d="M12 3.6c1 2.8 1.4 4.2 1.4 6.2 0 1.4-.5 2.2-.5 3.4 0 2.2 1.6 2.6 1.6 4.4 0 1.7-1.2 3-2.5 3s-2.5-1.3-2.5-3c0-1.8 1.6-2.2 1.6-4.4 0-1.2-.5-2-.5-3.4 0-2 .4-3.4 1.4-6.2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+    slab: '<path d="M12 4c4.4-.6 7.6 2.8 7.4 7-.2 4.8-2.9 8.6-7.6 8.8-4.4.2-7.2-3.4-7.2-7.6C4.6 7.8 7.4 4.6 12 4z" fill="currentColor" opacity=".92"/><path d="M7 9l8-3M6.4 12.4l10-4M7 15.6l9.4-3.8M9 18.4l7.6-3" stroke="#ede7d9" stroke-width="1.1" opacity=".85"/>',
+    wraith: '<path d="M5 14c2-6 5-8 7-6.4 2 1.6-1 4.4 1.4 6 2.4 1.6 5-1 5.6-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="17.4" cy="7.2" r="1.6" fill="currentColor"/>',
+    pulseling: '<path d="M12 6.6c2.8-.4 4.9 1.9 4.8 4.5-.1 3-1.9 5.6-4.9 5.8-2.8.1-4.6-2.4-4.6-5 0-2.7 1.9-4.9 4.7-5.3z" fill="currentColor"/>',
+    spit: '<path d="M12 4.4c3.6-.5 6.6 2.3 6.5 5.9-.1 3.9-2.4 7.4-6.5 7.6-3.7.2-6.1-3-6.1-6.6 0-3.2 2.6-6.5 6.1-6.9z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M17.8 12l3.4-1.7M17.8 12l3.4 1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10.2" cy="11" r="1.5" fill="currentColor"/>',
+    moth: '<path d="M16.8 12c-2.4 3-5.4 4.4-7.6 3.4-1.8-.8-2-3-.6-5 1.6-2.3 4.8-3.4 7-2.2 1.6.9 2 2.2 1.2 3.8z" fill="currentColor"/><path d="M6.2 8.6L3.6 6.4M6.4 15.4L3.8 17.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M2.6 12h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".45"/>',
+    shade: '<path d="M12 4.8c3.4-.4 6 2.1 5.9 5.4-.1 3.6-2.3 6.8-6 7-3.4.2-5.7-2.6-5.7-5.8 0-3.1 2.5-6.2 5.8-6.6z" fill="currentColor" opacity=".55"/><path d="M9.3 10.6l2.4 1M14.6 10.4l-2.2 1.3" stroke="#ede7d9" stroke-width="1.4" stroke-linecap="round"/>',
+    titan: '<path d="M12 3.8c4.9-.6 8.4 3 8.2 7.6-.2 5.2-3.2 9.3-8.3 9.6-4.7.2-7.9-3.6-7.9-8.1 0-4.3 3-8.6 8-9.1z" fill="currentColor"/><path d="M7.6 8.6l8.6-3.2M6.6 12.4l10.8-4M7.2 16l9.8-3.8M9 19l7.4-3" stroke="#ede7d9" stroke-width="1" opacity=".8"/><circle cx="20.6" cy="5.6" r="1.2" fill="currentColor"/><circle cx="3.4" cy="17.8" r="1.2" fill="currentColor"/>',
+  };
+
+  /* hand-brushed upgrade glyphs */
+  const GLYPHS = {
+    rapid: '<path d="M6 17L15 7M11 18.5L20 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+    heavy: '<path d="M12 4.5c1.4 3.4 2.2 5.4 2.2 7.6 0 2.8-1 4.9-2.2 4.9s-2.2-2.1-2.2-4.9c0-2.2.8-4.2 2.2-7.6z" fill="currentColor"/><circle cx="18" cy="16.8" r="1.6" fill="currentColor"/>',
+    split: '<path d="M12 19V9M12 9c-2.6-1.4-3.4-3.4-3-5.6M12 9c2.6-1.4 3.4-3.4 3-5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
+    pierce: '<circle cx="12" cy="12" r="5.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M17.5 9.5L21 12l-3.5 2.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    over: '<path d="M4 8.5h9M7 12h11M4 15.5h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+    plate: '<path d="M12 4.5c1.4 3.4 2.2 5.4 2.2 7.6 0 2.8-1 4.9-2.2 4.9s-2.2-2.1-2.2-4.9c0-2.2.8-4.2 2.2-7.6z" fill="currentColor" stroke="currentColor" stroke-width="1.6"/>',
+    velo: '<path d="M5 16.5C9 15 13 12 18.5 5.5M18.5 5.5l-1 5M18.5 5.5l-4.6 1.4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    adren: '<rect x="6.5" y="6.5" width="11" height="11" fill="currentColor" transform="rotate(-4 12 12)"/><path d="M9.6 12.6l1.8 1.8 3.4-3.8" stroke="#ede7d9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    shock: '<path d="M12 5.2c3.6-.4 6.4 2.4 6.2 5.8-.2 3.9-2.4 7.4-6.4 7.6-3.7.2-6-2.9-6-6.3 0-3.4 2.6-6.7 6.2-7.1z" fill="currentColor"/><path d="M12 8.5v4.2m0 2.2v.4" stroke="#ede7d9" stroke-width="1.6" stroke-linecap="round"/>',
+    patch: '<path d="M12 5c1.2 3 2 4.8 2 6.8a2 2 0 1 1-4 0c0-2 .8-3.8 2-6.8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+    echo: '<path d="M12 20V9M12 4.2v1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M9 6.8L12 3.8l3 3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M9.4 17.4L12 20l2.6-2.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".45"/>',
+    orbit: '<circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><path d="M18.6 7.6c1.5.6 2.3 1.6 2.3 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M19.2 12c2.8-.4 4.9 1.9 4.8 4.5" fill="none"/><circle cx="19.2" cy="6.8" r="2.3" fill="currentColor"/>',
+    nova: '<circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 4.4v2.8M12 16.8v2.8M4.4 12h2.8M16.8 12h2.8M6.6 6.6l2 2M15.4 15.4l2 2M17.4 6.6l-2 2M8.6 15.4l-2 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+    slow: '<path d="M12 4.6c1.3 3.2 2.1 5 2.1 7.1 0 2.6-.9 4.5-2.1 4.5s-2.1-1.9-2.1-4.5c0-2.1.8-3.9 2.1-7.1z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.4 19c1.8 1 3.6 1.5 5.6 1.5s3.8-.5 5.6-1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none" opacity=".6"/>',
+    crit: '<path d="M12 4.2c1.5 3.6 2.3 5.7 2.3 8 0 3-1 5.2-2.3 5.2s-2.3-2.2-2.3-5.2c0-2.3.8-4.4 2.3-8z" fill="currentColor"/><circle cx="17.6" cy="6.4" r="2" fill="#b23a2b"/>',
+    ward: '<rect x="8" y="4.6" width="8" height="14.8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10.4" r="1.7" fill="#b23a2b"/><path d="M10 15.6h4M10.6 17.6h2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>',
+  };
+
+  const HP_DROP = '<svg viewBox="0 0 20 26" aria-hidden="true"><path class="hp-shape" d="M10 2.2c2.6 6 4.6 9.6 4.6 13.2 0 4.6-2 7.8-4.6 7.8s-4.6-3.2-4.6-7.8C5.4 11.8 7.4 8.2 10 2.2z"/></svg>';
+
+  function buildLegend() {
+    const list = ['pulse', 'dart', 'spit', 'moth', 'split', 'shade', 'slab', 'wraith', 'titan'];
+    el.enemyLegend.innerHTML = list.map(k => {
+      const d = ENEMIES[k];
+      return `<span class="legend-item"><svg viewBox="0 0 24 24" aria-hidden="true">${CREATURE_SVGS[k]}</svg><b>${d.name}</b><i>${d.trait}</i><span class="legend-wave">${toKanji(d.intro)}</span></span>`;
+    }).join('');
+  }
+
+  function buildTicker() {
+    const p = 'ONE MORE WAVE · ONE MORE STROKE · THE INK REMEMBERS · NINE BEASTS, ONE BRUSH · THE INK DRIES · EVERY STAIN A STORY · ONE MORE RUN · ';
+    const half = `<span>${p.repeat(6)}</span>`;
+    el.tickerTrack.innerHTML = half + half;
+  }
+
+  function show(name) {
+    for (const k in el.screens) el.screens[k].classList.toggle('hidden', k !== name);
+  }
+
+  function hud(v) { el.hud.classList.toggle('hidden', !v); }
+
+  function setWave(n) { el.hudWave.textContent = toKanji(n); }
+
+  function setProgress(f) {
+    el.waveFill.style.width = (Math.max(0, Math.min(1, f)) * 100).toFixed(1) + '%';
+  }
+
+  function setHp(cur, max) {
+    el.hudHp.innerHTML = Array.from({ length: max }, (_, i) =>
+      `<span class="hp-cell${i < cur ? ' on' : ''}">${HP_DROP}</span>`).join('');
+  }
+
+  function setScore(n) { el.hudScore.textContent = fmtScore(n); }
+
+  function setTime(s) {
+    const t = fmtTime(s);
+    if (t !== lastTimeStr) { lastTimeStr = t; el.hudTime.textContent = t; }
+  }
+
+  function banner(n, surge) {
+    el.bannerKicker.textContent = surge ? 'THE SURGE' : 'INCOMING';
+    el.bannerTitle.innerHTML =
+      `<span class="ban-kanji">${toKanji(n)}</span><span class="ban-lat">WAVE ${pad2(n)}</span>`;
+    el.banner.classList.toggle('surge', !!surge);
+    el.banner.classList.remove('show');
+    void el.banner.offsetWidth; /* restart animation */
+    el.banner.classList.add('show');
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(() => el.banner.classList.remove('show'), 1500);
+  }
+
+  function flash() {
+    el.flash.classList.add('on');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => el.flash.classList.remove('on'), 130);
+  }
+
+  function setRunNo(n) { el.runNo.textContent = 'RUN ' + pad3(n); }
+
+  function setBest(b) {
+    if (b && b.score > 0) {
+      el.bestLine.classList.remove('hidden');
+      el.bestLine.innerHTML = `BEST — WAVE <span class="kanji-inline">${toKanji(b.wave)}</span> · ${b.score.toLocaleString('en-US')} PTS`;
+    } else {
+      el.bestLine.classList.add('hidden');
+    }
+  }
+
+  function fillUpgrades(choices, levels) {
+    el.upgradeGrid.innerHTML = '';
+    choices.forEach((u, i) => {
+      const lv = levels[u.id] || 0;
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'up-card';
+      const pips = u.patch ? '' : Array.from({ length: u.max }, (_, k) =>
+        `<i class="pip${k < lv ? ' on' : ''}"></i>`).join('');
+      const isNew = !u.patch && lv === 0 ? '<span class="up-new">NEW</span>' : '';
+      card.innerHTML =
+        `<div class="up-top"><span class="up-no">之${toKanji(i + 1)}</span><span class="up-top-right">${isNew}<span class="up-pips">${pips}</span></span></div>` +
+        `<svg class="up-glyph" viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.id] || GLYPHS.patch}</svg>` +
+        `<h3 class="up-name">${u.name}</h3>` +
+        `<p class="up-desc">${u.desc}</p>` +
+        `<span class="up-check" aria-hidden="true"></span>`;
+      card.addEventListener('click', () => G.pickAt(i));
+      el.upgradeGrid.appendChild(card);
+    });
+  }
+
+  function markSelected(i) {
+    [...el.upgradeGrid.children].forEach((c, idx) => {
+      c.classList.toggle('selected', idx === i);
+      c.classList.toggle('faded', i !== null && idx !== i);
+    });
+  }
+
+  function setDeploy(on, nextWave) {
+    el.deployBtn.classList.toggle('is-disabled', !on);
+    el.deployBtn.disabled = !on;
+    el.deployBtn.innerHTML = `DEPLOY — WAVE <span class="kanji-inline">${toKanji(nextWave)}</span>`;
+  }
+
+  function setUpgradeHeader(clearedWave, nextWave) {
+    el.upKicker.innerHTML = `WAVE <span class="kanji-inline">${toKanji(clearedWave)}</span> — CLEARED`;
+    el.upNext.innerHTML = '<span class="kanji-inline">' + toKanji(nextWave) + '</span>';
+  }
+
+  function showOver(d) {
+    el.overKicker.textContent = `RUN ${pad3(d.run)} — THE INK CLAIMS ANOTHER`;
+    el.overRank.textContent = d.rank;
+    el.statWaves.innerHTML = `${d.waves} <span class="kanji-inline">${toKanji(d.waves)}</span>`;
+    el.statKills.textContent = d.kills.toLocaleString('en-US');
+    el.statTime.textContent = fmtTime(d.time);
+    el.statScore.textContent = d.score.toLocaleString('en-US');
+    el.newBestBadge.classList.toggle('hidden', !d.newBest);
+  }
+
+  function muteVisual(m) { el.muteBtn.classList.toggle('muted', m); }
+
+  /* the brush's current loadout, worn on the wrist */
+  function setLoadout(levels) {
+    if (!el.hudLoadout) return;
+    el.hudLoadout.innerHTML = UPGRADES
+      .filter(u => (levels[u.id] || 0) > 0)
+      .map(u => `<span class="load-item" title="${u.name}"><svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.id] || GLYPHS.patch}</svg><b>${levels[u.id]}</b></span>`)
+      .join('');
+  }
+
+  return {
+    show, hud, setWave, setProgress, setHp, setScore, setTime, banner, flash,
+    setRunNo, setBest, buildLegend, buildTicker, fillUpgrades, markSelected,
+    setDeploy, setUpgradeHeader, showOver, muteVisual, setLoadout, el, toKanji,
+  };
+})();

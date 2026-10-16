@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ONE MORE — An Ink-Born Survival</title>
+<meta name="description" content="One arena. Endless waves. Simple upgrades. A monochrome survival painted in living ink." />
+<meta name="theme-color" content="#ede7d9" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20x='6'%20y='6'%20width='52'%20height='52'%20rx='7'%20fill='%23B23A2B'/%3E%3Ctext%20x='32'%20y='45'%20font-size='38'%20text-anchor='middle'%20fill='%23ede7d9'%20font-family='serif'%20font-weight='bold'%3E%E4%B8%80%3C/text%3E%3C/svg%3E" />
+<meta property="og:title" content="ONE MORE — An Ink-Born Survival" />
+<meta property="og:description" content="One arena. Endless waves. Simple upgrades. How long can the brush last?" />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Zen+Antique&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+<!-- hand-wobble filter: gives every ink border a brushed edge -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="inkrough" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5"/>
+    </filter>
+    <filter id="inkrough-soft" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="12" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
+    </filter>
+  </defs>
+</svg>
+
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <!-- ============ IN-RUN HUD ============ -->
+  <div id="hud" class="hidden">
+    <div class="hud-tl">
+      <div class="wave-chip"><span class="wave-kanji" id="hudWave">一</span></div>
+      <div class="hud-wave-meta">
+        <span class="hud-label">WAVE</span>
+        <div class="wave-progress"><div class="wave-fill" id="waveFill"></div></div>
+      </div>
+    </div>
+    <div class="hud-tr">
+      <div class="hp-row" id="hudHp"></div>
+      <div class="hud-score" id="hudScore">0000000</div>
+    </div>
+    <div class="hud-bl">
+      <div class="hud-loadout" id="hudLoadout"></div>
+      <span class="hud-time" id="hudTime">00:00</span>
+    </div>
+    <div class="hud-br">
+      <button id="muteBtn" class="icon-btn" aria-label="Toggle sound" title="Toggle sound (M)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none"/><path d="M15.5 8.6a4.8 4.8 0 0 1 0 6.8"/><path d="M18.2 6a8.6 8.6 0 0 1 0 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ WAVE BANNER ============ -->
+  <div id="waveBanner" class="wave-banner" aria-hidden="true">
+    <div class="banner-core">
+      <svg class="banner-stroke" viewBox="0 0 420 64" aria-hidden="true">
+        <path d="M14 36 C 92 20, 214 15, 406 27 C 302 40, 152 47, 42 44 C 27 43.3, 17 40, 14 36 Z" fill="currentColor"/>
+        <circle cx="404" cy="29" r="2.6" fill="currentColor"/>
+      </svg>
+      <span class="banner-kicker" id="bannerKicker">INCOMING</span>
+      <span class="banner-title" id="bannerTitle"><span class="ban-kanji">一</span><span class="ban-lat">WAVE 01</span></span>
+    </div>
+  </div>
+
+  <!-- ============ TITLE SCREEN ============ -->
+  <section id="screenTitle" class="screen screen-title">
+    <!-- the great brush circle, drawn once per visit -->
+    <svg class="enso" viewBox="0 0 640 640" aria-hidden="true">
+      <path class="enso-main" pathLength="100" d="M560.3 277.6 A 244 244 0 1 0 449.3 526.9" />
+      <path class="enso-echo" pathLength="100" d="M539.2 257.2 A 228 228 0 1 0 419.9 524.9" />
+      <circle class="enso-seal" cx="546" cy="304" r="7" />
+    </svg>
+
+    <header class="masthead">
+      <span class="mast-vert" aria-hidden="true">墨一色</span>
+      <span class="mast-left">THE INK REMEMBERS<br/>EVERY STROKE</span>
+      <span class="mast-mid">SUMI-E SURVIVAL — INK EDITION No.1</span>
+      <span class="mast-right">SINGLE BRUSH<br/>NO MERCY</span>
+    </header>
+    <div class="seal-vert" aria-hidden="true">一</div>
+
+    <div class="title-main">
+      <div class="title-chip">A MONOCHROME SURVIVAL</div>
+      <h1 class="title-word">ONE&nbsp;MORE</h1>
+      <svg class="swash" viewBox="0 0 320 26" aria-hidden="true">
+        <path d="M4 15 C 60 6, 150 4, 316 11 C 230 15, 120 19, 40 18 C 24 17.6, 12 16.6, 4 15 Z" fill="currentColor"/>
+        <circle cx="312" cy="16.5" r="2.4" fill="currentColor"/>
+        <circle cx="296" cy="19" r="1.3" fill="currentColor"/>
+      </svg>
+      <p class="title-sub">One arena. Endless waves. Simple upgrades.<br/>Every death leaves a stain. The only thing that multiplies is the difficulty.</p>
+      <button id="playBtn" class="play-btn">
+        <span class="play-seal" aria-hidden="true">一</span>
+        <span class="play-label">BEGIN — <span id="runNo">RUN 001</span></span>
+      </button>
+      <p class="best-line hidden" id="bestLine"></p>
+    </div>
+
+    <div class="title-foot">
+      <div class="beasts-head"><span class="bh-rule"></span>THE NINE BEASTS<span class="bh-rule"></span></div>
+      <div class="enemy-legend" id="enemyLegend" aria-hidden="true"></div>
+      <div class="controls-line">WASD — MOVE&nbsp;&nbsp;·&nbsp;&nbsp;THE BRUSH FIRES ITSELF&nbsp;&nbsp;·&nbsp;&nbsp;P — PAUSE&nbsp;&nbsp;·&nbsp;&nbsp;M — SOUND</div>
+    </div>
+
+    <footer class="ticker" aria-hidden="true"><div class="ticker-track" id="tickerTrack"></div></footer>
+  </section>
+
+  <!-- ============ UPGRADE SCREEN ============ -->
+  <section id="screenUpgrade" class="screen screen-upgrade hidden">
+    <span class="wm wm-up" aria-hidden="true">選</span>
+    <div class="panel">
+      <div class="panel-banner">
+        <div class="pb-left">
+          <span class="pb-kicker" id="upKicker">WAVE 一 — CLEARED</span>
+          <span class="pb-title">CHOOSE ONE MORE</span>
+        </div>
+        <div class="pb-right">
+          <span class="pb-step-label">NEXT</span>
+          <span class="pb-step-value" id="upNext">二</span>
+        </div>
+      </div>
+      <div class="upgrade-grid" id="upgradeGrid"></div>
+      <button id="deployBtn" class="deploy-btn is-disabled" disabled>DEPLOY</button>
+      <div class="panel-hint">PRESS 1 · 2 · 3 TO SELECT — AGAIN OR ENTER TO DEPLOY</div>
+    </div>
+  </section>
+
+  <!-- ============ PAUSE SCREEN ============ -->
+  <section id="screenPause" class="screen screen-pause hidden">
+    <span class="wm wm-pause" aria-hidden="true">休</span>
+    <div class="pause-box">
+      <div class="pause-chip">REST</div>
+      <p class="pause-note">The ink waits. For now.</p>
+      <div class="pause-actions">
+        <button id="resumeBtn" class="block-btn">RESUME</button>
+        <button id="pauseMenuBtn" class="ghost-btn">ABANDON RUN</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GAME OVER SCREEN ============ -->
+  <section id="screenOver" class="screen screen-over hidden">
+    <span class="wm wm-over" aria-hidden="true">終</span>
+    <div class="over-panel">
+      <div class="best-badge hidden" id="newBestBadge">NEW BEST</div>
+      <p class="over-kicker" id="overKicker">RUN 001 — THE INK CLAIMS ANOTHER</p>
+      <h2 class="over-title">THE INK DRIES.</h2>
+      <p class="over-sub">The paper keeps every stroke. Even this one.</p>
+      <div class="over-body">
+        <div class="rank-block">
+          <div class="rank-value" id="overRank">D</div>
+          <span class="rank-label">SEAL</span>
+        </div>
+        <div class="over-stats">
+          <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">WAVES SURVIVED</span><span class="stat-dots"></span><span class="stat-value" id="statWaves">0</span></div>
+          <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">BLOTS CLEANED</span><span class="stat-dots"></span><span class="stat-value" id="statKills">0</span></div>
+          <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">TIME IN ARENA</span><span class="stat-dots"></span><span class="stat-value" id="statTime">00:00</span></div>
+          <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">FINAL SCORE</span><span class="stat-dots"></span><span class="stat-value" id="statScore">0</span></div>
+        </div>
+      </div>
+      <div class="over-actions">
+        <button id="againBtn" class="block-btn big">ONE MORE</button>
+        <button id="menuBtn" class="ghost-btn">MENU</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="flash" aria-hidden="true"></div>
+</div>
+
+<script src="./js/config.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/game.js"></script>
+<script src="./js/render.js"></script>
+<script src="./js/main.js"></script>
+</body>
+</html>
