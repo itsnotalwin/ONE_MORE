@@ -5,10 +5,12 @@ const CAMPAIGN = (() => {
   const KEY = 'om_campaign_v1';
   const LEVELS_PER_WORLD = 10;
   const WAVES_PER_LEVEL = 10;
+  let sessionState = null; /* retained progress if browser storage is unavailable */
 
   function read() {
     let raw;
     try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { raw = null; }
+    if (!raw && sessionState) raw = sessionState;
     const completed = AREAS.map((_, i) => {
       const value = Number(raw && Array.isArray(raw.completed) && raw.completed[i]);
       return Number.isFinite(value) ? Math.max(0, Math.min(LEVELS_PER_WORLD, Math.floor(value))) : 0;
@@ -32,7 +34,8 @@ const CAMPAIGN = (() => {
     if (!canPlay(worldIndex, level, state)) return state;
     if (level === state.completed[worldIndex] + 1) {
       state.completed[worldIndex] = level;
-      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* Private mode: session still playable */ }
+      sessionState = state;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* Stay playable this session. */ }
     }
     return state;
   }
