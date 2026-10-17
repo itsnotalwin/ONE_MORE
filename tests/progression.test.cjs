@@ -137,6 +137,6 @@ test('original renderer, audio, and pre-existing CSS are frozen', () => {
   assert.equal(gitBlobHash(file('js/audio.js')), '50c75c3f74d20ff5f51232731ad8260c8881b635');
   const css = file('css/style.css');
   assert.ok(css.includes('CAMPAIGN SELECTION'));
-  const original = css.slice(0, css.indexOf('/* ============================================================\n   CAMPAIGN SELECTION'));
+  const original = css.slice(0, css.indexOf('\n/* ============================================================\n   CAMPAIGN SELECTION'));
   assert.equal(gitBlobHash(original), '7438ce27c87e88b507e76abcfbc45fe420ffc1db');
 });
