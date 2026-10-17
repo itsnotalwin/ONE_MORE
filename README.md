@@ -135,8 +135,7 @@ one-more/
 │   └── main.js                 # bootstrap, input, game loop, wiring
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml          # GitHub Pages deployment
-├── .nojekyll                   # serve files as-is, skip Jekyll
+│       └── test.yml            # progression + style-source checks on PRs
 ├── tests/
 │   └── progression.test.cjs    # Node built-in regression tests, no dependencies
 ├── DESIGN.md                   # frozen visual style references and rules
