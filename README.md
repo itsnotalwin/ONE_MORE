@@ -8,10 +8,12 @@ paper — Vampire-Survivors style, the camera follows you and the paper never
 ends. Your brush fires ink at the nearest threat on its own; your only job
 is to *not be erased*.
 
-The journey is **three scrolls of ten waves**, each sheet a different paper,
-each ending in a Guardian. Clear the third sheet and the scroll offers
-itself forever: **THE ENDLESS SCROLL**, where the paper cycles through its
-three faces and the difficulty never stops compounding.
+The journey is **three scrolls (worlds), ten separate levels per scroll, ten
+waves per level**. Each level is a fresh run and a harder challenge. Clear ten
+waves to seal a level and unlock the next; clear Level 10 to unroll the next
+world. Complete all three scrolls to seal the campaign. **THE ENDLESS SCROLL**
+remains a separate replayable mode, cycling through the original three papers
+as difficulty compounds.
 
 The whole game is painted like living sumi-e: every creature is a wobbling
 blot of ink animated with hand-drawn line boil, every kill splatters real
@@ -29,11 +31,23 @@ color belongs to the vermillion seal.
 | 二 NIGHT SCROLL | Near-black paper, the ink turns white | WISP, SHADE, MOTH, KAGE, STILT, SPEAR, BLIP |
 | 三 CINNABAR FIELD | Vermillion-washed paper, red drips dry underfoot | BRUTE, SPIT, ONI, CRANE, DRIP, TITAN, KAGE |
 
-Each sheet runs ten waves; the tenth summons a **GUARDIAN** — an elite
-beast bearing the red 危 seal, tracked by a vermillion arrow at the rim of
-the screen. Wave 5 and 15 and 25 are **SURGES** — denser, louder, meaner.
+**Each level is an independent ten-wave run.** Wave 10 summons a
+**GUARDIAN**, with a stronger world boss on Level 10, Wave 10. Wave 5 is a
+**SURGE**. New worlds unlock only after all ten levels of the preceding world
+are cleared. The player can replay completed levels, and losing never removes
+permanent unlocks.
+
+Each scroll also now features a distinct encounter pattern, using the original
+creatures and brush rendering: **SPLIT BLOOM** (FIRST WASH, waves 6/9),
+**PHANTOM AMBUSH** (NIGHT SCROLL, waves 3/6/9) and **CRIMSON RUSH**
+(CINNABAR FIELD, waves 5/9).
 
 ## How to play
+
+Choose **THE JOURNEY**, select an unlocked scroll, then choose the next
+unlocked level. Survive ten waves to seal it; between waves choose one of three
+brush upgrades. These upgrades reset on every new level, while completed
+levels stay saved in your browser.
 
 | Input | Action |
 |---|---|
@@ -82,33 +96,15 @@ reappears; read the paper.
 
 ## Deploy to GitHub Pages
 
-The repo ships with a ready-made workflow at
-`.github/workflows/deploy.yml` that publishes the site on every push to
-`main` using the official GitHub Pages Actions pipeline.
+ONE MORE is a static website with no build step. To publish it directly,
+open **Settings → Pages** and choose **Deploy from a branch**, with
+branch `main` and folder `/ (root)`. GitHub Pages then serves `index.html`.
+If you already use a separate Pages deployment setup, keep that existing
+configuration. This repository does not require a server or secrets.
 
-1. Create a new repository on GitHub (e.g. `one-more`).
-2. Push this folder's contents to the `main` branch:
-
-   ```bash
-   git init
-   git add -A
-   git commit -m "ONE MORE — the scroll turns"
-   git branch -M main
-   git remote add origin https://github.com/<your-username>/one-more.git
-   git push -u origin main
-   ```
-
-3. In the repository, go to **Settings → Pages** and set
-   **Build and deployment → Source** to **GitHub Actions**.
-4. That's it. The workflow runs on every push and publishes the game to:
-
-   `https://<your-username>.github.io/one-more/`
-
-You can also trigger a redeploy manually from the **Actions** tab via
-**Run workflow** (the workflow has `workflow_dispatch` enabled).
-
-> Note: the first deploy requires step 3. If the workflow fails with a
-> "Pages not enabled" error, this is the setting you missed.
+On a feature branch, use the branch's code for local previews; nothing is
+published from a feature branch until the relevant changes land in your
+configured deployment branch.
 
 ## Run locally
 
@@ -130,6 +126,7 @@ one-more/
 │   └── style.css               # the sumi-e design system
 ├── js/
 │   ├── config.js               # tuning: areas, enemies, waves, upgrades, ranks
+│   ├── campaign.js             # persistent world/level unlocks
 │   ├── audio.js                # synthesized ink sound kit (splats, taiko, gong)
 │   ├── ui.js                   # DOM screens, HUD, kanji numerals, upgrade cards
 │   ├── game.js                 # camera, areas, waves, entities, weapons, flow
@@ -140,6 +137,9 @@ one-more/
 │   └── workflows/
 │       └── deploy.yml          # GitHub Pages deployment
 ├── .nojekyll                   # serve files as-is, skip Jekyll
+├── tests/
+│   └── progression.test.cjs    # Node built-in regression tests, no dependencies
+├── DESIGN.md                   # frozen visual style references and rules
 ├── LICENSE
 └── README.md
 ```
@@ -150,16 +150,29 @@ All balance knobs live in `js/config.js`:
 
 - `AREAS` — the three sheets: name, kanji, paper theme, difficulty multipliers,
   spawn roster and each sheet's Guardian
-- `CFG.wave` — waves per sheet, spawn budgets, surge cadence, elite scaling
+- `CFG.wave` — waves per level, spawn budgets, surge cadence, elite scaling
 - `CFG.endless` — how fast the endless paper grows teeth after sheet three
 - `ENEMIES` — hp, speed, size, score and the wave each type enters
 - `UPGRADES` — the pool of strokes and weapons, and their level caps
 - `CFG.world` — spawn padding, stain cap and fade, ambient mark density
 - `CFG.ranks` — waves-cleared thresholds for the end-of-run seal
 
-High score, run counter and mute preference persist in `localStorage` —
+Campaign unlocks (`om_campaign_v1`), high score, run counter and mute preference
+persist in `localStorage` —
 no backend, no accounts, no tracking. GitHub Pages serves static files
 only, and the game is 100% client-side by design.
+
+## Test
+
+Run `node --test tests/progression.test.cjs` (Node.js 18+). The suite checks
+all 30 stage clears, 300 wave transitions, sequential unlocks, world-specific
+enemy patterns, final bosses, storage fallback, Endless, and frozen original
+renderer/audio/CSS contents. It is a headless logic test; actual browser visual
+checks on mobile and desktop are still required before deploying.
+
+For exact original appearance, consult [DESIGN.md](DESIGN.md) and its
+commit-pinned references. Existing enemy illustrations, ink effects and
+animations are preserved, not redrawn.
 
 ## Tech
 
