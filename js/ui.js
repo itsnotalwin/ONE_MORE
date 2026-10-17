@@ -13,14 +13,17 @@ const UI = (() => {
     hudWaveTotal: $('hudWaveTotal'), hudMode: $('hudMode'),
     banner: $('waveBanner'), bannerKicker: $('bannerKicker'), bannerTitle: $('bannerTitle'),
     screens: {
-      title: $('screenTitle'), upgrade: $('screenUpgrade'),
+      title: $('screenTitle'), select: $('screenSelect'), upgrade: $('screenUpgrade'),
       pause: $('screenPause'), over: $('screenOver'),
     },
     runNo: $('runNo'), bestLine: $('bestLine'), enemyLegend: $('enemyLegend'), tickerTrack: $('tickerTrack'),
     hudLoadout: $('hudLoadout'),
     upKicker: $('upKicker'), upNext: $('upNext'), upgradeGrid: $('upgradeGrid'), deployBtn: $('deployBtn'),
     overKicker: $('overKicker'), overRank: $('overRank'), overTitle: $('overTitle'), overSub: $('overSub'),
-    continueBtn: $('continueBtn'),
+    continueBtn: $('continueBtn'), againBtn: $('againBtn'),
+    campaignWorlds: $('campaignWorlds'), campaignLevels: $('campaignLevels'),
+    campaignWorldName: $('campaignWorldName'), campaignMechanic: $('campaignMechanic'),
+    campaignStatus: $('campaignStatus'),
     statWaves: $('statWaves'), statKills: $('statKills'), statTime: $('statTime'), statScore: $('statScore'),
     newBestBadge: $('newBestBadge'), flash: $('flash'),
   };
@@ -106,15 +109,45 @@ const UI = (() => {
     el.tickerTrack.innerHTML = half + half;
   }
 
+  /* Campaign selection is a new screen, built using the existing paper/ink tokens. */
+  function renderCampaign(progress, selectedWorld) {
+    const worlds = AREAS;
+    el.campaignWorlds.innerHTML = worlds.map((area, i) => {
+      const locked = !CAMPAIGN.isWorldUnlocked(i, progress);
+      const complete = progress.completed[i] === CAMPAIGN.LEVELS_PER_WORLD;
+      return `<button type="button" class="campaign-world${i === selectedWorld ? ' selected' : ''}" data-world="${i}" ${locked ? 'disabled' : ''}
+        aria-pressed="${i === selectedWorld}" aria-label="${area.name}, ${locked ? 'locked' : complete ? 'complete' : 'unlocked'}">
+        <span class="campaign-world-kanji">${locked ? '鎖' : area.kanji}</span>
+        <span class="campaign-world-copy"><strong>${area.name}</strong><small>${locked ? 'SEALED' : complete ? 'COMPLETE' : `${progress.completed[i]} / 10 SEALED`}</small></span>
+      </button>`;
+    }).join('');
+    const area = worlds[selectedWorld];
+    const completeCount = progress.completed[selectedWorld];
+    el.campaignWorldName.textContent = area.name;
+    el.campaignMechanic.textContent = `${area.desc}  ·  ${area.mechanic}`;
+    el.campaignStatus.textContent = `${completeCount} / 10 LEVELS COMPLETE · 10 WAVES EACH`;
+    el.campaignLevels.innerHTML = Array.from({ length: CAMPAIGN.LEVELS_PER_WORLD }, (_, i) => {
+      const level = i + 1;
+      const cleared = level <= completeCount;
+      const available = CAMPAIGN.canPlay(selectedWorld, level, progress);
+      const state = cleared ? 'SEALED' : available ? 'PLAY' : 'LOCKED';
+      return `<button type="button" class="campaign-level${cleared ? ' cleared' : ''}" data-level="${level}"
+        ${available ? '' : 'disabled'} aria-label="Level ${level}, ${state.toLowerCase()}">
+        <span class="campaign-level-no">${pad2(level)}</span><span class="campaign-level-state">${state}</span>
+        ${level === CAMPAIGN.LEVELS_PER_WORLD ? '<span class="campaign-boss-label">守</span>' : ''}
+      </button>`;
+    }).join('');
+  }
+
   function show(name) {
     for (const k in el.screens) el.screens[k].classList.toggle('hidden', k !== name);
   }
 
   function hud(v) { el.hud.classList.toggle('hidden', !v); }
 
-  function setMode(m) {
+  function setMode(m, level) {
     if (el.hudMode) {
-      el.hudMode.textContent = m === 'endless' ? 'ENDLESS SCROLL' : 'THE JOURNEY';
+      el.hudMode.textContent = m === 'endless' ? 'ENDLESS SCROLL' : `LEVEL ${pad2(level)} / 10`;
       el.hudMode.classList.toggle('endless', m === 'endless');
     }
   }
@@ -144,8 +177,8 @@ const UI = (() => {
     if (t !== lastTimeStr) { lastTimeStr = t; el.hudTime.textContent = t; }
   }
 
-  function banner(n, surge, isElite) {
-    el.bannerKicker.textContent = isElite ? 'THE GUARDIAN WAKES' : surge ? 'THE SURGE' : 'INCOMING';
+  function banner(n, surge, isElite, worldBoss = false) {
+    el.bannerKicker.textContent = worldBoss && isElite ? 'THE WORLD GUARDIAN WAKES' : isElite ? 'THE GUARDIAN WAKES' : surge ? 'THE SURGE' : 'INCOMING';
     el.bannerTitle.innerHTML =
       `<span class="ban-kanji">${toKanji(n)}</span><span class="ban-lat">WAVE ${pad2(n)}${isElite ? ' — GUARDIAN' : ''}</span>`;
     el.banner.classList.toggle('surge', !!surge || !!isElite);
@@ -158,10 +191,12 @@ const UI = (() => {
   }
 
   /* a new sheet unrolls: the scroll turns */
-  function areaBanner(area, cycle, deepEndless) {
-    el.bannerKicker.textContent = deepEndless
-      ? `THE SCROLL TURNS FOREVER — SHEET ${toKanji(cycle + 1)}`
-      : `THE SCROLL TURNS — SHEET ${toKanji(cycle + 1)} OF ${toKanji(AREAS.length)}`;
+  function areaBanner(area, cycle, deepEndless, level = null) {
+    el.bannerKicker.textContent = level != null
+      ? `SCROLL ${toKanji(cycle + 1)} — LEVEL ${toKanji(level)} OF 十`
+      : deepEndless
+        ? `THE SCROLL TURNS FOREVER — SHEET ${toKanji(cycle + 1)}`
+        : `THE SCROLL TURNS — SHEET ${toKanji(cycle + 1)} OF ${toKanji(AREAS.length)}`;
     el.bannerTitle.innerHTML =
       `<span class="ban-kanji">${area.kanji}</span><span class="ban-lat">${area.name}</span>`;
     el.banner.classList.toggle('area', true);
@@ -242,12 +277,27 @@ const UI = (() => {
 
   function showOver(d) {
     const vict = !!d.victory;
-    el.overTitle.textContent = vict ? 'THE SCROLL ENDS.' : 'THE INK DRIES.';
-    el.overSub.textContent = vict
-      ? 'Three sheets painted. The paper asks for more.'
-      : 'The paper keeps every stroke. Even this one.';
-    el.overKicker.textContent =
-      `RUN ${pad3(d.run)} — ${d.mode === 'endless' ? 'THE ENDLESS SCROLL' : vict ? 'THE JOURNEY, COMPLETE' : 'THE INK CLAIMS ANOTHER'}`;
+    const campaign = d.mode === 'journey';
+    const area = AREAS[d.worldIndex] || AREAS[0];
+    if (campaign) {
+      el.overTitle.textContent = vict ? 'THE SEAL IS SET.' : 'THE INK DRIES.';
+      el.overSub.textContent = vict
+        ? (d.finalCampaign ? 'Thirty levels sealed. The brush may wander forever.'
+          : d.level === 10 ? 'This scroll is complete. A new sheet awaits.'
+          : `Level ${pad2(d.level)} sealed. The next page is yours.`)
+        : `The brush fell on wave ${pad2(d.waves + 1)}. This level remains yours to retry.`;
+      el.overKicker.textContent = `RUN ${pad3(d.run)} — ${area.name} · LEVEL ${pad2(d.level)}${vict ? ' COMPLETE' : ''}`;
+      el.againBtn.textContent = vict
+        ? (d.finalCampaign ? 'CHOOSE A SCROLL' : d.level === 10 ? 'ENTER NEXT SCROLL' : 'NEXT LEVEL')
+        : 'RETRY LEVEL';
+    } else {
+      el.overTitle.textContent = vict ? 'THE SCROLL ENDS.' : 'THE INK DRIES.';
+      el.overSub.textContent = vict
+        ? 'Three sheets painted. The paper asks for more.'
+        : 'The paper keeps every stroke. Even this one.';
+      el.overKicker.textContent = `RUN ${pad3(d.run)} — THE ENDLESS SCROLL`;
+      el.againBtn.textContent = 'ONE MORE';
+    }
     el.overRank.textContent = d.rank;
     el.statWaves.innerHTML = `${d.waves} <span class="kanji-inline">${toKanji(d.waves)}</span>`;
     el.statKills.textContent = d.kills.toLocaleString('en-US');
@@ -255,10 +305,9 @@ const UI = (() => {
     el.statScore.textContent = d.score.toLocaleString('en-US');
     el.newBestBadge.classList.toggle('hidden', !d.newBest);
     if (el.continueBtn) {
-      el.continueBtn.classList.toggle('hidden', !vict);
-      if (vict) {
-        el.continueBtn.innerHTML =
-          'INTO THE ENDLESS — <span class="kanji-inline">無</span>';
+      el.continueBtn.classList.toggle('hidden', !(vict && campaign && d.finalCampaign));
+      if (vict && campaign && d.finalCampaign) {
+        el.continueBtn.innerHTML = 'START THE ENDLESS SCROLL — <span class="kanji-inline">無</span>';
       }
     }
   }
@@ -275,7 +324,7 @@ const UI = (() => {
   }
 
   return {
-    show, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
+    show, renderCampaign, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
     setRunNo, setBest, buildLegend, buildTicker, fillUpgrades, markSelected,
     setDeploy, setUpgradeHeader, showOver, muteVisual, setLoadout, setArea, setMode, el, toKanji,
   };

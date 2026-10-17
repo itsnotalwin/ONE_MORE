@@ -25,6 +25,7 @@ const G = (() => {
     stats: null,
     runMode: 'journey',            // 'journey' | 'endless'
     areaIdx: 0,
+    worldIndex: 0, level: 1, lastVictory: false, nextStage: null,
 
     bullets: [], ebullets: [], enemies: [], markers: [], particles: [], popups: [], rings: [], idle: [],
     puddles: [], spirits: [], stamps: [],
@@ -65,6 +66,18 @@ const G = (() => {
 
   /* which scroll are we on, and how hard has the endless paper grown */
   function areaStateFor(w) {
+    if (S.runMode === 'journey') {
+      const area = AREAS[S.worldIndex];
+      const difficulty = S.level - 1;
+      return {
+        cycle: S.worldIndex, waveInArea: w, themeIdx: S.worldIndex, area,
+        effectiveWave: S.worldIndex * CFG.wave.wavesPerArea + w,
+        hp: area.mult.hp * (1 + difficulty * 0.10),
+        sp: area.mult.sp * (1 + difficulty * 0.012),
+        budget: area.mult.budget * (1 + difficulty * 0.12),
+        isElite: w === CFG.wave.wavesPerArea,
+      };
+    }
     const per = CFG.wave.wavesPerArea;
     const cycle = Math.floor((w - 1) / per);
     const waveInArea = ((w - 1) % per) + 1;
@@ -79,7 +92,7 @@ const G = (() => {
       sp *= Math.pow(CFG.endless.spGrowth, k);
       budget *= Math.pow(CFG.endless.budgetGrowth, k);
     }
-    return { cycle, waveInArea, themeIdx, area, hp, sp, budget, isElite: waveInArea === per };
+    return { cycle, waveInArea, themeIdx, area, hp, sp, budget, effectiveWave: w, isElite: waveInArea === per };
   }
 
   /* a birth point just past the edge of the eye — measured to the
@@ -121,13 +134,14 @@ const G = (() => {
     const def = ENEMIES[type];
     const w = S.stats.wave;
     const st = areaStateFor(w);
-    let hp = CFG.wave.hpScale(def.hp, w, def.intro) * st.hp;
+    let hp = CFG.wave.hpScale(def.hp, st.effectiveWave, def.intro) * st.hp;
     let r = def.r;
-    let speed = def.speed * CFG.wave.spScale(w, def.intro) * st.sp;
+    let speed = def.speed * CFG.wave.spScale(st.effectiveWave, def.intro) * st.sp;
     if (opts.elite) {
       hp = Math.round(hp * CFG.wave.eliteHpMult);
       r = Math.round(r * CFG.wave.eliteR);
       speed *= 0.86;
+      if (opts.boss) { hp *= 1.8; r = Math.round(r * 1.2); }
     }
     hp = Math.max(1, Math.round(hp));
     const e = {
@@ -146,7 +160,7 @@ const G = (() => {
 
   function killEnemy(e) {
     const def = ENEMIES[e.type];
-    const mult = 1 + 0.15 * Math.max(0, S.stats.wave - 1);
+    const mult = 1 + 0.15 * Math.max(0, areaStateFor(S.stats.wave).effectiveWave - 1);
     const pts = Math.round((def.score * mult * (e.elite ? 6 : 1)) / 5) * 5;
     S.stats.score += pts;
     S.stats.kills++;
@@ -218,7 +232,14 @@ const G = (() => {
     let budget = CFG.wave.budget(as.waveInArea, as.cycle) * as.budget;
     if (surge) budget *= CFG.wave.surgeMult;
     if (as.isElite) budget *= 1.2;
-    S.queue = buildQueue(Math.round(budget), n, as.area.roster);
+    S.queue = buildQueue(Math.round(budget), as.effectiveWave, as.area.roster);
+    /* Each scroll has a unique combat twist, using existing ink creatures and art. */
+    if (S.runMode === 'journey') {
+      if (S.worldIndex === 0 && (n === 6 || n === 9)) S.queue.push('split', 'split', 'split');
+      if (S.worldIndex === 1 && (n === 3 || n === 6 || n === 9)) S.queue.push('shade', 'shade', 'kage');
+      if (S.worldIndex === 2 && (n === 5 || n === 9)) S.queue.push('oni', 'oni', 'crane');
+      shuffle(S.queue);
+    }
     S.waveInitial = S.queue.length + (as.isElite ? 1 : 0);
     S.waveActive = true;
     S.spawnTimer = 1.0;
@@ -228,16 +249,17 @@ const G = (() => {
     UI.setProgress(0);
     if (as.waveInArea === 1) {
       /* the scroll turns — a new sheet of paper */
-      UI.areaBanner(as.area, as.cycle, S.runMode === 'endless' && as.cycle >= AREAS.length);
+      UI.areaBanner(as.area, as.cycle, S.runMode === 'endless' && as.cycle >= AREAS.length, S.runMode === 'journey' ? S.level : null);
       SFX.gong();
     } else {
-      UI.banner(as.waveInArea, surge, as.isElite);
+      UI.banner(as.waveInArea, surge, as.isElite, S.runMode === 'journey' && S.level === CAMPAIGN.LEVELS_PER_WORLD);
       SFX.wave(surge || as.isElite);
     }
     if (as.isElite) {
       /* the Guardian of the sheet enters */
       const pt = edgePoint();
-      S.markers.push({ type: as.area.elite, x: pt.x, y: pt.y, t: 1.7, elite: true });
+      S.markers.push({ type: as.area.elite, x: pt.x, y: pt.y, t: 1.7, elite: true,
+        boss: S.runMode === 'journey' && S.level === CAMPAIGN.LEVELS_PER_WORLD });
     }
   }
 
@@ -276,8 +298,13 @@ const G = (() => {
   }
 
   /* ---------------- flow ---------------- */
-  function startRun(mode) {
+  function startRun(mode, worldIndex = 0, level = 1) {
+    if (mode !== 'endless' && !CAMPAIGN.canPlay(worldIndex, level)) return false;
     S.runMode = mode === 'endless' ? 'endless' : 'journey';
+    S.worldIndex = S.runMode === 'endless' ? 0 : worldIndex;
+    S.level = S.runMode === 'endless' ? 1 : level;
+    S.lastVictory = false;
+    S.nextStage = null;
     S.stats = freshStats();
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
@@ -286,7 +313,7 @@ const G = (() => {
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
     S.fanT = 2.2; S.spiritT = 1.6; S.hankoT = 4.0; S.trailT = 0;
     S.choices = []; S.selected = null; S.idle = [];
-    S.areaIdx = 0;
+    S.areaIdx = S.worldIndex;
 
     const runs = getRuns() + 1;
     store.set('om_runs_v1', runs);
@@ -298,22 +325,39 @@ const G = (() => {
 
     UI.show(null);
     UI.hud(true);
-    UI.setMode(S.runMode);
+    UI.setMode(S.runMode, S.level);
     UI.setScore(0);
     UI.setHp(S.stats.hp, S.stats.maxHp);
     UI.setLoadout({});
     S.mode = 'playing';
     startWave(1);
+    return true;
+  }
+
+  function startLevel(worldIndex, level) { return startRun('journey', worldIndex, level); }
+
+  function openCampaign(worldIndex = S.worldIndex) {
+    const progress = CAMPAIGN.read();
+    if (!CAMPAIGN.isWorldUnlocked(worldIndex, progress)) worldIndex = 0;
+    S.worldIndex = worldIndex;
+    S.mode = 'select';
+    UI.hud(false);
+    UI.renderCampaign(progress, worldIndex);
+    UI.show('select');
+    initAttract();
+  }
+
+  function retryOrNext() {
+    if (S.mode !== 'over') return;
+    if (S.runMode === 'endless') return startRun('endless');
+    if (!S.lastVictory) return startLevel(S.worldIndex, S.level);
+    if (!S.nextStage) return openCampaign(S.worldIndex);
+    return startLevel(S.nextStage.worldIndex, S.nextStage.level);
   }
 
   function continueEndless() {
     if (S.mode !== 'over') return;
-    S.runMode = 'endless';
-    UI.setMode(S.runMode);
-    UI.show(null);
-    UI.hud(true);
-    S.mode = 'playing';
-    startWave(S.stats.wave + 1);
+    startRun('endless');
   }
 
   function abandon() {
@@ -373,9 +417,16 @@ const G = (() => {
 
   function showOver(victory) {
     const st = S.stats;
-    const cleared = Math.max(0, st.wave - 1);
+    const cleared = victory ? st.wave : Math.max(0, st.wave - 1);
+    S.lastVictory = !!victory;
+    S.nextStage = null;
+    if (victory && S.runMode === 'journey') {
+      CAMPAIGN.complete(S.worldIndex, S.level);
+      S.nextStage = CAMPAIGN.next(S.worldIndex, S.level);
+    }
     let rank = 'D';
-    for (const [min, r] of CFG.ranks) { if (cleared >= min) { rank = r; break; } }
+    const ranks = S.runMode === 'journey' ? [[10, 'S'], [8, 'A'], [6, 'B'], [3, 'C']] : CFG.ranks;
+    for (const [min, r] of ranks) { if (cleared >= min) { rank = r; break; } }
     const best = getBest();
     const nb = st.score > (best ? best.score : 0);
     if (nb) store.set('om_best_v1', { score: st.score, wave: cleared });
@@ -384,6 +435,8 @@ const G = (() => {
       run: getRuns(), waves: cleared, kills: st.kills,
       time: st.time, score: st.score, rank, newBest: nb,
       mode: S.runMode, victory: !!victory,
+      worldIndex: S.worldIndex, level: S.level, nextStage: S.nextStage,
+      finalCampaign: S.runMode === 'journey' && !S.nextStage,
     });
     UI.hud(false);
     UI.show('over');
@@ -1086,7 +1139,7 @@ const G = (() => {
       if (mk.t <= 0) {
         S.markers.splice(i, 1);
         S.stainQueue.push({ x: mk.x, y: mk.y, r: ENEMIES[mk.type].r * (mk.elite ? 2 : 1.1), alpha: mk.elite ? 0.55 : 0.42, red: !!mk.elite });
-        spawnEnemy(mk.type, mk.x, mk.y, { elite: !!mk.elite });
+        spawnEnemy(mk.type, mk.x, mk.y, { elite: !!mk.elite, boss: !!mk.boss });
         if (mk.elite) { S.shake = Math.max(S.shake, 7); SFX.elite(); }
       }
     }
@@ -1168,8 +1221,8 @@ const G = (() => {
     if (!S.waveActive && S.clearedT > 0) {
       S.clearedT -= dt;
       if (S.clearedT <= 0) {
-        /* the third sheet, washed clean — the scroll ends */
-        if (S.runMode === 'journey' && st.wave >= CFG.wave.wavesPerArea * AREAS.length) {
+        /* Every level is exactly ten waves and a separate run. */
+        if (S.runMode === 'journey' && st.wave >= CAMPAIGN.WAVES_PER_LEVEL) {
           showOver(true);
         } else {
           openUpgrade();
@@ -1231,7 +1284,8 @@ const G = (() => {
     S,
     get mode() { return S.mode; },
     set mode(m) { S.mode = m; },
-    startRun, continueEndless, abandon, deploy, pickAt,
+    startRun, startLevel, openCampaign, retryOrNext, continueEndless, abandon, deploy, pickAt,
+    getCampaign: CAMPAIGN.read,
     update, updateDying, updateIdle, initAttract,
     getBest, getRuns,
   };
