@@ -54,12 +54,15 @@
     UI.show(null);
   }
 
-  let lastMode = 'journey';
-  function start(mode) {
+  function start(mode = 'journey', worldIndex, level) {
     SFX.ensure();
-    R.resetStains(); /* a fresh sheet */
-    G.startRun(mode || lastMode);
-    lastMode = mode || lastMode;
+    if (mode === 'journey' && worldIndex == null) {
+      G.openCampaign();
+      return;
+    }
+    R.resetStains(); /* a fresh sheet, never the previous level's stains */
+    if (mode === 'journey') G.startLevel(worldIndex, level);
+    else G.startRun('endless');
   }
 
   function goMenu() {
@@ -86,7 +89,12 @@
       return;
     }
     if (k === 'Enter') {
-      if (m === 'title' || m === 'over') start();
+      if (m === 'title') start('journey');
+      else if (m === 'over') {
+        SFX.ensure();
+        R.resetStains();
+        G.retryOrNext();
+      }
       else if (m === 'upgrade') G.deploy();
       else if (m === 'paused') resume();
       return;
@@ -135,10 +143,26 @@
   document.getElementById('endlessBtn').addEventListener('click', () => start('endless'));
   document.getElementById('continueBtn').addEventListener('click', () => {
     SFX.ensure();
-    /* the same sheet keeps its stains — no fresh paper here */
+    /* A new Endless run begins on a new sheet. */
+    R.resetStains();
     G.continueEndless();
   });
-  document.getElementById('againBtn').addEventListener('click', () => start());
+  document.getElementById('againBtn').addEventListener('click', () => {
+    SFX.ensure();
+    R.resetStains();
+    G.retryOrNext();
+  });
+  document.getElementById('selectBackBtn').addEventListener('click', goMenu);
+  document.getElementById('campaignWorlds').addEventListener('click', e => {
+    const button = e.target.closest('button[data-world]');
+    if (!button || button.disabled) return;
+    G.openCampaign(Number(button.dataset.world));
+  });
+  document.getElementById('campaignLevels').addEventListener('click', e => {
+    const button = e.target.closest('button[data-level]');
+    if (!button || button.disabled) return;
+    start('journey', G.S.worldIndex, Number(button.dataset.level));
+  });
   document.getElementById('menuBtn').addEventListener('click', goMenu);
   document.getElementById('resumeBtn').addEventListener('click', resume);
   document.getElementById('pauseMenuBtn').addEventListener('click', goMenu);
@@ -170,7 +194,7 @@
     const m = G.mode;
     if (m === 'playing') G.update(dt);
     else if (m === 'dying') G.updateDying(dt);
-    else if (m === 'title' || m === 'over') G.updateIdle(dt);
+    else if (m === 'title' || m === 'select' || m === 'over') G.updateIdle(dt);
 
     ctx.setTransform(G.S.dpr, 0, 0, G.S.dpr, 0, 0);
     R.draw(ctx, now / 1000);
