@@ -108,6 +108,7 @@ const AREAS = [
     mult: { hp: 1, sp: 1, budget: 1 },
     roster: ['pulse', 'dart', 'spit', 'moth', 'split', 'wraith', 'slab'],
     elite: 'slab',
+    mechanic: 'SPLIT BLOOM',
   },
   {
     id: 'II', name: 'NIGHT SCROLL', kanji: '夜', theme: 'dark',
@@ -115,6 +116,7 @@ const AREAS = [
     mult: { hp: 1.55, sp: 1.05, budget: 1.35 },
     roster: ['wraith', 'shade', 'moth', 'kage', 'stilt', 'dart', 'pulseling'],
     elite: 'shade',
+    mechanic: 'PHANTOM AMBUSH',
   },
   {
     id: 'III', name: 'CINNABAR FIELD', kanji: '紅', theme: 'red',
@@ -122,6 +124,7 @@ const AREAS = [
     mult: { hp: 2.35, sp: 1.1, budget: 1.75 },
     roster: ['slab', 'spit', 'oni', 'crane', 'split', 'titan', 'kage'],
     elite: 'oni',
+    mechanic: 'CRIMSON RUSH',
   },
 ];
 
