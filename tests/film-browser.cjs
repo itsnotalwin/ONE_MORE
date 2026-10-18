@@ -83,6 +83,36 @@ async function inspect(browser,name,viewport){
   await page.waitForFunction(()=>G.mode==='playing');
   assert.equal(await page.locator('#firstRunHint').isVisible(),true,
     'first play teaches movement without blocking game input');
+  /* Verify that the user's requested XP bar is physically left-aligned,
+     fills from bottom upward and remains readable on phone dimensions. */
+  const meter=await page.locator('#inkMeter').boundingBox();
+  const track=await page.locator('.ink-meter-track').boundingBox();
+  assert.ok(meter&&track,'vertical ink gauge is visible');
+  assert.ok(meter.x>=0 && meter.x<70,
+    name+' XP meter must sit along the LEFT edge');
+  assert.ok(meter.y>50 && meter.y+meter.height<viewport.height-20,
+    name+' XP meter must not overlap top or bottom control regions');
+  assert.ok(track.height>track.width*8,
+    name+' progress track must be taller than it is wide');
+  await page.evaluate(()=>{
+    const st=G.S.stats;
+    UI.setInkProgress(st.inkRank,INK_XP.needed(st.inkRank)*.6,
+      INK_XP.needed(st.inkRank),false);
+  });
+  await page.waitForTimeout(300);
+  const fill=await page.locator('#inkFill').boundingBox();
+  const orientation=await page.locator('#inkMeter').getAttribute('aria-orientation');
+  assert.equal(orientation,'vertical');
+  assert.ok(fill&&fill.height/track.height>.53&&fill.height/track.height<.65,
+    name+' XP column must fill upward by approximately 60 percent');
+  assert.ok(fill.y>=track.y+track.height*.30 &&
+    fill.y<track.y+track.height*.48,
+    name+' progress fill starts above the BOTTOM of the bar, not the top');
+  await page.screenshot({path:path.join(out,name+'-09-left-vertical-ink-gauge.png')});
+  await page.evaluate(()=>{
+    const st=G.S.stats;
+    UI.setInkProgress(st.inkRank,st.inkXp,INK_XP.needed(st.inkRank),false);
+  });
   const plan=await page.evaluate(()=>({
     stage:G.S.wavePlan?.stage,pattern:G.S.wavePlan?.pattern,
     count:G.S.queue.length,wave:G.S.stats.wave,
@@ -179,7 +209,7 @@ async function inspect(browser,name,viewport){
   await page.screenshot({path:path.join(out,name+'-11-guardian-final-phase.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:16,homeVerified:true,onboardingVerified:true,inkXPVerified:true,stableBrushVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
+  return {name,shots:17,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
