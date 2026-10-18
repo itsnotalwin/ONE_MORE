@@ -645,6 +645,16 @@ const G = (() => {
     });
     S.knotT = CFG.knot.period(S.stats.knot);
     markWeapon('knot',anchor.x,anchor.y,{r:12,alpha:.9});
+    /* The bound thread is also painted onto the paper, in small spaced
+       fibrous marks following its actual path to each selected creature. */
+    for(const target of members){
+      const dx=target.x-anchor.x,dy=target.y-anchor.y;
+      const length=Math.hypot(dx,dy),ang=Math.atan2(dy,dx);
+      const n=Math.min(8,Math.floor(length/28));
+      for(let j=1;j<=n;j++)
+        markWeapon('knot',anchor.x+dx*j/(n+1),
+          anchor.y+dy*j/(n+1),{r:4.5,alpha:.82,angle:ang});
+    }
     SFX.knot();
   }
 
