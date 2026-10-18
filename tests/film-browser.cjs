@@ -94,12 +94,14 @@ async function inspect(browser,name,viewport){
     name+' XP meter must not overlap top or bottom control regions');
   assert.ok(track.height>track.width*8,
     name+' progress track must be taller than it is wide');
+  assert.ok(track.width>=16,
+    name+' the left-hand XP gauge should feel like a thick column of ink');
   await page.evaluate(()=>{
     const st=G.S.stats;
     UI.setInkProgress(st.inkRank,INK_XP.needed(st.inkRank)*.6,
       INK_XP.needed(st.inkRank),false);
   });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(780); // give the thick liquid time to settle
   const fill=await page.locator('#inkFill').boundingBox();
   const orientation=await page.locator('#inkMeter').getAttribute('aria-orientation');
   assert.equal(orientation,'vertical');
@@ -112,12 +114,20 @@ async function inspect(browser,name,viewport){
     };
   });
   assert.ok(bloodInk.gradient && bloodInk.vermilion && bloodInk.depth,
-    name+' XP column must fill with the same red ink as enemy blood');
+    name+' XP column must remain in the original cinnabar palette');
   assert.ok(fill&&fill.height/track.height>.53&&fill.height/track.height<.65,
     name+' XP column must fill upward by approximately 60 percent');
   assert.ok(fill.y>=track.y+track.height*.30 &&
     fill.y<track.y+track.height*.48,
     name+' progress fill starts above the BOTTOM of the bar, not the top');
+  const liquid=await page.locator('#inkFill').evaluate(el=>({
+    width:el.getBoundingClientRect().width,
+    meniscus:getComputedStyle(el,'::before').animationName,
+    timing:getComputedStyle(el).transitionDuration,
+  }));
+  assert.ok(liquid.width>=12,'wet red ink column is not a thin line');
+  assert.equal(liquid.meniscus,'inkMeniscus');
+  assert.ok(parseFloat(liquid.timing)>=.5,'the XP rise has viscous inertia');
   await page.screenshot({path:path.join(out,name+'-09-left-vertical-ink-gauge.png')});
   await page.evaluate(()=>{
     const st=G.S.stats;
