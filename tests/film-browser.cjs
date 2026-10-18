@@ -93,6 +93,34 @@ async function inspect(browser,name,viewport){
   assert.ok(plan.count>0);
   await page.waitForTimeout(1200);
   await page.screenshot({path:path.join(out,name+'-09-wave-director-game.png')});
+  /* Stage 4: living splat cores drift, magnetically absorb and grant a
+     real upgrade mid-wave, without resetting the Wave Director state. */
+  await page.evaluate(()=>{
+    G.S.enemies=[];G.S.queue=['pulse'];G.S.markers=[];
+    G.S.spawnTimer=9999;G.S.player.fireT=9999;
+    INK_XP.drop(G.S.inkDrops,G.S.player.x+87,G.S.player.y+14,5,false,5);
+  });
+  await page.waitForTimeout(160);
+  await page.screenshot({path:path.join(out,name+'-10-living-ink-pickups.png')});
+  await page.evaluate(()=>{
+    INK_XP.drop(G.S.inkDrops,G.S.player.x+75,G.S.player.y,
+      INK_XP.needed(G.S.stats.inkRank),false,8);
+  });
+  await page.waitForFunction(()=>G.mode==='upgrade',null,{timeout:8000});
+  assert.equal(await page.locator('#inkRank').textContent(),'BRUSH 02');
+  assert.equal(await page.locator('#upgradeGrid .up-card').count(),3);
+  await page.screenshot({path:path.join(out,name+'-11-ink-level-up.png')});
+  await page.click('#upgradeGrid .up-card:first-child');
+  await page.click('#deployBtn');
+  await page.waitForFunction(()=>G.mode==='playing');
+  const grown=await page.evaluate(()=>({
+    rank:G.S.stats.inkRank,realRadius:G.S.player.r,drawScale:INK_XP.visualScale(G.S.stats),wave:G.S.stats.wave
+  }));
+  assert.equal(grown.rank,2);
+  assert.equal(grown.wave,1,'leveling does not skip any wave');
+  assert.equal(grown.realRadius,10,'the character only grows visually');
+  assert.ok(grown.drawScale>1,'new rank looks visibly bigger');
+  await page.screenshot({path:path.join(out,name+'-12-grown-brush.png')});
   /* Exercise an actual 3-phase Guardian using the live game loop,
      retaining the same Canvas render path and mobile-sized viewport. */
   await page.evaluate(()=>{
@@ -122,7 +150,7 @@ async function inspect(browser,name,viewport){
   await page.screenshot({path:path.join(out,name+'-11-guardian-final-phase.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:11,homeVerified:true,onboardingVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
+  return {name,shots:14,homeVerified:true,onboardingVerified:true,inkXPVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
