@@ -264,6 +264,9 @@ async function inspect(browser,name,viewport){
      Real phone-sized UI must show red art and not silently grant it. */
   await page.evaluate(()=>{
     G.S.stats.orb=0; G.S.eraserT=0;
+    /* Remove earlier maxed Eraser test rank so Echo is the eligible seal. */
+    G.S.stats.levels.orbit=0;
+    delete G.S.stats.levels.seal_orbit;
     G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.enemies=[];
     G.S.stats.levels.echo=2;G.S.stats.echo=2;
     G.S.stats.inkPending=1;
