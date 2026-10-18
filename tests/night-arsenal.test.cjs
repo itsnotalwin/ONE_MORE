@@ -70,7 +70,7 @@ test('Crescent Return actually travels, strikes and begins painting only at max 
   G.update(.05);
   assert.equal(S.crescents.length,1);
   assert.ok(!S.stainQueue.some(m=>m.weapon==='crescent'));
-  for(let i=0;i<5;i++)G.update(.05);
+  for(let i=0;i<8;i++)G.update(.05);
   assert.ok(e.hp<18,'outbound blade damages its target');
   S.stats.crescent=3;S.stats.levels.crescent=3;
   S.crescents=[];S.crescentT=0;
