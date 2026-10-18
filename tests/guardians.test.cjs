@@ -124,8 +124,13 @@ test('Endless Guardian scaling and run progression remain unaffected',()=>{
   assert.equal(x.G.S.stats.wave,2);
 });
 test('only phase-specific ink visuals changed and original renderer is byte-identical otherwise',()=>{
-  const renderer=file('js/render.js');
-  let source=renderer;
+  /* The Guardian artwork, the rest of the renderer and original
+     combat painter remain frozen; only the player nib was redesigned. */
+  let source=file('js/render.js');
+  const pa=source.indexOf('  /* ---------------- player:');
+  const pb=source.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */',pa);
+  assert.ok(pa>0&&pb>pa);
+  source=source.slice(0,pa)+'  /* PLAYER-RENDER-MASK */\n\n'+source.slice(pb);
   const a=source.indexOf('  /* Phase 3 additions reuse');
   const b=source.indexOf('  function drawRing(c, r) {',a);
   assert.ok(a>0&&b>a);
@@ -139,13 +144,9 @@ test('only phase-specific ink visuals changed and original renderer is byte-iden
     '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
     '       No original creature or player sprite functions are modified. */\n' +
     '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
-  const xpStart=source.indexOf('    if (playing) {\n      /* Growth is visual ONLY');
-  const xpEnd=source.indexOf('    for (const knot of S.knots)',xpStart);
-  assert.ok(xpStart>0&&xpEnd>xpStart);
-  source=source.slice(0,xpStart)+'    if (playing) drawPlayer(ctx, t);\n'+source.slice(xpEnd);
   let h=0x811c9dc5;
   for(let i=0;i<source.length;i++){h^=source.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}
-  assert.equal(h.toString(16).padStart(8,'0'),'84b72d7e');
+  assert.equal(h.toString(16).padStart(8,'0'),'70a61c56');
   assert.ok(file('index.html').includes('<script src="./js/guardians.js"></script>'));
   assert.ok(file('index.html').indexOf('/js/guardians.js')<file('index.html').indexOf('/js/game.js'));
 });
