@@ -1,7 +1,7 @@
 # ONE MORE / PHASE 6
 ## Living Ink, Untouched Paper, Divine Brushstroke & Suiteki Leak
 
-**Status:** Design locked for the next implementation pass; **NOT IMPLEMENTED**.  
+**Status:** IMPLEMENTED on `development`; desktop/mobile browser acceptance under CI review. Physical iPhone Safari review remains outstanding.  
 **Working branch:** `development`. Do not merge to `main` without explicit instruction.  
 **Version:** 1.0, 18 October 2026.  
 **Purpose:** Replace the static-feeling hero motion, restore visual silence to Paper I, make its Guardian attack feel like a deliberate divine brushstroke instead of a road, and replace the existing Ink Trail/blotch weapon with a distinctive inkstone spill. Leave other combat systems and enemy silhouettes intact.
@@ -101,15 +101,15 @@ Damage baseline: at most **1 HP per affected enemy every 0.55 s**, shared across
 
 Keep **Ink Lantern** as the strongest prospective Paper II power: a warm white floating light that reveals phantoms and interrupts one incoming ambush on a readable cooldown. It belongs to Night Scroll, not Paper I, and it should not add permanent marks until maximum ordinary rank. At mastery it can paint black concentric seals; a separate red choice recolors only those seals. Do not implement until the user approves its exact combat tuning and the rest of the Paper II unlock roster. Revisit Crescent Return, Mirror Fold and Shroud Step instead of committing them now.
 
-## 6. Delivery plan and pass/fail acceptance
+## 6. Delivered implementation and pass/fail acceptance
 
-**Milestone A / living hero:** visual-only animation controller, deterministic contour interpolation, real RUN cycle and start/stop/turn/hit/XP/rank-up reactions. Check 393px phone touch movement and desktop keyboard, 30/60 fps playback, reduced motion, hitbox invariance and 20–30 second continuous travel. No rapid full-body wobble and no visual lag behind controls.
+**Milestone A / living hero, implemented:** visual-only animation controller, deterministic contour interpolation, real RUN cycle and start/stop/turn/hit/XP/rank-up reactions. Check 393px phone touch movement and desktop keyboard, 30/60 fps playback, reduced motion, hitbox invariance and 20–30 second continuous travel. No rapid full-body wobble and no visual lag behind controls.
 
-**Milestone B / Paper I:** theme-scoped flat warm sheet and no automatic Paper-I background decor. Preserve Paper II and III bytes/visuals and all stage blood/weapon stamp logic. Compare clean starting screenshot and fully painted wave 10 screenshot at mobile and desktop sizes.
+**Milestone B / Paper I, implemented:** theme-scoped flat warm sheet and no automatic Paper-I background decor. Preserve Paper II and III bytes/visuals and all stage blood/weapon stamp logic. Compare clean starting screenshot and fully painted wave 10 screenshot at mobile and desktop sizes.
 
-**Milestone C / heavenly Guardian:** pure cubic hit shape tested for inside/outside/edge/taper; matching warning/render/collision; 1.15/1.25 second readable telegraph; normal versus final Guardian phase count protected; safe lanes on narrow screens; never use ordinary dark-paper attacks for Paper I.
+**Milestone C / heavenly Guardian, implemented:** pure cubic hit shape tested for inside/outside/edge/taper; matching warning/render/collision; 1.15/1.25 second readable telegraph; normal versus final Guardian phase count protected; safe lanes on narrow screens; never use ordinary dark-paper attacks for Paper I.
 
-**Milestone D / Suiteki Leak:** 3 upgrade ranks, preserved save IDs, timed wet area and non-stacking 0.55 s damage; placement cap; no permanent terrain before rank 3; black permanent stain at rank 3; only selected `seal_trail` makes permanent stain crimson; Eraser clears dried stain without retroactively cancelling a living spill; wave-to-wave stamp persistence.
+**Milestone D / Suiteki Leak, implemented:** 3 upgrade ranks, preserved save IDs, timed wet area and non-stacking 0.55 s damage; placement cap; no permanent terrain before rank 3; black permanent stain at rank 3; only selected `seal_trail` makes permanent stain crimson; Eraser clears dried stain without retroactively cancelling a living spill; wave-to-wave stamp persistence.
 
 **Required final QA:** all unit and regression suites, Playwright desktop + phone visual smoke screenshots and real user review on iPhone Safari for long stages. Do not claim manual phone testing unless performed. Keep `main` untouched.
 
@@ -119,3 +119,14 @@ Keep **Ink Lantern** as the strongest prospective Paper II power: a warm white f
 - The Metropolitan Museum of Art: https://www.metmuseum.org/ja/essays/japanese-writing-boxes  
 - Tokyo National Museum: https://www.tnm.jp/modules/r_free_page/index.php?id=224&lang=en  
 - The Metropolitan Museum of Art, suzuribako waterfall: https://www.metmuseum.org/art/collection/search/57603
+
+## Implementation verification
+
+- `js/game.js`: delta-time-driven visual-only hero locomotion and reaction state, staggered Guardian warning/impact lifecycle, capped Suiteki placement and global per-enemy damage throttle.
+- `js/render.js`: near-blank Paper-I tile, world-I decorative bypass, continuous two-fold run cycle, sampled divine ink warning/strike, four spill variants and rank-three pool residue.
+- `js/guardians.js`: pure Bézier point sampling reused by tapered calligraphy hit tests.
+- `js/config.js`: three-rank Suiteki cooldown/size/lifetime configuration and the existing `trail`, `trailW`, `seal_trail` IDs.
+- `tests/phase6.test.cjs`: animation states and unchanged collision radius, Paper I tile, divine geometry, Suiteki capacity, black/red mastery and nonstacking overlap tests.
+- `tests/film-browser.cjs`: desktop/phone checks of character RUN and Guardian path. Existing art/XP/weapon tests remain enabled.
+
+Live play and late-stage performance on a **physical iPhone Safari** are still a separate acceptance step. The First Paper Guardian HP/difficulty pass and Ink Lantern unlock logic remain intentionally deferred.
