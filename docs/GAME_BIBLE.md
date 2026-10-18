@@ -309,6 +309,10 @@ The director chooses:
 
 **Verification:** `tests/story.test.cjs` covers the film/replay while the full Node test suite protects combat and progression. Real Chromium at desktop and mobile dimensions screenshots the new home, onboarding, campaign and in-game sequences. Physical iPhone Safari review of touch spacing and transitions remains an acceptance step.
 
+## Phase 6 / locked visual and combat design (not implemented)
+
+The agreed next-pass blueprint is [**Living Ink, Untouched Paper, Divine Brushstroke & Suiteki Leak**](PHASE-6-LIVING-INK-DESIGN-SPEC.md). It specifies the ink-soul's RUN/start/stop/turn/hit/pickup animation state machine; flat almost-unmarked Paper I ivory washi; Paper I Guardian's authored Heaven Stroke/Crossing/Hook hazard geometry and matched collision/telegraph; and replacing the current Ink Trail with an inkstone/suiteki spill while preserving `trail`, `trailW`, `seal_trail` and two-step terrain-color progression. It also documents the deferred Paper II Ink Lantern concept and strict art/performance/regression acceptance tests. **This is documentation only. No Phase 6 gameplay/rendering changes have been committed yet; Paper I Guardian difficulty and Paper II abilities remain outside this approved blueprint implementation.**
+
 ## First Wash pacing and Night Scroll clarity (development)
 
 **Implemented.** Eraser’s circular clearing field now scales through **65 / 100 / 135 px** for ranks 1–3; its previous starting size is its new maximum. Eraser damage remains **1 per enemy per 0.82 s** with the same erasure cadence and red-seal progression. It is much less dominant immediately after selection.
