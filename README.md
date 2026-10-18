@@ -21,13 +21,13 @@ The ink remembers every stroke.</p>
 
 The old wave-only upgrade reward has been replaced by **recoverable ink XP**. Each defeated enemy leaves its ordinary sumi-e stain behind, plus a small living ink kernel. Wander near the kernel and it spirals into the brush, with hand-drawn lines and a cinnabar center. At the end of each wave, the remaining living ink streams across the sheet to the player rather than being lost off-screen.
 
-Your **BRUSH rank** is shown on a compact XP meter. When it fills, pick one of the existing three-card upgrades and jump back into the *same* fight. Several rank-ups can queue independently. Later worlds and levels yield stronger ink so your development doesn't stall as enemies toughen. Higher brush rank and maximum health subtly refine the brush nib and its ink richness, capped at **1.18× apparent size**, while **the collision hitbox remains unchanged**. New runs start fresh, respecting the ten-wave independent level progression.
+Your **BRUSH rank** is displayed in a slim XP meter on the **left side**, filling upward vertically. When it fills, pick one of the existing three-card upgrades and jump back into the *same* fight. Several rank-ups can queue independently. Later worlds and levels yield stronger ink so your development doesn't stall as enemies toughen. Higher brush rank and maximum health subtly refine the brush nib and its ink richness, capped at **1.18× apparent size**, while **the collision hitbox remains unchanged**. New runs start fresh, respecting the ten-wave independent level progression.
 
 Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
 
 ## Phase 4A: the awakened brush and living ink seeds (development)
 
-The brush now retains a consistent calligraphic silhouette while moving, rather than randomly changing its outline as its coordinates change. Visual aim and movement are smoothly eased; rank and bonus-integrity growth affects the brush nib only, capped at **1.18× apparent scale**. A finer dry-brush tail, subtle tier-based bristles, quieter recoil, and a calm invulnerability ring replace exaggerated wobble. **Combat speed, collision radius, weapon orbits and the original enemy artwork remain unchanged.**
+The original **rounded, living ink blob has been restored**, now with gently morphing brush-painted edges instead of the flattened nib silhouette. Its outline is seeded once per run, so moving doesn't randomly redraw it. Aim and tail movement remain smoothly eased, and rank growth is capped at **1.18× apparent scale**. **Combat speed, collision radius, weapon orbits and the original enemy artwork remain unchanged.**
 
 XP pickups are now **five variations of living ink seeds**, not regular circular orbs. They emerge from the original enemy splats and stretch into tapered ink ribbons when being recalled. No change was made to the XP reward values, level curve, acquisition magnet physics, or automatic wave-end banking.
 
