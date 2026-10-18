@@ -12,8 +12,9 @@ const INK_XP = (() => {
     maxRadius: 6.7,
     worldBoost: 0.12,
     stageBoost: 0.022,
-    levelGrowth: .035,
-    hpGrowth: .018,
+    /* Cosmetic silhouette growth only. HP adds pigment, not a larger hitbox. */
+    levelGrowth: .012,
+    hpGrowth: .006,
   };
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   /* Early ranks arrive quickly. After Brush 09 the rising cost prevents
@@ -33,8 +34,20 @@ const INK_XP = (() => {
     if(!stats)return 1;
     const rank=Math.max(1,stats.inkRank||1);
     const bonus=Math.max(0,(stats.maxHp||3)-3);
-    return clamp(1+Math.min(rank-1,20)*CFG_XP.levelGrowth+
-      Math.min(bonus,10)*CFG_XP.hpGrowth,1,1.55);
+    /* First three ranks keep the silhouette's original size. By rank 15
+       it grows only ~14%, with up to 4% more pigment for extra integrity. */
+    return clamp(1+Math.min(Math.max(0,rank-3),12)*CFG_XP.levelGrowth+
+      Math.min(bonus,6)*CFG_XP.hpGrowth,1,1.18);
+  }
+  function visualForm(stats) {
+    const rank=Math.max(1,stats?.inkRank||1);
+    const tier=rank>=15?3:rank>=9?2:rank>=4?1:0;
+    return {
+      tier,
+      scale:visualScale(stats),
+      bristles:tier>=2?3:tier>=1?2:1,
+      pigment:clamp(.88+Math.max(0,(stats?.maxHp||3)-3)*.012,.88,.97),
+    };
   }
   function seedDrop(x,y,value,i,n,seed){
     const a=Math.PI*2*(i/n)+(seed%11)*.12;
@@ -99,35 +112,74 @@ const INK_XP = (() => {
       }
     }
   }
-  /* Same handmade shapes as paper stains, with a living cinnabar center.
-     Night Scroll colors are passed in from the active renderer palette. */
+  /* Each living seed is a recognizable calligraphic nib, never a circle.
+     Geometry depends only on its drop seed and its current homeward direction.
+     The dried splat remains permanently painted underneath it. */
   function draw(c,S,t,ink,paper,red){
     const p=S.player;
-    const bounds={x0:S.cam.x-S.W*.6,x1:S.cam.x+S.W*.6,
-      y0:S.cam.y-S.H*.6,y1:S.cam.y+S.H*.6};
+    const bounds={x0:S.cam.x-S.W*.60,x1:S.cam.x+S.W*.60,
+      y0:S.cam.y-S.H*.60,y1:S.cam.y+S.H*.60};
+    let detailed=0;
     for(const d of S.inkDrops||[]){
       if(d.x<bounds.x0||d.x>bounds.x1||d.y<bounds.y0||d.y>bounds.y1)continue;
-      const radius=clamp(CFG_XP.minRadius+Math.sqrt(d.value)*.65,
-        CFG_XP.minRadius,CFG_XP.maxRadius);
-      const beat=S.reduced?1:1+.10*Math.sin(t*4+d.pulse);
-      c.save();c.translate(d.x,d.y);c.rotate(Math.sin(d.pulse)*.25);
-      if(d.homing&&!S.reduced){
-        const vx=p.x-d.x,vy=p.y-d.y;
-        const dist=Math.hypot(vx,vy)||1;
-        const trail=Math.min(35,dist*.24);
-        c.globalAlpha=.30;c.strokeStyle=red;c.lineWidth=1.1;c.lineCap='round';
-        c.beginPath();c.moveTo(0,0);
-        c.quadraticCurveTo(-vx/dist*trail*.4+Math.sin(t*7+d.pulse)*3,
-          -vy/dist*trail*.4,-vx/dist*trail,-vy/dist*trail);c.stroke();
+      const r=clamp(2.7+Math.sqrt(Math.max(1,d.value))*.33,2.7,5.4);
+      const seed=d.pulse||0, variant=(Math.floor(Math.abs(seed)*19)%5);
+      const bloom=clamp((d.age||.19)/.19,0,1);
+      const homing=!!d.homing;
+      const dir=homing?Math.atan2(p.y-d.y,p.x-d.x)
+        :Math.atan2(d.vy||0,d.vx||1);
+      const sway=S.reduced?0:Math.sin(t*1.9+seed)*.035;
+      const trailLen=homing&&!S.reduced?Math.min(21,8+Math.hypot(p.x-d.x,p.y-d.y)*.085):0;
+      const body=r*(.94+.06*bloom);
+      c.save();
+      c.translate(d.x,d.y);
+      c.rotate(dir+sway);
+      c.globalAlpha=.68+.16*bloom;
+      c.fillStyle=ink;
+      /* A five-variant silhouette family, stable for the entire lifetime
+         of each kernel; only the ink's direction and length are animated. */
+      c.beginPath();
+      c.moveTo(body*1.35,0);
+      c.bezierCurveTo(body*.3,-body*(.6+variant*.055),
+        -body*.64,-body*.78,-body*.9,-body*.14);
+      c.lineTo(-body*(1.14+variant*.045),-body*.31);
+      c.lineTo(-body*.79,body*.05);
+      c.lineTo(-body*(1.08+(4-variant)*.03),body*.32);
+      c.bezierCurveTo(-body*.48,body*(.62+variant*.03),
+        body*.32,body*.56,body*1.35,0);
+      c.fill();
+      if(detailed++<80){
+        /* The old trail behind a marble becomes a tapered ink ribbon
+           physically connected to the nib while it returns home. */
+        if(trailLen>0){
+          c.globalAlpha=.38;
+          c.beginPath();
+          c.moveTo(-body*.54,-body*.28);
+          c.quadraticCurveTo(-body-trailLen*.44,-body*(.15+variant*.06),
+            -body-trailLen,-body*.06);
+          c.quadraticCurveTo(-body-trailLen*.62,body*.10,
+            -body*.78,body*.19);
+          c.closePath();
+          c.fill();
+          if(trailLen>13){
+            c.globalAlpha=.22;c.lineWidth=.55;c.strokeStyle=ink;
+            c.beginPath();c.moveTo(-body*.85,body*.2);
+            c.quadraticCurveTo(-body-trailLen*.55,body*.62,
+              -body-trailLen*.88,body*.42);c.stroke();
+          }
+        }else if(!S.reduced&&bloom>.4){
+          c.globalAlpha=.30;c.lineWidth=.65;c.strokeStyle=ink;
+          c.beginPath();c.moveTo(-body*.64,-body*.12);
+          c.lineTo(-body*(1.48+variant*.065),-body*.37);c.stroke();
+        }
+        /* Cinnabar is a rare registration fleck, not an orb's red center. */
+        if(variant===0 && d.value>=6){
+          c.fillStyle=red;c.globalAlpha=.65;
+          c.fillRect(body*.15,-body*.12,.8,.8);
+        }
       }
-      c.globalAlpha=.85;c.scale(beat,beat);
-      c.fillStyle=ink;c.beginPath();c.arc(0,0,radius,0,Math.PI*2);c.fill();
-      c.globalAlpha=.80;c.strokeStyle=paper;c.lineWidth=.7;
-      c.beginPath();c.arc(0,0,radius*.6,-.55,2.1);c.stroke();
-      c.fillStyle=red;c.globalAlpha=.90;
-      c.beginPath();c.arc(radius*.12,-radius*.15,Math.max(.75,radius*.24),0,Math.PI*2);c.fill();
       c.restore();
     }
   }
-  return { needed,value,visualScale,drop,grant,update,draw,CFG_XP };
+  return { needed,value,visualScale,visualForm,drop,grant,update,draw,CFG_XP };
 })();
