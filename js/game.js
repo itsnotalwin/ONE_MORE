@@ -1492,8 +1492,12 @@ const G = (() => {
     const cap = CFG.wave.concurrentCap(S.stats.wave, S.areaIdx);
     const alive = S.enemies.length + S.markers.length;
     if (S.spawnTimer <= 0 && S.markers.length < 6 && alive < cap) {
-      const baseGroup = CFG.wave.groupSize(S.stats.wave, S.areaIdx);
-      const pacedGroup = director ? Math.max(1, Math.round(baseGroup * director.size)) : baseGroup;
+      const baseGroup=CFG.wave.groupSize(S.stats.wave,S.areaIdx);
+      const openingGroup=S.runMode==='journey'
+        ? CFG.wave.openingGroup(S.worldIndex,S.level):1;
+      const pacedGroup=director
+        ? Math.max(1,Math.round(baseGroup*director.size*openingGroup))
+        : baseGroup;
       const group = Math.min(pacedGroup, S.queue.length, cap - alive, 6 - S.markers.length);
       if (group <= 0) return;
       const sides = director ? null : shuffle([0, 1, 2, 3]);
@@ -1509,8 +1513,10 @@ const G = (() => {
           t: director ? director.telegraph : 0.62,
         });
       }
-      S.spawnTimer = director
-        ? Math.max(0.42, CFG.wave.groupInterval(S.stats.wave) * director.rate)
+      const openingPace=S.runMode==='journey'
+        ? CFG.wave.openingPace(S.worldIndex,S.level):1;
+      S.spawnTimer=director
+        ? Math.max(.42,CFG.wave.groupInterval(S.stats.wave)*director.rate*openingPace)
         : CFG.wave.groupInterval(S.stats.wave);
     }
   }
