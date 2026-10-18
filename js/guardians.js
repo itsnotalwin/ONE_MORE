@@ -13,7 +13,7 @@ const GUARDIANS = (() => {
       : (ratio <= .52 ? 2 : 1);
   };
   const titles = [
-    ['THE BROKEN LINE', 'THE PAGE SPLITS', 'THE FIRST SEAL'],
+    ['THE HAND ABOVE', 'THE CROSSING', 'THE HEAVENLY HOOK'],
     ['THE FALSE REFLECTION', 'THE DOUBLE SHADOW', 'THE NIGHT SEAL'],
     ['THE RED IMPRINT', 'THE SECOND SEAL', 'THE CINNABAR CROWN'],
   ];
