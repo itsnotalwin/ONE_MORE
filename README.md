@@ -5,9 +5,10 @@
 <p align="center"><strong>THE LAST STROKE</strong> · AN EXPERIMENTAL FULL-MOTION INK SHORT FILM<br/>
 The ink remembers every stroke.</p>
 
-> **Experimental story branch:** [experiment/the-last-stroke](https://github.com/itsnotalwin/ONE_MORE/tree/experiment/the-last-stroke). This is a creative preview, **not the live production release**. The current original game remains on [main](https://github.com/itsnotalwin/ONE_MORE/tree/main).
+> **Active live test build:** [development](https://github.com/itsnotalwin/ONE_MORE/tree/development). The main branch remains unchanged and the short film is under review in [draft PR #5](https://github.com/itsnotalwin/ONE_MORE/pull/5).
 
-**Watch the animated build:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. The owner approved using the public [ONE MORE Pages URL](https://itsnotalwin.github.io/ONE_MORE/) to test the `development` branch. **Action still required:** an automated source-switch attempt was rejected by GitHub (HTTP 403: insufficient settings privileges). In [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages), set **Deploy from a branch → development → / (root) → Save**. Do not interpret successful branch checks as proof the live source was switched.
+**Watch the animated short film:** [Play ONE MORE on the live development Pages site](https://itsnotalwin.github.io/ONE_MORE/). GitHub's [Pages build and deployment succeeded on the development commit](https://github.com/itsnotalwin/ONE_MORE/actions/runs/39126685811). The film starts automatically. Alternative: [third-party branch preview](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html). To switch back to the original release, set GitHub Pages publishing source to `main` in [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages).
+
 
 ## A story hidden beneath the paper
 
