@@ -17,6 +17,14 @@ The ink remembers every stroke.</p>
 
 **Development milestone 03 / Multi-phase Guardians:** First Wash cracks the paper with ink seams, Night Scroll lashes out with targeted shadow rays, and Cinnabar Field brands the ground with delayed red seals. All three encounters have dodgeable warnings, distinct HP-based phase changes, short impact windows and a restrained, in-world Guardian HP bar. Final Level 10 world bosses have three phases; regular wave-10 Guardians have two. The original enemy art and movement remain intact. Implemented directly in `development`, still under evaluation. See [Guardian architecture and roadmap](docs/GAME_BIBLE.md#guardian-encounters--phase-3-development) and [automated Guardian tests](tests/guardians.test.cjs).
 
+## Home screen and first-stroke onboarding (development)
+
+The starting experience is mobile-first without replacing the original sumi-e/washi art. The title now has one obvious **BEGIN JOURNEY** action, a quieter **ENDLESS MODE** choice and compact links to **HOW TO PLAY**, the animated film and the Chronicle. A short, optional instruction sheet explains drag/WASD movement, automatic combat, upgrades and ten-wave runs. A small non-blocking hint appears only on the first real gameplay run. Returning players can jump straight into the scroll selection.
+
+The film still autoplays on every page load, as requested. Frame transitions now capture the exact outgoing film image, dissolve using eased interpolation and crossfade the final scene into the home screen instead of cutting hard. Reduced-motion users get a direct transition without unnecessary effects.
+
+Implementation: `css/home.css` (isolated additive title styling), `index.html` (title hierarchy and help sheet), `js/intro.js` (film transition), and `js/main.js` (onboarding controls). The original combat renderer, boss patterns, effects, upgrades, campaign progression and `main` branch are unchanged. These refinements are being tested on **`development` only**.
+
 ## A story hidden beneath the paper
 
 Before the world had a name, there was paper. The Painter imagined mountains, rivers, and living things in a single breath. But ink seeped through the other side, and abandoned marks learned to move. Afraid of these mistakes, the Painter tried to wash everything away. One unfinished brushstroke survived.
