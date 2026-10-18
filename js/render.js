@@ -1628,5 +1628,16 @@ const R = (() => {
     }
   }
 
-  return { draw, resetStains };
+  /* A small read-only inspection surface for cross-wave visual QA.
+     It is not part of gameplay or the per-frame paint path. */
+  function terrainStats(){
+    const weapons={};let blood=0;
+    for(const mark of stains){
+      if(mark.kind==='blood')blood++;
+      else weapons[mark.kind]=(weapons[mark.kind]||0)+1;
+    }
+    return {total:stains.length,blood,weapons};
+  }
+
+  return { draw, resetStains, terrainStats };
 })();
