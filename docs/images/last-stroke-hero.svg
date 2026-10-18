@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+<title id="title">ONE MORE: The Last Stroke, illustrated story title card</title>
+<desc id="desc">Original SVG illustration, not a gameplay screenshot: dark sumi-ink mountains on washi, a brush-spirit and restrained vermilion seal beneath a Japanese-inspired typographic title.</desc>
+<defs>
+ <filter id="fiber"><feTurbulence baseFrequency=".64" numOctaves="3" seed="19" type="fractalNoise"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".08"/></feComponentTransfer></filter>
+ <filter id="bleed" x="-7%" y="-7%" width="114%" height="114%"><feTurbulence type="fractalNoise" baseFrequency=".024" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5"/></filter>
+ <linearGradient id="wash" x2="0" y2="1"><stop stop-color="#ede7d9"/><stop offset="1" stop-color="#dbd3c2"/></linearGradient>
+ <linearGradient id="mist" x2="0" y2="1"><stop stop-color="#ede7d9" stop-opacity="0"/><stop offset=".52" stop-color="#ede7d9" stop-opacity=".83"/><stop offset="1" stop-color="#ede7d9" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="1440" height="720" fill="url(#wash)"/><rect width="1440" height="720" filter="url(#fiber)" opacity=".8"/>
+<g filter="url(#bleed)" fill="#1a1714">
+ <path opacity=".12" d="M0 510 80 428 124 466 222 312 310 421 403 338 500 466 640 307 755 448 833 328 933 466 1080 357 1203 452 1330 321 1440 467 1440 720H0Z"/>
+ <path opacity=".24" d="M0 590 118 470 202 541 360 392 501 545 597 470 697 564 870 429 960 549 1098 416 1260 546 1370 432 1440 505V720H0Z"/>
+ <path opacity=".29" d="M0 645 97 539 209 599 318 502 412 612 531 526 647 616 766 520 888 644 1001 531 1120 605 1253 511 1370 604 1440 570V720H0Z"/>
+</g>
+<rect x="0" y="474" width="1440" height="126" fill="url(#mist)"/>
+<rect x="0" y="574" width="1440" height="115" fill="url(#mist)"/>
+<g stroke="#1a1714" stroke-linecap="round" fill="none">
+ <path stroke-width="15" opacity=".6" d="M140 566Q377 547 521 565T900 561Q1112 545 1309 561"/>
+ <path stroke-width="3" opacity=".28" d="M188 580Q404 554 581 570T1011 561"/>
+</g>
+<g transform="translate(1130 476) rotate(-11)">
+ <path d="M0 -82C55 -84 85 -42 79 10 73 58 35 87 -8 83 -44 78 -73 43 -65 2 -61 -46 -41 -81 0 -82Z" fill="#1a1714" filter="url(#bleed)"/>
+ <path d="M-28 49Q-45 109 -90 143" stroke="#1a1714" stroke-width="16" stroke-linecap="round" fill="none"/>
+ <path d="M-5 7 17 4" stroke="#ede7d9" stroke-width="8" stroke-linecap="round"/>
+ <circle cx="18" cy="-19" r="7" fill="#b23a2b"/>
+</g>
+<g fill="#b23a2b" opacity=".9"><circle cx="1022" cy="587" r="6"/><circle cx="1008" cy="608" r="2.3"/><circle cx="1066" cy="624" r="3.5"/></g>
+<text x="82" y="96" font-family="IBM Plex Mono,monospace" font-size="14" letter-spacing="6" fill="#b23a2b">墨  /  AN INK-BORN SURVIVAL</text>
+<text x="81" y="220" font-family="Georgia,'Zen Antique',serif" font-size="124" fill="#1a1714" letter-spacing="-5">ONE MORE.</text>
+<text x="86" y="279" font-family="IBM Plex Mono,monospace" font-size="23" fill="#554c40" letter-spacing="9">THE LAST STROKE</text>
+<path d="M88 321Q327 310 480 319T804 311" fill="none" stroke="#1a1714" stroke-width="7" opacity=".75"/>
+<text x="87" y="373" font-family="Georgia,'Zen Antique',serif" font-size="22" fill="#1a1714">Before the brush can fight, it must remember why.</text>
+<g transform="translate(1288 84) rotate(7)">
+ <rect width="92" height="92" fill="none" stroke="#b23a2b" stroke-width="4"/>
+ <text x="46" y="67" text-anchor="middle" fill="#b23a2b" font-family="Georgia,serif" font-size="66">一</text>
+</g>
+<text x="86" y="679" font-family="IBM Plex Mono,monospace" font-size="13" fill="#1a1714" letter-spacing="4">THREE SCROLLS  /  TEN LEVELS EACH  /  THE PAPER NEVER ENDS</text>
+<text x="1355" y="679" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="12" fill="#b23a2b" letter-spacing="3">STORY EXPERIMENT 001</text>
+</svg>
