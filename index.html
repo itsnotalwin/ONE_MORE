@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Zen+Antique&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./css/style.css" />
 <link rel="stylesheet" href="./css/intro.css" />
+<link rel="stylesheet" href="./css/home.css" />
 </head>
 <body>
 <!-- hand-wobble filter: gives every ink border a brushed edge -->
@@ -32,6 +33,10 @@
 </svg>
 
 <div id="stage">
+  <div id="firstRunHint" class="first-run-hint hidden" role="status" aria-live="polite" aria-atomic="true">
+    <span class="first-run-seal" aria-hidden="true">一</span>
+    <span><strong>YOUR FIRST STROKE</strong><small>DRAG TO MOVE · AUTO-FIRE · SURVIVE TEN WAVES</small></span>
+  </div>
   <canvas id="game"></canvas>
 
   <!-- ============ IN-RUN HUD ============ -->
@@ -83,7 +88,7 @@
       <span class="intro-count" id="introCount" aria-label="Film playback time">00:00 / 01:01</span>
       <div class="intro-film-actions">
         <button id="introSound" class="intro-minor" type="button" aria-pressed="false">SOUND OFF</button>
-        <button id="introSkip" class="intro-minor intro-skip" type="button" aria-label="Skip short film and enter game">SKIP FILM ↗</button>
+        <button id="introSkip" class="intro-minor intro-skip" type="button" aria-label="Skip short film and go to the main menu">SKIP FILM ↗</button>
       </div>
     </div>
     <div id="introContent" class="intro-content" aria-live="polite">
@@ -113,58 +118,70 @@
     </div>
   </section>
 
-  <!-- ============ TITLE SCREEN ============ -->
-  <section id="screenTitle" class="screen screen-title">
-    <!-- the great brush circle, drawn once per visit -->
+  <!-- ============ TITLE / MOBILE-FIRST INK HOME ============ -->
+  <section id="screenTitle" class="screen screen-title" aria-label="ONE MORE main menu">
     <svg class="enso" viewBox="0 0 640 640" aria-hidden="true">
       <path class="enso-main" pathLength="100" d="M560.3 277.6 A 244 244 0 1 0 449.3 526.9" />
       <path class="enso-echo" pathLength="100" d="M539.2 257.2 A 228 228 0 1 0 419.9 524.9" />
       <circle class="enso-seal" cx="546" cy="304" r="7" />
     </svg>
-
-    <header class="masthead">
-      <span class="mast-vert" aria-hidden="true">墨一色</span>
-      <span class="mast-left">THE INK REMEMBERS<br/>EVERY STROKE</span>
-      <span class="mast-mid">SUMI-E SURVIVAL — INK EDITION No.1</span>
-      <span class="mast-right">SINGLE BRUSH<br/>NO MERCY</span>
+    <header class="home-top">
+      <div class="home-brand"><span class="home-brand-seal" aria-hidden="true">一</span><span>ONE MORE <small>AN INK-BORN SURVIVAL</small></span></div>
+      <span class="home-edition">墨 · VOL. 01</span>
     </header>
-    <div class="seal-vert" aria-hidden="true">一</div>
 
-    <div class="title-main">
-      <div class="title-chip">A MONOCHROME SURVIVAL</div>
-      <h1 class="title-word">ONE&nbsp;MORE</h1>
-      <svg class="swash" viewBox="0 0 320 26" aria-hidden="true">
-        <path d="M4 15 C 60 6, 150 4, 316 11 C 230 15, 120 19, 40 18 C 24 17.6, 12 16.6, 4 15 Z" fill="currentColor"/>
-        <circle cx="312" cy="16.5" r="2.4" fill="currentColor"/>
-        <circle cx="296" cy="19" r="1.3" fill="currentColor"/>
-      </svg>
-      <p class="title-sub">No walls. No arena. One endless sheet of washi under your brush.<br/>Three scrolls. Ten levels per scroll. Ten waves per level. Each level begins a new run.</p>
-      <div class="mode-row">
-        <button id="playBtn" class="play-btn">
-          <span class="play-seal" aria-hidden="true">一</span>
-          <span class="play-label">THE JOURNEY — <span id="runNo">RUN 001</span></span>
-        </button>
-        <button id="endlessBtn" class="endless-btn" title="Endless waves across turning sheets">
-          <span class="endless-kanji" aria-hidden="true">無</span>
-          <span class="play-label">THE ENDLESS SCROLL</span>
-        </button>
+    <main class="home-content">
+      <div class="home-hero">
+        <span class="home-eyebrow">THE INK REMEMBERS EVERY STROKE</span>
+        <h1 class="title-word">ONE<span>MORE<span class="home-period">.</span></span></h1>
+        <svg class="swash" viewBox="0 0 320 26" aria-hidden="true">
+          <path d="M4 15 C 60 6, 150 4, 316 11 C 230 15, 120 19, 40 18 C 24 17.6, 12 16.6, 4 15 Z" fill="currentColor"/>
+          <circle cx="312" cy="16.5" r="2.4" fill="currentColor"/>
+        </svg>
+        <p class="home-tagline">One brush. Three scrolls.<br/>Keep the ink alive.</p>
       </div>
-      <p class="mode-note">TEN WAVES A LEVEL · TEN LEVELS A SCROLL · ONE MORE RUN</p>
-      <div class="story-title-actions">
-        <button id="replayIntroBtn" type="button" class="story-title-action">↻ WATCH THE PROLOGUE</button>
-        <span aria-hidden="true" class="story-title-divider">/</span>
-        <button id="chronicleBtn" type="button" class="story-title-action">THE CHRONICLE ↗</button>
+
+      <nav class="home-actions" aria-label="Game modes and information">
+        <button id="playBtn" class="home-play" type="button">
+          <span class="home-play-icon" aria-hidden="true">一</span>
+          <span class="home-play-copy"><strong>BEGIN JOURNEY</strong><small>30 LEVELS · 3 SCROLLS</small></span>
+          <span class="home-play-arrow" aria-hidden="true">↗</span>
+        </button>
+        <button id="endlessBtn" class="home-endless" type="button">
+          <span class="home-endless-kanji" aria-hidden="true">無</span>
+          <span>ENDLESS MODE</span>
+          <span aria-hidden="true">↗</span>
+        </button>
+        <p class="home-progress"><span id="runNo">RUN 001</span><span class="home-progress-divider" aria-hidden="true">·</span><span id="bestLine" class="best-line hidden"></span></p>
+        <div class="home-links">
+          <button id="howToPlayBtn" type="button">HOW TO PLAY</button>
+          <span aria-hidden="true">/</span>
+          <button id="replayIntroBtn" type="button">WATCH FILM</button>
+          <span aria-hidden="true">/</span>
+          <button id="chronicleBtn" type="button">CHRONICLE</button>
+        </div>
+      </nav>
+    </main>
+    <footer class="home-bottom">
+      <span>墨 · A LIVING SHEET OF PAPER</span>
+      <span>DRAG TO MOVE · THE BRUSH FIRES ITSELF</span>
+    </footer>
+    <!-- Keep the enemy vocabulary available for the original UI helpers. -->
+    <div class="home-supplement hidden" aria-hidden="true">
+      <div id="enemyLegend"></div><div id="tickerTrack"></div>
+    </div>
+    <dialog id="howToPlayDialog" class="home-help" aria-labelledby="helpTitle">
+      <div class="home-help-head"><span>墨 / YOUR FIRST STROKE</span><button id="helpClose" type="button" aria-label="Close instructions">✕</button></div>
+      <span class="home-help-mark" aria-hidden="true">一</span>
+      <h2 id="helpTitle">The paper is yours.</h2>
+      <p class="home-help-intro">Every journey is ten waves. Survive, choose a new stroke, and keep drawing.</p>
+      <div class="home-help-steps">
+        <div><span>01</span><p><strong>MOVE</strong>Drag anywhere to guide the brush. On desktop, use WASD or arrows.</p></div>
+        <div><span>02</span><p><strong>FIGHT</strong>The brush fires on its own. Dodge ink beasts and watch their warning marks.</p></div>
+        <div><span>03</span><p><strong>GROW</strong>Pick one upgrade between waves. Survive all ten to unseal the next level.</p></div>
       </div>
-      <p class="best-line hidden" id="bestLine"></p>
-    </div>
-
-    <div class="title-foot">
-      <div class="beasts-head"><span class="bh-rule"></span>THE FOURTEEN BEASTS · THREE SHEETS · THE INK REMEMBERS<span class="bh-rule"></span></div>
-      <div class="enemy-legend" id="enemyLegend" aria-hidden="true"></div>
-      <div class="controls-line">WASD — MOVE&nbsp;&nbsp;·&nbsp;&nbsp;THE BRUSH FIRES ITSELF&nbsp;&nbsp;·&nbsp;&nbsp;THE SHEET IS ENDLESS — WALK ANYWHERE&nbsp;&nbsp;·&nbsp;&nbsp;P — PAUSE&nbsp;&nbsp;·&nbsp;&nbsp;M — SOUND</div>
-    </div>
-
-    <footer class="ticker" aria-hidden="true"><div class="ticker-track" id="tickerTrack"></div></footer>
+      <button id="helpDone" class="home-help-start" type="button">I'M READY <span aria-hidden="true">↗</span></button>
+    </dialog>
   </section>
 
   <!-- ============ SCROLL / LEVEL SELECTION ============ -->
