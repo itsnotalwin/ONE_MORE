@@ -148,6 +148,7 @@ test('only phase-specific ink visuals changed and original renderer is byte-iden
      former non-player baseline protected by undoing that one allowed line. */
   source=source.replace('    c.fillStyle = p.red ? RED : INK;\n    const vang = Math.atan2(p.vy, p.vx);',
     '    c.fillStyle = INK;\n    const vang = Math.atan2(p.vy, p.vx);');
+  source=source.replace('inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1, color: p.red ? RED : INK });','inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1 });');
   let h=0x811c9dc5;
   for(let i=0;i<source.length;i++){h^=source.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}
   assert.equal(h.toString(16).padStart(8,'0'),'70a61c56');
