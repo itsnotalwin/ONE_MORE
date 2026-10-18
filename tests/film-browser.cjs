@@ -233,7 +233,7 @@ async function inspect(browser,name,viewport){
     phase:G.S.enemies.find(e=>e.guardian)?.guardian.phase,
     danger:G.S.guardianMarks[0]?.kind,
   }));
-  assert.deepEqual(guardian,{name:'slab',phase:1,danger:'line'});
+  assert.deepEqual(guardian,{name:'slab',phase:1,danger:'heavenlyStroke'});
   await page.screenshot({path:path.join(out,name+'-10-guardian-ink-seam.png')});
   await page.evaluate(()=>{
     const boss=G.S.enemies.find(e=>e.guardian);
