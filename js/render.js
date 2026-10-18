@@ -1059,142 +1059,81 @@ const R = (() => {
   }
 
   function drawPlayer(c, t) {
-    const S = G.S, p = S.player, st = S.stats;
-    const guarded = S.invulnT > 0;
-    /* The nib identity is fixed at the beginning of the run. World motion
-       NEVER re-seeds the outline: movement only translates this drawing. */
-    const sd = p.visualSeed || 0x51a7;
-    const form = INK_XP.visualForm(st);
-    const scale = p.displayScale || 1;
-    const vx = p.visualMoveX || 0, vy = p.visualMoveY || 0;
-    const motion = Math.min(1, Math.hypot(vx, vy));
-    const aim = p.visualAim == null ? p.aim : p.visualAim;
-
-    /* Original wisps of paper history remain, but the player does not
-       drag an oversized oscillating comet across the whole sheet. */
-    if (S.mode === 'playing' && motion > 0.15 &&
-        t - lastTrailT > CFG.ink.trailGap && !S.reduced) {
-      lastTrailT = t;
-      S.stainQueue.push({
-        x: p.x + (Math.random() - 0.5) * 4,
-        y: p.y + (Math.random() - 0.5) * 4,
-        r: 2.2, alpha: 0.12,
-      });
-    }
-
-    /* An anchored dry-brush tail. Direction changes are damped by the
-       visual velocity so rapid thumb movement never snaps the ink shape. */
-    if (motion > 0.08) {
-      const a = Math.atan2(-vy, -vx);
-      const len = 6 + 5 * motion + form.tier * .55;
-      const sway = S.reduced ? 0 : Math.sin(t * 1.9 + sd * .001) * .38;
-      const root = p.r * .35;
-      const x0 = p.x + Math.cos(a) * root;
-      const y0 = p.y + Math.sin(a) * root;
-      inkStroke(c, [
-        { x: x0, y: y0 },
-        { x: x0 + Math.cos(a) * len * .53 - Math.sin(a) * sway,
-          y: y0 + Math.sin(a) * len * .53 + Math.cos(a) * sway },
-        { x: x0 + Math.cos(a) * len, y: y0 + Math.sin(a) * len },
-      ], 4.5 + form.tier * .15, {
-        alpha: .78, taper: .82, seed: sd, jit: .04, color: INK,
-      });
-    }
-
-    c.save();
-    /* Recoil is a small nib response; shots, collision and camera remain
-       at their unmodified positions. No scaling is applied to orbit/ward. */
-    const recoil = Math.min(.9, Math.max(0, p.recoil) * .55);
-    c.translate(p.x - Math.cos(aim) * recoil,
-      p.y - Math.sin(aim) * recoil);
-
-    if (S.adrenT > 0) {
-      const ma = Math.atan2(-vy || Math.sin(aim), -vx || Math.cos(aim));
-      c.save(); c.globalAlpha = .26;
-      for (const off of [-.5, .5]) {
-        const a = ma + off;
-        inkStroke(c, [
-          { x: Math.cos(a) * 13, y: Math.sin(a) * 13 },
-          { x: Math.cos(a) * 18, y: Math.sin(a) * 18 },
-        ], 1.4, { alpha: .42, seed: sd });
-      }
+    const S=G.S,p=S.player,st=S.stats;
+    const seed=p.visualSeed||0x51a7;
+    const aim=p.visualAim==null?p.aim:p.visualAim;
+    const mvx=p.visualMoveX||0,mvy=p.visualMoveY||0;
+    const motion=Math.min(1,Math.hypot(mvx,mvy));
+    const size=p.displayScale||1;
+    const reduced=!!S.reduced;
+    /* One ink-born spirit: a round, weighted living spot with a trailing
+       stroke that physically springs from the silhouette. No added brush
+       icon, no exposed bristle stick and never a vermilion body. */
+    c.save();c.translate(p.x,p.y);
+    const dir=motion>.12?Math.atan2(mvy,mvx):aim;
+    const breathe=reduced?0:Math.sin(t*2.6+seed*.001)*.014;
+    const recoil=Math.max(0,Math.min(.7,p.recoil*.38));
+    c.translate(-Math.cos(aim)*recoil,-Math.sin(aim)*recoil);
+    const r=p.r;
+    /* The tail is rooted behind the blob, not drawn as a loose object. */
+    if(motion>.10&&!reduced){
+      c.save();c.rotate(dir);
+      const len=6+motion*8;
+      inkStroke(c,[
+        {x:-r*.50,y:0},
+        {x:-r*.88-len*.36,y:.48},
+        {x:-r-len,y:-.42}
+      ],3.7+motion*.7,{color:INK,alpha:.75,taper:1.25,seed,jit:.035});
       c.restore();
     }
-
-    /* Bring back the original ROUND, organic blob and its living contour.
-       The last nib-only outline flattened the character's personality.
-       Growth is still gently eased and the collision radius never changes. */
+    /* Same temporal ink-boil mechanism as the enemies, softened by smooth
+       interpolation. Subtle vertical mass shift suggests wet liquid. */
     c.save();
-    c.scale(scale, scale);
-    c.rotate(p.visualTilt || 0);
-    const r = p.r;
-    /* Exactly the enemy's active ink color on every scroll: never red.
-       BLOT's gentle squash follows aim; only the animation, not the
-       physical radius, changes. */
-    const squash = S.reduced ? 1 : 1 + Math.sin(t * 6 + sd * .001) * .035;
-    c.rotate(aim);
-    c.scale(squash, 2 - squash);
-    c.rotate(-aim);
-    c.globalAlpha = 1;
-    c.fillStyle = INK;
-    livingBlobPath(c, r, sd, t, S.reduced);
+    c.rotate((p.visualTilt||0)*.65);
+    c.scale(size*(1+motion*.045),size*(1-motion*.035));
+    c.translate(0,breathe*r*.55);
+    const pulse=reduced?1:1+.016*Math.sin(t*3.4+seed*.003);
+    c.scale(pulse,2-pulse);
+    c.globalAlpha=1;c.fillStyle=INK;
+    livingBlobPath(c,r*1.06,seed,t,reduced);
     c.fill();
-
-    /* The living blob is a single uninterrupted body. Higher ranks
-       grow the silhouette slightly without whiskers or attached brushes. */
-    /* One quiet paper eye faces the smoothed target aim. */
-    c.globalAlpha = 1;
-    const ex = Math.cos(aim) * r * .42, ey = Math.sin(aim) * r * .42;
-    const el = 4.35;
-    c.strokeStyle = PAPER; c.lineWidth = 1.8; c.lineCap = 'round';
+    /* A single carved paper eye makes the spirit instantly recognizable.
+       It follows aim without creating a second, disconnected shape. */
+    const ex=Math.cos(aim)*r*.34,ey=Math.sin(aim)*r*.34;
+    const tx=-Math.sin(aim),ty=Math.cos(aim);
+    c.lineWidth=1.65;c.strokeStyle=PAPER;c.lineCap='round';
     c.beginPath();
-    c.moveTo(ex - Math.cos(aim) * el / 2, ey - Math.sin(aim) * el / 2);
-    c.lineTo(ex + Math.cos(aim) * el / 2, ey + Math.sin(aim) * el / 2);
-    c.stroke();
-    c.restore();
+    c.moveTo(ex-tx*2.25,ey-ty*2.25);
+    c.quadraticCurveTo(ex+Math.cos(aim)*.45,ey+Math.sin(aim)*.45,
+      ex+tx*2.25,ey+ty*2.25);
+    c.stroke();c.restore();
 
-    /* Invulnerability glows through a restrained ink-outline breath instead
-       of strobing the entire character at 18 Hz. Immunity is unchanged. */
-    if (guarded) {
-      c.save();
-      c.globalAlpha = S.reduced ? .42 : .38 + Math.sin(t * 3.1) * .08;
-      c.strokeStyle = INK; c.lineWidth = 1.2;
-      c.beginPath(); c.arc(0, 0, p.r * scale + 4.5, 0, TAU); c.stroke();
-      c.restore();
+    /* Combat readability stays separate from the ink body's identity. */
+    if(S.invulnT>0){
+      c.save();c.globalAlpha=reduced?.36:.29+Math.sin(t*3)*.055;
+      c.strokeStyle=INK;c.lineWidth=1;
+      c.beginPath();c.arc(0,0,r*size+4,0,TAU);c.stroke();c.restore();
     }
-
-    /* Existing defensive orbit stays in actual world units. */
-    if (st && st.orb > 0) {
-      const orbR = CFG.orbit.radius(st.orb);
-      const base = S.clockT || t;
-      c.save(); c.globalAlpha = .10;
-      c.strokeStyle = INK; c.lineWidth = 1;
-      c.beginPath(); c.arc(0, 0, orbR, 0, TAU); c.stroke();
-      c.restore();
-      for (let i = 0; i < st.orb; i++) {
-        const a = base * CFG.orbit.speed + (i / st.orb) * TAU;
-        const ox = Math.cos(a) * orbR, oy = Math.sin(a) * orbR;
-        c.save(); c.translate(ox, oy); c.rotate(a + Math.PI / 2);
-        c.globalAlpha = .93; c.fillStyle = INK;
-        teardrop(c, 3.6); c.fill();
-        c.globalAlpha = .28;
-        inkStroke(c, [{ x: -6, y: 0 }, { x: -13, y: .4 }],
-          1.8, { alpha: 1, seed: sd });
-        c.restore();
+    if(st&&st.orb>0){
+      const orbR=CFG.orbit.radius(st.orb);
+      const base=S.clockT||t;
+      c.save();c.globalAlpha=.10;c.strokeStyle=INK;c.lineWidth=1;
+      c.beginPath();c.arc(0,0,orbR,0,TAU);c.stroke();c.restore();
+      for(let i=0;i<st.orb;i++){
+        const a=base*CFG.orbit.speed+i*TAU/st.orb;
+        c.save();c.translate(Math.cos(a)*orbR,Math.sin(a)*orbR);
+        c.rotate(a+Math.PI/2);
+        c.globalAlpha=.91;c.fillStyle=INK;
+        teardrop(c,3.6);c.fill();c.restore();
       }
     }
-
-    /* Paper Ward stays the same size regardless of brush rank. */
-    if (st && st.ward) {
-      const ready = st.wardCd <= 0;
-      const wa = aim + Math.PI;
-      c.save();
-      c.translate(Math.cos(wa) * (p.r + 12), Math.sin(wa) * (p.r + 12) - 2);
-      c.rotate((S.reduced ? 0 : Math.sin(t * 1.7) * .07) - .35);
-      c.globalAlpha = ready ? .9 : .2;
-      c.strokeStyle = INK; c.lineWidth = 1.4;
-      c.strokeRect(-4, -6.5, 8, 13);
-      if (ready) { c.fillStyle = INK; c.fillRect(-1.6, -1.6, 3.2, 3.2); }
+    if(st&&st.ward){
+      const ready=st.wardCd<=0,wa=aim+Math.PI;
+      c.save();c.translate(Math.cos(wa)*(r+12),Math.sin(wa)*(r+12)-2);
+      c.rotate((reduced?0:Math.sin(t*1.7)*.07)-.35);
+      c.globalAlpha=ready?.9:.2;c.strokeStyle=INK;c.lineWidth=1.4;
+      c.strokeRect(-4,-6.5,8,13);
+      if(ready){c.fillStyle=INK;c.fillRect(-1.6,-1.6,3.2,3.2);}
       c.restore();
     }
     c.restore();
