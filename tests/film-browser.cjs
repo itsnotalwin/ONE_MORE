@@ -49,9 +49,31 @@ async function inspect(browser,name,viewport){
   assert.equal(await page.locator('#screenTitle').isVisible(),true);
   await page.click('#replayIntroBtn');
   await page.waitForFunction(()=>G.mode==='intro');
+  await page.click('#introSkip');
+  await page.waitForFunction(()=>G.mode==='title');
+  /* Phase 2: exercise the REAL DOM campaign picker and canvas runtime,
+     not merely the director's headless plan builder. */
+  await page.click('#playBtn');
+  await page.waitForFunction(()=>G.mode==='select');
+  assert.ok((await page.locator('#campaignStatus').textContent()).includes('THE FIRST MARK'));
+  assert.equal(await page.locator('#campaignLevels button[data-level="1"]').isEnabled(),true);
+  assert.equal(await page.locator('#campaignLevels button[data-level="2"]').isEnabled(),false);
+  await page.screenshot({path:path.join(out,name+'-08-wave-director-levels.png')});
+  await page.click('#campaignLevels button[data-level="1"]');
+  await page.waitForFunction(()=>G.mode==='playing');
+  const plan=await page.evaluate(()=>({
+    stage:G.S.wavePlan?.stage,pattern:G.S.wavePlan?.pattern,
+    count:G.S.queue.length,wave:G.S.stats.wave,
+  }));
+  assert.equal(plan.stage,'THE FIRST MARK');
+  assert.equal(plan.pattern,'drift');
+  assert.equal(plan.wave,1);
+  assert.ok(plan.count>0);
+  await page.waitForTimeout(1200);
+  await page.screenshot({path:path.join(out,name+'-09-wave-director-game.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:5,noBrowserErrors:true};
+  return {name,shots:7,directorVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
