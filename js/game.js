@@ -211,7 +211,7 @@ const G = (() => {
       }
     }
     if (S.stats.adren > 0) S.adrenT = CFG.adrenaline.dur(S.stats.adren);
-    if((S.stats.levels?.adren||0)>=3)
+    if(terrainState('adren'))
       markWeapon('adren',e.x,e.y,{r:9,alpha:.88});
   }
 
@@ -225,25 +225,25 @@ const G = (() => {
     return best;
   }
 
-  /* Persistent brush impressions join the enemy blood on the washi.
-     Stamped weapon marks survive wave changes, but not a stage reset. */
-  /* Mastered techniques sign the landscape in deep vermilion.
-     The starting ink shot never paints the ground, even at mastery. */
-  function awakenedWeapon(weapon){
+  /* Every acquired technique has a complete two-step painting mastery:
+     ordinary ranks = NO terrain stamps; at max = permanent black ink;
+     the subsequent one-time Vermilion Seal upgrade = deep red ink.
+     The base auto-fire shot has no terrain effects at ANY rank. */
+  function terrainState(weapon){
+    const skill=TERRAIN_SKILL_KEYS[weapon];
+    if(!skill)return 0;
     const levels=S.stats?.levels||{};
-    const caps={echo:2,fan:4,nova:3,trail:3,spirit:3,
-      knot:3,ward:1,shock:1,eraser:3};
-    const key=weapon==='eraser'?'orbit':weapon;
-    const limit=caps[weapon]||UPGRADES.find(u=>u.id===key)?.max||999;
-    return (levels[key]||0)>=limit;
+    const cap=UPGRADES.find(u=>u.id===skill)?.max||Infinity;
+    if((levels[skill]||0)<cap)return 0;
+    return levels['seal_'+skill]?2:1;
   }
-
-  function markWeapon(weapon, x, y, opts = {}) {
-    if (!Number.isFinite(x)||!Number.isFinite(y))return;
+  function markWeapon(weapon,x,y,opts={}){
+    if(!Number.isFinite(x)||!Number.isFinite(y))return;
+    const tier=terrainState(weapon);
+    if(!tier)return;
     S.stainQueue.push({
       x,y,r:opts.r??5,alpha:Math.max(.78,opts.alpha??.9),
-      kind:'weapon',weapon,angle:opts.angle??0,
-      red:awakenedWeapon(weapon),
+      kind:'weapon',weapon,angle:opts.angle??0,red:tier===2,
     });
   }
 
@@ -322,19 +322,29 @@ const G = (() => {
   }
 
   function pickUpgrades(n) {
-    const st = S.stats;
-    const avail = shuffle(UPGRADES.filter(u => (st.levels[u.id] || 0) < u.max));
-    const out = avail.slice(0, n);
-    let i = 0;
-    while (out.length < n) {
-      const k = i++;
+    const st=S.stats;
+    const available=shuffle(UPGRADES.filter(u=>(st.levels[u.id]||0)<u.max));
+    /* Once a technique has reached the original rank cap, its unique
+       post-max red upgrade enters the next rank-up menu. Reserve one
+       slot when possible so the crimson milestone is actually findable
+       among the many existing choices. It is NEVER automatic. */
+    const seals=shuffle(RED_SEALS.filter(u=>
+      (st.levels[u.requires]||0)>=(UPGRADES.find(v=>v.id===u.requires)?.max||Infinity)
+      && (st.levels[u.id]||0)===0));
+    const out=[];
+    if(seals.length)out.push(seals.shift());
+    out.push(...available.slice(0,n-out.length));
+    while(out.length<n&&seals.length)out.push(seals.shift());
+    let i=0;
+    while(out.length<n){
+      const k=i++;
       out.push({
-        id: 'patch' + k, name: 'Fresh Water', patch: true,
-        desc: 'Restore 1 integrity. Clean water for a tired brush.',
-        apply: s => { s.hp = Math.min(s.maxHp, s.hp + 1); },
+        id:'patch'+k,name:'Fresh Water',patch:true,
+        desc:'Restore 1 integrity. Clean water for a tired brush.',
+        apply:s=>{s.hp=Math.min(s.maxHp,s.hp+1);},
       });
     }
-    return out;
+    return shuffle(out);
   }
 
   function openUpgrade() {
@@ -546,7 +556,7 @@ const G = (() => {
       return;
     }
     st.hp--;
-    if((st.levels?.plate||0)>=3)
+    if(terrainState('plate'))
       markWeapon('plate',S.player.x,S.player.y,{r:12,alpha:.88});
     S.invulnT = CFG.player.invuln;
     if (!S.reduced) S.shake = 8;
@@ -758,7 +768,7 @@ const G = (() => {
         S.stainQueue=S.stainQueue.filter(q=>
           (q.x-cx)**2+(q.y-cy)**2>r*r);
         if(typeof R!=='undefined'&&R.eraseTerrain)R.eraseTerrain(cx,cy,r);
-        if((st.levels?.orbit||0)>=3){
+        if(terrainState('eraser')){
           const theta=S.clockT*.55;
           markWeapon('eraser',cx+Math.cos(theta)*(r+9),
             cy+Math.sin(theta)*(r+9),{r:11,alpha:.94,angle:theta});
@@ -768,7 +778,7 @@ const G = (() => {
 
     /* Fleeting Foot at mastery finally signs the paper: faint spaced
        ruby steps, never continuous visual clutter or extra damage. */
-    if((st.levels?.over||0)>=4 && m>.22){
+    if(terrainState('over') && m>.22){
       S.passiveFootT=(S.passiveFootT||0)-dt;
       if(S.passiveFootT<=0){
         S.passiveFootT=.64;
@@ -929,13 +939,13 @@ const G = (() => {
     let d = dmg;
     if (critCh > 0 && Math.random() < critCh) {
       d *= 2;
-      if((st.levels?.crit||0)>=2)
+      if(terrainState('crit'))
         markWeapon('crit',e.x,e.y,{r:8,alpha:.94,angle:ang});
       S.popups.push({ x: e.x, y: e.y - e.r - 6, txt: '×2', life: 0.55, max: 0.55, red: true });
     }
     if (st.slow > 0) {
       e.slowT = CFG.slow.dur;
-      if((st.levels?.slow||0)>=2)
+      if(terrainState('slow'))
         markWeapon('slow',e.x,e.y,{r:6,alpha:.86});
     }
     e.hp -= d;
