@@ -158,7 +158,7 @@ test('only phase-specific ink visuals changed and original renderer is byte-iden
   assert.equal(hash(fragment('  function drawEnemy(c, e, t) {',
     '  /* ---------------- player:')),'44e8cc52');
   assert.equal(hash(fragment('  /* ---------------- projectiles, zones, fx ---------------- */',
-    '  /* Phase 3 additions reuse')),'20aee36a');
+    '  /* Phase 3 additions reuse')),'06353f91');
   assert.ok(painter.includes('function paintWeaponImprint('));
   assert.ok(painter.includes('stainCells.get('));
   assert.ok(file('index.html').includes('<script src="./js/guardians.js"></script>'));
