@@ -473,17 +473,10 @@ const R = (() => {
             Math.max(1,r*.09),{alpha:.29,color,seed:seed+i});
         }
         break;
-      case 'trail': { /* dried suiteki pool, not a footstep stripe */
-        blobPath(g,0,0,r*1.2,seed,.32,12);
-        g.globalAlpha=.98;g.fill();
-        blobPath(g,-r*.25,r*.21,r*.65,seed^71,.28,10);
-        g.globalAlpha=.74;g.fill();
-        for(let i=0;i<3;i++){
-          const a=(i*2.2)+(seed%9)*.09;
-          inkStroke(g,[{x:Math.cos(a)*r*.7,y:Math.sin(a)*r*.7},
-            {x:Math.cos(a+.11)*r*1.46,y:Math.sin(a+.11)*r*1.46}],
-            Math.max(1,r*.12),{alpha:.48,color,seed:seed+i,taper:.45,jit:.04});
-        }
+      case 'trail': { /* one short, joined snail-like dry ink strand */
+        inkStroke(g,[{x:-r*1.12,y:0},{x:-r*.22,y:-r*.035},
+          {x:r*1.10,y:r*.04}],Math.max(2,r*1.06),
+          {alpha:.88,color,seed,jit:.025,dry:false});
         break;
       }
       case 'spirit': /* little afterimage of a visiting lesser brush */
@@ -1344,39 +1337,29 @@ const R = (() => {
     c.restore();
   }
 
+  /* Suiteki is an uninterrupted wet ink thread: connected round-cap
+     segments instead of independent circular black blobs. No shaking,
+     no scattered satellites, no transparent neon effect. */
   function drawSuiteki(c,pd,t){
-    const age=pd.max-pd.life,spread=Math.min(1,age/.68);
-    const fade=Math.min(1,pd.life/.38);
-    const radius=pd.r*spread,variant=pd.variant||0;
-    if(radius<.5)return;
-    c.save();c.translate(pd.x,pd.y);
-    c.rotate(variant*Math.PI/2);c.scale(1.12,.74);
-    c.fillStyle=INK;c.globalAlpha=.72*fade;
-    blobPath(c,0,0,radius,pd.seed,.26,12);c.fill();
-    c.globalAlpha=.48*fade;
-    blobPath(c,radius*.13,-radius*.07,radius*.72,pd.seed^1009,.23,11);c.fill();
-    if(spread>.3){
-      for(let j=0;j<3;j++){
-        const angle=variant*1.2+j*2.09;
-        inkStroke(c,[
-          {x:Math.cos(angle)*radius*.64,y:Math.sin(angle)*radius*.64},
-          {x:Math.cos(angle+.12)*radius*1.05,y:Math.sin(angle+.12)*radius*1.05},
-          {x:Math.cos(angle-.11)*radius*1.45,y:Math.sin(angle-.11)*radius*1.45}
-        ],1.7,{color:INK,alpha:.42*fade,seed:pd.seed+j,taper:.5,jit:.02});
-      }
-    }
+    const fade=Math.min(1,pd.life/.45);
+    c.save();c.lineCap='round';c.lineJoin='round';
+    c.strokeStyle=INK;c.globalAlpha=.52*fade;
+    c.lineWidth=pd.r*1.95;c.beginPath();
+    c.moveTo(pd.x0,pd.y0);c.lineTo(pd.x,pd.y);c.stroke();
+    c.globalAlpha=.76*fade;c.lineWidth=pd.r*1.08;c.beginPath();
+    c.moveTo(pd.x0,pd.y0);c.lineTo(pd.x,pd.y);c.stroke();
     c.restore();
-    if(pd.vesselT>0){
-      c.save();c.translate(pd.x+9,pd.y-10);
-      c.rotate(-.35+variant*.13);
-      c.globalAlpha=Math.min(.8,pd.vesselT/.18);
-      c.strokeStyle=INK;c.lineWidth=1.2;
-      c.beginPath();c.moveTo(-6,-2);c.lineTo(5,-2);
-      c.lineTo(4,3);c.quadraticCurveTo(0,6,-5,3);c.closePath();c.stroke();
-      c.beginPath();c.arc(5,-4,2.2,0,TAU);c.stroke();
-      c.fillStyle=INK;c.beginPath();c.arc(7,0,1.5,0,TAU);c.fill();
-      c.restore();
-    }
+  }
+  function drawSuitekiVessel(c,S){
+    if(!S.stats?.trailW||!S.trailFrom)return;
+    const p=S.player,a=p.visualFacing||0;
+    c.save();c.translate(p.x-Math.cos(a)*17,p.y-Math.sin(a)*17);
+    c.rotate(a+.36);c.globalAlpha=.78;
+    c.strokeStyle=INK;c.lineWidth=1.25;c.lineJoin='round';
+    c.beginPath();c.moveTo(-4,-4);c.lineTo(4,-4);
+    c.lineTo(5,2);c.quadraticCurveTo(0,5,-5,2);c.closePath();c.stroke();
+    c.fillStyle=INK;c.beginPath();c.arc(-6,1,1.6,0,TAU);c.fill();
+    c.restore();
   }
 
   /* ---------------- projectiles, zones, fx ---------------- */
@@ -1863,6 +1846,7 @@ const R = (() => {
 
     if (playing) drawEraserField(ctx,S,t);
     for (const pd of S.puddles) drawSuiteki(ctx,pd,t);
+    if(playing)drawSuitekiVessel(ctx,S);
     if (!S.reduced) updateAmbient(dt, S);
 
     for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);
