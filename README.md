@@ -25,6 +25,16 @@ Your **BRUSH rank** now fills a compact horizontal cinnabar-red ink gauge **at t
 
 Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
 
+## Phase 6: a living hero on untouched washi (development)
+
+**Implemented:** the ink-soul now anticipates movement, flows through a two-beat RUN, eases into turns and braking, and reacts to hits, ink absorption and brush-rank gains. Its original movement physics and 10px collision circle have not changed.
+
+**Paper I** is a near-flat warm-ivory Japanese-inspired sheet with no repeated line pattern, background glyphs or ghost decoration. The world's artwork comes from enemy blood and mastered skills rather than preprinted marks. **The First Guardian** now attacks with an enormous tapered divine brushstroke instead of an ink road: a Downstroke, Crossing and Hook use sampled Bézier paths shared by the visible warning, impact and damage test. Telegraph time, HP and damage have not been raised.
+
+**Suiteki Leak** replaces Ink Trail as a three-rank area-control weapon: an inkstone gently spills into slow-spreading temporary black pools. Placement is occasional, capped to one or two active pools, and damage is limited to one hit per enemy every 0.55 seconds across all pools. At rank 3 it begins leaving a dried black pool on the stage. Selecting its separate one-time Vermilion Seal changes the dried stain to lacquer crimson without any damage increase. Its old internal IDs `trail`, `trailW` and `seal_trail` are retained.
+
+The specific technical [Phase 6 design/implementation specification](docs/PHASE-6-LIVING-INK-DESIGN-SPEC.md) and [regression tests](tests/phase6.test.cjs) document the details. Paper II Ink Lantern and other power unlocks, plus the First Guardian difficulty rebalance, are **not implemented** in this phase.
+
 ## Paper II readability and opening-stage pacing (development)
 
 - **The Eraser is no longer oversized at rank one.** Clearing radius is 65px, then 100px, and finally 135px, which used to be its initial radius. Its damage/cooldown remain unchanged.
@@ -50,7 +60,7 @@ Material reference: [Awagami Factory's indigo-dyed Awa Washi](https://www.awagam
 
 ## Stage-long ink painting and the new protagonist (development)
 
-**Special abilities sign the paper; basic shots never do.** Echo leaves mirrored marks, Folded Fan cuts directional slash marks, The Eraser clears accumulated marks, Black Tide makes broken rings, Ink Trail drags pools, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. Special-technique marks appear in scroll-colored black/pale ink only after maxing the underlying skill. A separate post-max red upgrade can then change that skill's marks to deep lacquer crimson. Enemy blood stays black.
+**Special abilities sign the paper; basic shots never do.** Echo leaves mirrored marks, Folded Fan cuts directional slash marks, The Eraser clears accumulated marks, Black Tide makes broken rings, Suiteki Leak leaves timed inkstone pools, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. Special-technique marks appear in scroll-colored black/pale ink only after maxing the underlying skill. A separate post-max red upgrade can then change that skill's marks to deep lacquer crimson. Enemy blood stays black.
 
 **All weapon marks and enemy blood survive the entire independent ten-wave stage** without fading, including the final Guardian encounter. Only a completed/failed/abandoned stage or fresh run turns the sheet; Endless turns the sheet after each ten-wave region. Terrain marks now reuse cached painted sprites and are indexed in small world-space cells to avoid creating new texture canvases per hit or repainting every distant stain on mobile.
 
@@ -185,7 +195,7 @@ reappears; read the paper.
   Black Tide, Wet Paper, Crimson Tip, Paper Ward
 - *Weapons* (marked 武 in vermilion on their cards):
   **Folded Fan** — a snapping spray of paper blades;
-  **Ink Trail** — the smears you leave behind keep biting;
+  **Suiteki Leak** — a slow spreading inkstone spill slows and damages nearby enemies;
   **Spirit Scribes** — lesser brushes that wake and hunt on their own;
   **Ink Knots** — living brush threads bind a small cluster, slow them, and deal one delayed point of damage per target.
 
