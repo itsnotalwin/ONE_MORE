@@ -30,7 +30,7 @@
 
 ### What Story Experiment 01 adds
 
-- An optional **seven-frame animated prologue**, built procedurally in \`js/intro.js\` (Canvas2D, no exported MP4). It lasts **61 seconds** if allowed to play, with tap/click-to-advance, chapter scrub controls, Enter/right-arrow advance and Escape/Skip.
+- An optional **seven-shot, 61-second animated short film**, drawn continuously in \`js/film.js\` and directed by \`js/intro.js\`. It plays automatically with timed shots and subtitles, a moving camera and animated characters; Escape/Skip ends it immediately.
 - The film **autoplays on every page launch** without a start cover or session-based suppression. It remains skippable and replayable from the title; audio is opt-in.
 - Optional synthesized tonal cues, **off by default** and activated only by player gesture.
 - The Chronicle, a readable five-part story archive, with later chapters gated by existing campaign completion: 0, 10, 20, 30 levels.
@@ -46,17 +46,17 @@ An unseen **Painter** imagined an infinite world on endless washi. The brush mov
 
 The Painter is deliberately neither all-good nor an evil final villain. This is a story about creation, regret and the courage to continue unfinished work. Never narrate it as a historical Japanese legend. It is original fiction borrowing a visual language from sumi-e.
 
-### Seven-frame prologue (as implemented)
+### The Last Stroke: seven-shot animated short film
 
-| # | Frame | Spoken-equivalent caption / narrative beat | Illustration and motion |
+| # | Film shot | Narrative beat | Action animated in real time |
 |---|---|---|---|
-| 01 | Before the First Mark | Blank endless paper; a lone dark brush stroke emerges. | Pale fibers, sparse void, drawing mark |
-| 02 | A World in One Breath | The Painter draws mountains and rivers. | Layered black ridges; scrolling mist |
-| 03 | Every Mark Cast a Shadow | Rejected marks gain movement behind the paper. | Inverted black night; ghostly white shapes |
-| 04 | The Water Came | The Painter tries to wash away their mistakes and the landscape fades. | Ink peaks erased by watery ribbons; red fault line |
-| 05 | One Stroke Refused | A small unfinished stroke survives alone. | Brush-spirit, empty mountain field, vermilion seal |
-| 06 | Three Sheets. One Fate. | Three scrolls must be crossed to reach the broken seal. | A three-panel paper triptych |
-| 07 | The Page Is Not Finished | The player's challenge is to decide what remains. | Last Stroke beside the unfinished mark |
+| 01 | Before the First Mark | A drop falls into a world before language. | Animated ink drop, liquid splash and stroke literally drawing across paper |
+| 02 | A World in One Breath | The Painter makes the first landscape. | A bamboo brush moves across the camera while mountains reveal and the river is drawn |
+| 03 | Every Mark Cast a Shadow | Rejected marks awaken on the paper's reverse side. | A succession of independent ink beasts coalesces, floats and writhes in living night |
+| 04 | The Water Came | Fear drives the Painter to erase the world. | A moving water-front physically washes the screen; particles dissipate; red fracture appears |
+| 05 | One Stroke Refused | The last living mark reforms. | Dozens of ink flecks converge into the animated protagonist, then travel past pursuing shadows |
+| 06 | Three Sheets. One Fate. | The journey's three worlds are revealed. | Each scroll unfurls on a separate beat with moving native enemy silhouettes |
+| 07 | The Page Is Not Finished | The Last Stroke will keep drawing. | ONE MORE letterforms appear through an animated ink wipe; a vermilion seal strikes and breaks into flecks |
 
 ![Seven-frame storyboard, original illustration, not screenshots](images/seven-frames.svg)
 
@@ -127,7 +127,7 @@ Title → Journey → Scroll picker → Level (new 10-wave run)
 - \`js/ui.js\`: screen registry, upgrades, HUD and selection screens.
 - \`js/campaign.js\`: unlock validation and local persistence.
 - \`js/audio.js\`: original WebAudio synthesis.
-- \`js/intro.js\`: experimental prologue and Chronicle only.
+- \`js/film.js\`: the procedural animated-film renderer: 7 independently choreographed shots, world creation, moving creatures, water wash, spirit, scroll unroll and title. \`js/intro.js\`: 61-second timeline, camera movement, subtitling, sound opt-in, skip/replay and Chronicle.
 - \`css/style.css\`: original global style and compact responsive upgrade cards.
 - \`css/intro.css\`: styles scoped to the two experimental screens.
 
@@ -177,7 +177,7 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 | Shock/ring effects | \`drawRing\`, particle functions | Circular ink washes, directional dust and bursts | Done |
 | Guardian cues | HUD + render marker | Red off-screen arrow and elite telegraph | Done |
 | Upgrade glyphs | \`js/ui.js\` \`GLYPHS\` | Inline 24×24 SVG strokes, not sprite sheets | Done |
-| Intro scenes | \`js/intro.js\` \`paintScene\` | Cached Canvas plates, brush spatter, mild camera movement | Experiment |
+| Animated short film | \`js/film.js\`, \`js/intro.js\` | Live-drawn brush stroke, mountains, beasts, erasure, character motion, composited shot fades and camera push | Development |
 | Chronicle | \`js/intro.js\` \`ARCHIVE\` | Readable prose, unlock-gated | Experiment |
 | Editorial illustrations | \`docs/images/*.svg\` | Original authored SVG, **not gameplay screenshots** | Experiment |
 
@@ -188,7 +188,7 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 - Paper texture follows the camera over an unbounded world; player never hits artificial screen walls.
 - Stains are world-space marks, capped/faded for performance, and reset between independent runs.
 - Main render rate uses \`requestAnimationFrame\`; frame delta is capped in \`js/main.js\`.
-- Intro animation reuses the established colors, cached painted scenes and gentle layered camera drift. At reduced-motion settings the scene remains static and the full text can be read manually.
+- The film uses live Canvas2D drawings every shot, a moving camera, and cached still frames only for cross-dissolves. Reduced-motion preference disables decorative dolly/transition movement while dialogue timing continues and scenes remain skippable.
 - No video dependencies, no remote image downloads, and no high-resolution bitmap backgrounds.
 - \`docs/images/\` SVGs represent **illustrated design reference art** only. A true screenshot pass on iPhone and desktop remains to be performed.
 
@@ -196,7 +196,7 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 
 - Responsive one-canvas game; touch pointer joystick; prevent scroll while playing.
 - \`prefers-reduced-motion\` is respected in old and new UI.
-- The intro uses up to 1.5× device pixel ratio, cached Canvas plates, brushstroke reveals, moving ink motes and frame-to-frame dissolves. Hidden gameplay rendering pauses while the film is onscreen.
+- The film caps rendering at 1.5× device pixel ratio and animates moving painter, monsters and protagonist, brush reveals, moving water and scroll unfurling. It composites previous shots on an offscreen Canvas for transitions. Hidden gameplay rendering pauses while the film plays.
 - Script-only voice and sound; cinematic sound begins only after the user opts in. Original game sound preferences remain separate.
 - No user accounts, backend services or analytics. Campaign persists locally.
 - Asset dimensions and memory must remain reasonable for Safari on iPhone.
@@ -228,17 +228,17 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 - [x] Three upgrade-card choices adapted for phone viewport.
 - [x] Endless mode, pause, basic scoring and result screens.
 - [x] Campaign regression suite and immutable style-source checks.
-- [x] Seven-scene experimental intro source, original SVG docs illustrations and Chronicle source added on separate branch.
+- [x] Seven-shot continuous animation, original SVG docs illustrations and Chronicle source added on development.
 - [x] Living game document, story bible, and roadmap committed on branch.
 
 ### IN REVIEW / NEEDS REAL DEVICE ACCEPTANCE
 
-- [ ] Cinematic seven-frame pacing feels intentional on iPhone and desktop.
+- [ ] Cinematic seven-shot pacing feels intentional on iPhone and desktop.
 - [ ] Intro scenes, controls and captions actually fit short/tall viewports without clipping.
 - [ ] Sound option respects Safari's user-gesture policy, mute behavior and audio interruption.
 - [ ] Prologue's **every-visit autoplay**, replay, skip, and return-to-title navigation tested manually.
 - [ ] Chronicle unlock gating verified with genuine gameplay progression and a cleared campaign.
-- [ ] Benchmark intro frame time, memory and battery usage on iPhone Safari.
+- [ ] Benchmark animated-film FPS, frame time, memory and battery usage on iPhone Safari.
 - [ ] Capture **actual** game screenshots from a browser and compare with pinned original art.
 - [ ] Owner decides whether to merge story experiment into \`main\`.
 
