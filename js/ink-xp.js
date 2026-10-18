@@ -112,9 +112,35 @@ const INK_XP = (() => {
       }
     }
   }
-  /* Each living seed is a recognizable calligraphic nib, never a circle.
-     Geometry depends only on its drop seed and its current homeward direction.
-     The dried splat remains permanently painted underneath it. */
+  /* Small fragments of the same living black ink as the enemies.
+     Rounded quadratic contours, never teardrop blades, gems or coins.
+     The droplets gently breathe and remain recognizably blob-shaped. */
+  function drawLivingDrop(c, radius, seed, t, reduced, detailed) {
+    const n = detailed ? 9 : 6;
+    const wobble = detailed && !reduced ? Math.sin(t * 2.5 + seed) * .035 : 0;
+    const points = [];
+    for (let i = 0; i < n; i++) {
+      const angle = i * Math.PI * 2 / n;
+      const irregular = Math.sin(seed * 1.7 + i * 2.31) * .095;
+      const breathing = detailed && !reduced
+        ? Math.sin(t * 3.2 + seed + i * .86) * .035 : 0;
+      const r = radius * (1 + irregular + breathing + wobble);
+      points.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+    }
+    const last = points[n-1], first = points[0];
+    c.beginPath();
+    c.moveTo((last[0]+first[0])*.5,(last[1]+first[1])*.5);
+    for (let i = 0; i < n; i++) {
+      const next = points[(i+1)%n];
+      c.quadraticCurveTo(points[i][0],points[i][1],
+        (points[i][0]+next[0])*.5,(points[i][1]+next[1])*.5);
+    }
+    c.closePath();
+  }
+
+  /* The black ink heart separates from the dried black splat, drifts,
+     then becomes a tiny round blob sliding back into the main brush.
+     The mechanic and XP collection distance are completely unchanged. */
   function draw(c,S,t,ink,paper,red){
     const p=S.player;
     const bounds={x0:S.cam.x-S.W*.60,x1:S.cam.x+S.W*.60,
@@ -122,64 +148,36 @@ const INK_XP = (() => {
     let detailed=0;
     for(const d of S.inkDrops||[]){
       if(d.x<bounds.x0||d.x>bounds.x1||d.y<bounds.y0||d.y>bounds.y1)continue;
-      const r=clamp(2.7+Math.sqrt(Math.max(1,d.value))*.33,2.7,5.4);
-      const seed=d.pulse||0, variant=(Math.floor(Math.abs(seed)*19)%5);
-      const bloom=clamp((d.age||.19)/.19,0,1);
-      const homing=!!d.homing;
-      const dir=homing?Math.atan2(p.y-d.y,p.x-d.x)
-        :Math.atan2(d.vy||0,d.vx||1);
-      const sway=S.reduced?0:Math.sin(t*1.9+seed)*.035;
-      const trailLen=homing&&!S.reduced?Math.min(21,8+Math.hypot(p.x-d.x,p.y-d.y)*.085):0;
-      const body=r*(.94+.06*bloom);
+      const radius=clamp(2.4+Math.sqrt(Math.max(1,d.value))*.24,2.5,4.4);
+      const seed=d.pulse||.23;
+      const detail=detailed++<90;
+      const bloom=clamp((d.age||0)/.18,0,1);
+      const moving=d.homing && !S.reduced;
       c.save();
       c.translate(d.x,d.y);
-      c.rotate(dir+sway);
-      /* Recovered enemy blood is cinnabar like the level-up channel.
-         It uses the same handmade ink nib paths, not floating gems. */
-      c.globalAlpha=.76+.17*bloom;
-      c.fillStyle=red;
-      /* A five-variant silhouette family, stable for the entire lifetime
-         of each kernel; only the ink's direction and length are animated. */
-      c.beginPath();
-      c.moveTo(body*1.35,0);
-      c.bezierCurveTo(body*.3,-body*(.6+variant*.055),
-        -body*.64,-body*.78,-body*.9,-body*.14);
-      c.lineTo(-body*(1.14+variant*.045),-body*.31);
-      c.lineTo(-body*.79,body*.05);
-      c.lineTo(-body*(1.08+(4-variant)*.03),body*.32);
-      c.bezierCurveTo(-body*.48,body*(.62+variant*.03),
-        body*.32,body*.56,body*1.35,0);
-      c.fill();
-      if(detailed++<80){
-        /* The old trail behind a marble becomes a tapered ink ribbon
-           physically connected to the nib while it returns home. */
-        if(trailLen>0){
-          c.globalAlpha=.38;
+      c.globalAlpha=.78+.2*bloom;
+      c.fillStyle=ink; /* same palette as the enemy, including Night Scroll */
+      /* A very short wet smear connects to the rounded body when moving.
+         The ink blob is always the subject, not the trail. */
+      if(moving&&detail){
+        const dx=p.x-d.x,dy=p.y-d.y;
+        const angle=Math.atan2(dy,dx);
+        const tail=Math.min(6,Math.hypot(d.vx||0,d.vy||0)*.017);
+        if(tail>1.4){
+          c.save();c.rotate(angle);
+          c.globalAlpha=.24;
           c.beginPath();
-          c.moveTo(-body*.54,-body*.28);
-          c.quadraticCurveTo(-body-trailLen*.44,-body*(.15+variant*.06),
-            -body-trailLen,-body*.06);
-          c.quadraticCurveTo(-body-trailLen*.62,body*.10,
-            -body*.78,body*.19);
-          c.closePath();
-          c.fill();
-          if(trailLen>13){
-            c.globalAlpha=.22;c.lineWidth=.55;c.strokeStyle=red;
-            c.beginPath();c.moveTo(-body*.85,body*.2);
-            c.quadraticCurveTo(-body-trailLen*.55,body*.62,
-              -body-trailLen*.88,body*.42);c.stroke();
-          }
-        }else if(!S.reduced&&bloom>.4){
-          c.globalAlpha=.30;c.lineWidth=.65;c.strokeStyle=red;
-          c.beginPath();c.moveTo(-body*.64,-body*.12);
-          c.lineTo(-body*(1.48+variant*.065),-body*.37);c.stroke();
-        }
-        /* A pale dry-brush nick, never a glowy coin center. */
-        if(variant===0 && d.value>=6){
-          c.fillStyle=paper;c.globalAlpha=.29;
-          c.fillRect(body*.15,-body*.12,.8,.8);
+          c.moveTo(-radius*.42,-radius*.33);
+          c.quadraticCurveTo(-radius-tail*.65,-radius*.34,-radius-tail,0);
+          c.quadraticCurveTo(-radius-tail*.52,radius*.18,
+            -radius*.42,radius*.29);
+          c.closePath();c.fill();
+          c.restore();
         }
       }
+      drawLivingDrop(c,radius*(.9+.1*bloom),seed,t,S.reduced,detail);
+      c.globalAlpha=.94;
+      c.fill();
       c.restore();
     }
   }
