@@ -260,9 +260,32 @@ async function inspect(browser,name,viewport){
   await page.waitForFunction(()=>R.terrainStats().weapons.eraser>0,
     null,{timeout:4000});
   await page.screenshot({path:path.join(out,name+'-15-mastered-red-eraser.png')});
+  /* A weapon at its normal maximum gets one distinct Vermilion card.
+     Real phone-sized UI must show red art and not silently grant it. */
+  await page.evaluate(()=>{
+    G.S.stats.orb=0; G.S.eraserT=0;
+    G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.enemies=[];
+    G.S.stats.levels.echo=2;G.S.stats.echo=2;
+    G.S.stats.inkPending=1;
+  });
+  await page.waitForFunction(()=>G.mode==='upgrade',null,{timeout:4000});
+  const redCard=page.locator('.up-card.is-seal');
+  assert.ok(await redCard.count()>=1,name+' maxed Echo offers a selectable red upgrade');
+  assert.ok((await redCard.first().innerText()).includes('VERMILION'),
+    name+' red upgrade card is clearly named');
+  await page.screenshot({path:path.join(out,name+'-16-post-max-red-upgrade.png')});
+  const chosen=await page.evaluate(()=>{
+    const slot=G.S.choices.findIndex(u=>u.id==='seal_echo');
+    if(slot<0)return false;
+    G.pickAt(slot);G.deploy();
+    return G.S.stats.levels.seal_echo===1;
+  });
+  assert.ok(chosen,name+' post-max red upgrade must be selectable through gameplay');
+  assert.ok(await page.locator('.load-item.is-seal').count()>=1,
+    name+' selected red seal must remain visible in the loadout');
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:18,eraserVerified:true,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
+  return {name,shots:19,redSealVerified:true,eraserVerified:true,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
