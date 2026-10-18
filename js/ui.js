@@ -164,6 +164,9 @@ const UI = (() => {
     el.hudAreaKanji.textContent = area.kanji;
     el.hudAreaName.textContent = area.name;
     el.inkMeter.classList.toggle('is-night',area.theme==='dark');
+    /* Keep HUD and wave warnings legible on indigo paper too. */
+    el.hud.classList.toggle('is-night',area.theme==='dark');
+    el.banner.classList.toggle('is-night',area.theme==='dark');
     el.hudWaveTotal.textContent = `${toKanji(waveInArea)} / ${toKanji(CFG.wave.wavesPerArea)}${isElite ? ' · 守' : ''}`;
   }
 
