@@ -25,7 +25,7 @@ test('enemy XP scales to later stages but remains positive and bounded',()=>{
   assert.ok(first>=1);
   assert.ok(late>first&&late<first*3,'late game provides more living ink');
   assert.ok(INK_XP.value(def,elite,{wave:10,worldIndex:2,level:10})>late);
-  assert.ok(INK_XP.needed(9)>INK_XP.needed(3)>INK_XP.needed(1));
+  assert.ok(INK_XP.needed(9)>INK_XP.needed(3) && INK_XP.needed(3)>INK_XP.needed(1));
 });
 test('earned XP levels up with remainder and never drops multiple rewards',()=>{
   const {INK_XP}=setup(),s={inkXp:0,inkRank:1,inkPending:0};
@@ -101,6 +101,17 @@ test('new runs clear loot and rank; growth is visual only, not a larger hitbox',
   assert.equal(G.S.stats.inkXp,0);
   assert.equal(G.S.inkDrops.length,0);
   assert.equal(INK_XP.visualScale(G.S.stats),1);
+});
+test('ink rank earned at wave clear does not stall the next wave',()=>{
+  const {G,INK_XP}=setup();G.startLevel(0,1);
+  G.S.enemies=[];G.S.queue=[];G.S.markers=[];
+  addDrop(G,INK_XP.needed(1),1500,1800);
+  tick(G,40);
+  assert.equal(G.mode,'upgrade');
+  assert.equal(G.S.clearedT<=0,true);
+  G.pickAt(0);G.deploy();
+  assert.equal(G.mode,'playing');
+  assert.equal(G.S.stats.wave,2,'resume next wave after the last earned choice');
 });
 test('elite loot cap safely merges value instead of discarding XP',()=>{
   const {INK_XP}=setup(),drops=[];
