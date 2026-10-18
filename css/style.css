@@ -1062,7 +1062,7 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
   }
   .screen-upgrade .up-glyph{
     grid-column: 1;
-    grid-row: 1 / 4;
+    grid-row: 1 / 3;
     align-self: center;
     width: 34px;
     height: 34px;
@@ -1090,14 +1090,14 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
   .screen-upgrade .up-pips{ gap: 3px; }
   .screen-upgrade .pip{ width: 6px; height: 6px; }
   .screen-upgrade .up-check{
-    position: absolute;
-    right: 9px;
-    top: 50%;
-    margin-top: -9px;
+    position: relative;
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: center;
+    align-self: center;
     width: 18px;
     height: 18px;
   }
-  .screen-upgrade .up-desc{ padding-right: 14px; }
   .screen-upgrade .deploy-btn{
     padding: 10px 25px;
     font-size: 11px;
