@@ -258,6 +258,16 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [ ] Compare captured film stills against pinned original gameplay art and review compositions on physical devices.
 - [ ] Owner decides whether to merge story experiment into \`main\`.
 
+### CURRENT SPRINT / DEVELOPMENT ONLY
+
+- [x] **Phase 1 — Combat Foundations:** Correct swept collision detection for droplets, blades, needles, ink globs and Spirit Scribes; piercing hit order and one-hit-per-enemy protection; reset keyboard and touch input on focus changes, retries and wave screens.
+- [x] Automated regression coverage: 11 targeted tests in `tests/combat.test.cjs`, plus the existing campaign/cinematic suite. GitHub Actions passed for this development milestone.
+- [ ] Test Phase 1 manually on iPhone Safari and desktop during real ten-wave runs.
+- [ ] **Phase 2 — Wave Director 2.0:** Design encounter patterns and distinctive level pacing. Not implemented yet.
+- [ ] **Phase 3 — Guardians:** Unique multi-phase world boss behavior. Not implemented yet.
+- [ ] **Phase 4 — Upgrade synergies:** Build variety and restrained evolutions. Not implemented yet.
+- [ ] **Phase 5 — Story integration:** Gameplay narrative milestones. Not implemented yet.
+
 ### NEXT / GAMEPLAY & STORY
 
 - [ ] World- and level-specific encounter pacing beyond simple scaling.
@@ -296,7 +306,7 @@ The owner approved using the live GitHub Pages URL for `development` testing. **
 
 A safe non-Pages third-party branch preview for personal evaluation uses the `story-preview` branch alias via raw.githack, which can render files straight from a GitHub branch but may show a safety confirmation screen and has no uptime guarantees. A workflow on the experimental branch can additionally package a downloadable offline preview artifact. Long-term isolated first-party staging requires a distinct Pages repository or Pages deployment architecture intentionally set up for previews.
 
-After acceptance, selectively merge the tested work into `main`. Restore production Pages source to `main` when the experiment is complete. Keep the draft PR for review until then.
+The cinematic milestone is now merged into `main` ([PR #7](https://github.com/itsnotalwin/ONE_MORE/pull/7)). Continue gameplay work on `development`; promote subsequent milestones only when approved. The obsolete combined draft PR #5 is closed. GitHub Pages may continue serving `development` for live testing.
 
 ## 10. Research and references
 
