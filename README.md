@@ -17,13 +17,21 @@ The ink remembers every stroke.</p>
 
 **Development milestone 03 / Multi-phase Guardians:** First Wash cracks the paper with ink seams, Night Scroll lashes out with targeted shadow rays, and Cinnabar Field brands the ground with delayed red seals. All three encounters have dodgeable warnings, distinct HP-based phase changes, short impact windows and a restrained, in-world Guardian HP bar. Final Level 10 world bosses have three phases; regular wave-10 Guardians have two. The original enemy art and movement remain intact. Implemented directly in `development`, still under evaluation. See [Guardian architecture and roadmap](docs/GAME_BIBLE.md#guardian-encounters--phase-3-development) and [automated Guardian tests](tests/guardians.test.cjs).
 
+## Ink Absorption: growth from the paper (development)
+
+The old wave-only upgrade reward has been replaced by **recoverable ink XP**. Each defeated enemy leaves its ordinary sumi-e stain behind, plus a small living ink kernel. Wander near the kernel and it spirals into the brush, with hand-drawn lines and a cinnabar center. At the end of each wave, the remaining living ink streams across the sheet to the player rather than being lost off-screen.
+
+Your **BRUSH rank** is shown on a compact XP meter. When it fills, pick one of the existing three-card upgrades and jump back into the *same* fight. Several rank-ups can queue independently. Later worlds and levels yield stronger ink so your development doesn't stall as enemies toughen. Higher brush rank and maximum health gradually enlarge the player artistically, while **the collision hitbox remains unchanged**. New runs start fresh, respecting the ten-wave independent level progression.
+
+Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
+
 ## Home screen and first-stroke onboarding (development)
 
 The starting experience is mobile-first without replacing the original sumi-e/washi art. The title now has one obvious **BEGIN JOURNEY** action, a quieter **ENDLESS MODE** choice and compact links to **HOW TO PLAY**, the animated film and the Chronicle. A short, optional instruction sheet explains drag/WASD movement, automatic combat, upgrades and ten-wave runs. A small non-blocking hint appears only on the first real gameplay run. Returning players can jump straight into the scroll selection.
 
 The film still autoplays on every page load, as requested. Frame transitions now capture the exact outgoing film image, dissolve using eased interpolation and crossfade the final scene into the home screen instead of cutting hard. Reduced-motion users get a direct transition without unnecessary effects.
 
-Implementation: `css/home.css` (isolated additive title styling), `index.html` (title hierarchy and help sheet), `js/intro.js` (film transition), and `js/main.js` (onboarding controls). The original combat renderer, boss patterns, effects, upgrades, campaign progression and `main` branch are unchanged. These refinements are being tested on **`development` only**.
+Implementation: `css/home.css` (isolated additive title styling), `index.html` (title hierarchy and help sheet), `js/intro.js` (film transition), and `js/main.js` (onboarding controls). The original combat silhouettes, enemy patterns, and campaign unlocks remain unchanged; the new ink pickups and player growth are additive to the renderer. The `main` branch is untouched. These refinements are being tested on **`development` only**.
 
 ## A story hidden beneath the paper
 
@@ -39,7 +47,7 @@ The prologue **automatically starts on every page load, without requiring a tap*
 
 ![The three existing environments in an original editorial SVG triptych, not screenshots](docs/images/three-scrolls.svg)
 
-The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, upgrade picks follow each cleared wave, and permanent campaign unlocks survive failed runs. The short film is entirely separate from gameplay; it does not alter game physics, enemy balance, upgrades, or the protected combat renderer.
+The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, ink XP earns upgrade choices while fighting, and permanent campaign unlocks survive failed runs. The short film is entirely separate from gameplay; it does not alter game physics, enemy balance, upgrades, or the protected combat renderer.
 
 **Living project documents:** [Full GAME BIBLE, story, art/sprite/animation atlas and Kanban roadmap](docs/GAME_BIBLE.md) · [Original style protection contract](DESIGN.md) · [Research notes](docs/RESEARCH.md).
 
