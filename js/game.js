@@ -28,7 +28,7 @@ const G = (() => {
     worldIndex: 0, level: 1, lastVictory: false, nextStage: null,
 
     bullets: [], ebullets: [], enemies: [], markers: [], particles: [], popups: [], rings: [], idle: [],
-    puddles: [], spirits: [], knots: [],
+    puddles: [], spirits: [], knots: [], guardianMarks: [],
     stainQueue: [],
     queue: [], waveInitial: 0, waveActive: false, spawnTimer: 0, clearedT: 0,
     wavePlan: null,
@@ -153,6 +153,10 @@ const G = (() => {
       state: 'cruise', stateT: rand(0.3, 1.5), seed: rand(0, 6.28), stun: 0,
       slowT: 0, orbCd: 0, dirT: 0, spawnT: type === 'titan' ? 2.5 : 0,
       px: 0, py: 0, // kage perch / crane pass target
+      guardian: opts.elite ? {
+        world: st.themeIdx, boss: !!opts.boss, phase: 1,
+        cast: 0, cooldown: opts.boss ? 2.6 : 3.0,
+      } : null,
     };
     S.enemies.push(e);
     S.rings.push({ x, y, max: r * 2.4, life: 0.3, maxLife: 0.3 });
@@ -160,6 +164,8 @@ const G = (() => {
   }
 
   function killEnemy(e) {
+    /* A fallen Guardian cannot leave unavoidable delayed attacks behind. */
+    if (e.guardian) S.guardianMarks = S.guardianMarks.filter(m => m.owner !== e);
     const def = ENEMIES[e.type];
     const mult = 1 + 0.15 * Math.max(0, areaStateFor(S.stats.wave).effectiveWave - 1);
     const pts = Math.round((def.score * mult * (e.elite ? 6 : 1)) / 5) * 5;
@@ -225,6 +231,7 @@ const G = (() => {
   }
 
   function startWave(n) {
+    S.guardianMarks = [];
     const st = S.stats;
     st.wave = n;
     const as = areaStateFor(n);
@@ -319,7 +326,7 @@ const G = (() => {
     S.stats = freshStats();
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
-    S.puddles = []; S.spirits = []; S.knots = [];
+    S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
     S.queue = []; S.wavePlan = null; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
     S.fanT = 2.2; S.spiritT = 1.6; S.knotT = 3.6; S.trailT = 0;
@@ -383,7 +390,7 @@ const G = (() => {
     S.inputVec.x = 0; S.inputVec.y = 0;
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = []; S.queue = [];
-    S.puddles = []; S.spirits = []; S.knots = [];
+    S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
     UI.hud(false);
     UI.show('title');
     UI.setBest(getBest());
@@ -1239,6 +1246,80 @@ const G = (() => {
     }
   }
 
+  /* ---------------- Phase 3 / the three ink Guardians ----------------
+     The boss director only schedules marked attacks. Original enemy movement,
+     line-boil sprites, weapon damage and HP scaling stay intact. */
+  function updateGuardians(dt) {
+    for (const e of S.enemies) {
+      const g = e.guardian;
+      if (!g) continue;
+      const nextPhase = GUARDIANS.phases(e.hp, e.maxHp, g.boss);
+      if (nextPhase > g.phase) {
+        g.phase = nextPhase;
+        g.cooldown = Math.max(g.cooldown, 1.15);
+        S.guardianMarks = S.guardianMarks.filter(m => m.owner !== e);
+        S.popups.push({
+          x: e.x, y: e.y - e.r - 18,
+          txt: GUARDIANS.titles[g.world][g.phase - 1],
+          life: 1.5, max: 1.5, red: true,
+        });
+        S.rings.push({ x: e.x, y: e.y, max: e.r * 2.6,
+          life: .6, maxLife: .6, red: true });
+        SFX.wind();
+      }
+      g.cooldown -= dt;
+      if (g.cooldown > 0) continue;
+      const cast = GUARDIANS.attack(
+        g.world, g.phase, g.boss,
+        { x: e.x, y: e.y }, { x: S.player.x, y: S.player.y },
+        { width: S.W || 800, height: S.H || 600 }, g.cast++,
+      );
+      for (const mark of cast.marks) {
+        S.guardianMarks.push({
+          ...mark, owner: e, world: g.world,
+          phase: g.phase, maxWarn: cast.windup,
+          t: cast.windup, recovery: cast.recovery, fired: false,
+        });
+      }
+      /* Start the next pattern only after a dodge and a short recovery.
+         Even the final boss never fires hazards continuously. */
+      g.cooldown = (g.boss ? 3.9 : 4.6) - (g.phase - 1) * .36;
+      SFX.wind();
+    }
+  }
+
+  function updateGuardianMarks(dt) {
+    for (let i = S.guardianMarks.length - 1; i >= 0; i--) {
+      const mark = S.guardianMarks[i];
+      if (S.enemies.indexOf(mark.owner) === -1 || S.mode !== 'playing') {
+        S.guardianMarks.splice(i, 1);
+        continue;
+      }
+      mark.t -= dt;
+      if (mark.t <= 0 && !mark.fired) {
+        mark.fired = true;
+        if (mark.kind === 'seal') {
+          S.rings.push({
+            x: mark.x, y: mark.y, max: mark.radius,
+            life: .38, maxLife: .38, red: true,
+          });
+        } else {
+          const cx = (mark.x1 + mark.x2) * .5;
+          const cy = (mark.y1 + mark.y2) * .5;
+          S.stainQueue.push({ x: cx, y: cy, r: 14, alpha: .24,
+            red: mark.world === 2 });
+        }
+        SFX.glob();
+      }
+      /* The warning is harmless; only the brief solid impact can hurt.
+         takeHit() provides regular integrity / Ward / invulnerability. */
+      if (mark.fired && mark.t >= -mark.recovery && S.invulnT <= 0 &&
+          GUARDIANS.hits(mark, S.player)) takeHit();
+      if (mark.t < -mark.recovery) S.guardianMarks.splice(i, 1);
+      if (S.mode !== 'playing') break;
+    }
+  }
+
   function updateSpawning(dt) {
     if (!S.waveActive || !S.queue.length) return;
     S.spawnTimer -= dt;
@@ -1307,6 +1388,10 @@ const G = (() => {
     updateBullets(dt);
     updateEbullets(dt);
     updateEnemies(dt);
+    if (S.mode !== 'playing') return;
+    updateGuardians(dt);
+    updateGuardianMarks(dt);
+    if (S.mode !== 'playing') return;
     updateKnots(dt);
     updatePuddles(dt);
     updateSpirits(dt);
