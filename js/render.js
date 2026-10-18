@@ -1186,7 +1186,7 @@ const R = (() => {
   function drawEraserField(c,S,t){
     const level=S.stats?.orb||0;if(!level)return;
     const p=S.player,r=CFG.eraser.radius(level);
-    const mastered=(S.stats?.levels?.orbit||0)>=3;
+    const mastered=(S.stats?.levels?.seal_orbit||0)>0;
     c.save();c.translate(p.x,p.y);
     /* Wash the paper into a faint clearing without an opaque magic aura. */
     c.globalAlpha=mastered?.055:.034;c.fillStyle=PAPER;
