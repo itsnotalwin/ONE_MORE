@@ -97,9 +97,16 @@ const GUARDIANS = (() => {
       windup, recovery: worldBoss ? .32 : .26, marks,
     };
   }
+  /* The exact sweep fraction drives BOTH the dangerous segments and
+     the visible wet stroke. The 1.15/1.25-second warning remains safe. */
+  function strokeReveal(mark){
+    if(!Number.isFinite(mark.t))return 1; // authored pure geometry query
+    return Math.max(0,Math.min(1,-mark.t/.22));
+  }
   function strokeHits(mark,player){
-    const points=mark.points||[];
+    const points=mark.points||[],reveal=strokeReveal(mark);
     for(let i=1;i<points.length;i++){
+      if(i/(points.length-1)>reveal)break;
       const a=points[i-1],b=points[i],dx=b.x-a.x,dy=b.y-a.y;
       const len=dx*dx+dy*dy;
       const t=len?Math.max(0,Math.min(1,
@@ -125,5 +132,5 @@ const GUARDIANS = (() => {
     const ax = player.x - px, ay = player.y - py;
     return ax * ax + ay * ay < (mark.width * .5 + player.r - 2) ** 2;
   }
-  return { phases, attack, hits, titles, heavenlyPoints };
+  return { phases, attack, hits, titles, heavenlyPoints, strokeReveal };
 })();
