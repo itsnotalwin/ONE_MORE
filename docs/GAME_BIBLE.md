@@ -20,7 +20,7 @@
 ### Existing implementation
 
 - Browser stack: plain HTML5, CSS, JavaScript, Canvas2D and synthesized WebAudio. Zero build step and no third-party runtime packages.
-- Static hosting: the existing GitHub Pages URL is the agreed test environment; the desired publishing source is `development`, not the experimental draft PR. Confirm GitHub Pages Settings and a successful deployment rather than assuming changing branches published.
+- Static hosting: the public GitHub Pages URL is currently being built successfully from `development`, as confirmed by [GitHub Actions](https://github.com/itsnotalwin/ONE_MORE/actions/runs/39126685811). The normal `main` source remains an available rollback branch.
 - Movement: WASD, arrow keys or touch joystick. Player auto-targets and shoots. Pause with P/Escape, mute with M. Pick one of three cards between waves; deploy using 1/2/3 and Enter/click.
 - World architecture: **3 worlds × 10 separate levels × 10 waves each = 30 levels / 300 authored wave slots**. Wave 10 has a Guardian, with a stronger world boss at level 10.
 - Waves 1–9 end with a three-upgrade choice. There is **no XP-based leveling yet**: do not advertise XP pickups as existing.
@@ -280,7 +280,7 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 
 ## 9. Preview, release and rollback
 
-The story lives on the experimental and `development` branches. On 2026-10-18, the owner approved testing this build on the existing public GitHub Pages URL. **Publishing-source change still pending:** GitHub rejected the automatic attempt with HTTP 403 (repository settings permission). To serve development, open [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages), select Deploy from a branch → `development` → `/ (root)` → Save. Restore `main` at the same menu to roll back.
+The owner approved using the live GitHub Pages URL for `development` testing. **The source switch is now confirmed by successful Pages builds on development.** The first automated settings attempt did receive HTTP 403, but the eventual configured Pages pipeline is successfully deploying the `development` branch. Restore `main` in [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages) when the experiment ends.
 
 A safe non-Pages third-party branch preview for personal evaluation uses the `story-preview` branch alias via raw.githack, which can render files straight from a GitHub branch but may show a safety confirmation screen and has no uptime guarantees. A workflow on the experimental branch can additionally package a downloadable offline preview artifact. Long-term isolated first-party staging requires a distinct Pages repository or Pages deployment architecture intentionally set up for previews.
 
