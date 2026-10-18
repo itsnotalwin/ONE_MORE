@@ -78,8 +78,6 @@ const INTRO = (() => {
   let index = 0, elapsed = 0, lastTime = 0, running = false, visible = false;
   let sceneCache = null, sceneW = 0, sceneH = 0, raf = 0, audio = null, soundOn = false;
   let reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const hasSeen = () => { try { return sessionStorage.getItem('om_story_seen_v1') === '1'; } catch (_) { return false; } };
-  const markSeen = () => { try { sessionStorage.setItem('om_story_seen_v1', '1'); } catch (_) {} };
   function rng(seed) {
     let a = seed | 0;
     return () => {
@@ -239,7 +237,7 @@ const INTRO = (() => {
     if(!visible) return;
     const dt=Math.min(.08,Math.max(0,(now-lastTime)/1000||0));
     lastTime=now;
-    if(!document.hidden&&running&&!reduced) {
+    if(!document.hidden&&running) {
       elapsed+=dt;
       if(elapsed>=SCENES[index].seconds){ next(); }
     }
@@ -305,38 +303,29 @@ const INTRO = (() => {
     soundButton.textContent=soundOn?'SOUND ON':'SOUND OFF';
     soundButton.setAttribute('aria-pressed',String(soundOn));
   }
-  function play(force=false) {
-    if(!force&&hasSeen())return false;
+  function play() {
     if(visible)return true;
-    visible=true;running=false;elapsed=0;
+    visible=true;running=true;elapsed=0;lastTime=performance.now();
     G.mode='intro';UI.show('intro');
     setScene(0);
-    $('introStart').classList.remove('hidden');
     stage.setAttribute('aria-hidden','false');
     cancelAnimationFrame(raf);raf=requestAnimationFrame(render);
+    /* Visuals autoplay; Safari-compatible soundtrack still requires a tap. */
     return true;
-  }
-  function start() {
-    $('introStart').classList.add('hidden');
-    running=true;lastTime=performance.now();
-    if(soundOn && audio) audio.ctx.resume().catch(()=>{});
-    if(soundOn)cue(index);
   }
   function next() {
     if(!visible)return;
-    if(!running){start();return;}
     if(index+1>=SCENES.length){finish();return;}
     setScene(index+1);
   }
   function finish() {
     if(!visible)return;
-    markSeen();visible=false;running=false;cancelAnimationFrame(raf);
+    visible=false;running=false;cancelAnimationFrame(raf);
     stage.setAttribute('aria-hidden','true');
     if(audio)audio.ctx.suspend().catch(()=>{});
     UI.show('title');G.mode='title';
   }
   function openArchive() {
-    markSeen();
     const total=CAMPAIGN.totalCompleted();
     const items=ARCHIVE.map((entry,i)=>{
       const unlocked=total>=entry.unlock;
@@ -358,12 +347,10 @@ const INTRO = (() => {
     if(G.mode==='chronicle'&&(key==='Escape'||key==='Backspace')){closeArchive();return true;}
     return false;
   }
-  $('introStartBtn').addEventListener('click',start);
   $('introSkip').addEventListener('click',finish);
-  $('introCoverSkip').addEventListener('click',finish);
   $('introNext').addEventListener('click',next);
   soundButton.addEventListener('click',toggleSound);
-  $('replayIntroBtn').addEventListener('click',()=>play(true));
+  $('replayIntroBtn').addEventListener('click',play);
   $('chronicleBtn').addEventListener('click',openArchive);
   $('archiveBack').addEventListener('click',closeArchive);
   window.addEventListener('resize',()=>{sceneCache=null;});
@@ -372,7 +359,7 @@ const INTRO = (() => {
   SCENES.forEach((scene,i)=>{
     const b=document.createElement('button');b.className='intro-frame';
     b.type='button';b.setAttribute('aria-label','Chapter '+(i+1)+': '+scene.title);
-    b.addEventListener('click',()=>{if(!running)start();setScene(i);});
+    b.addEventListener('click',()=>setScene(i));
     frames.appendChild(b);
   });
   return {play,finish,next,openArchive,handleKey,SCENES,ARCHIVE};
