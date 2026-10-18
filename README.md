@@ -21,9 +21,19 @@ The ink remembers every stroke.</p>
 
 The old wave-only upgrade reward has been replaced by **recoverable ink XP**. Each defeated enemy leaves its ordinary sumi-e stain behind, plus a small living ink kernel. Wander near the kernel and it spirals into the brush, with hand-drawn lines and a cinnabar center. At the end of each wave, the remaining living ink streams across the sheet to the player rather than being lost off-screen.
 
-Your **BRUSH rank** fills a deliberately thicker liquid-ink gauge on the **left side**. The gauge alone uses a viscous cinnabar-red fill with a soft moving meniscus. Enemy blood and reclaimed XP droplets remain the current world's **black/pale ink**, never red. When it fills, pick one of the existing three-card upgrades and jump back into the *same* fight. Several rank-ups can queue independently. Later worlds and levels yield stronger ink so your development doesn't stall as enemies toughen. Higher brush rank and maximum health subtly refine the brush nib and its ink richness, capped at **1.18× apparent size**, while **the collision hitbox remains unchanged**. New runs start fresh, respecting the ten-wave independent level progression.
+Your **BRUSH rank** now fills a compact horizontal cinnabar-red ink gauge **at the top beside the wave progress bar**. The world beneath remembers its black ink marks for all ten waves. Enemy blood and reclaimed XP droplets remain the current world's **black/pale ink**, never red. When it fills, pick one of the existing three-card upgrades and jump back into the *same* fight. Several rank-ups can queue independently. Later worlds and levels yield stronger ink so your development doesn't stall as enemies toughen. Higher brush rank and maximum health subtly refine the brush nib and its ink richness, capped at **1.18× apparent size**, while **the collision hitbox remains unchanged**. New runs start fresh, respecting the ten-wave independent level progression.
 
 Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
+
+## Stage-long ink painting and the new protagonist (development)
+
+**Every weapon signs the paper.** Basic ink shots make small dabs, Echo leaves mirrored marks, Folded Fan cuts directional slash marks, Orbit scuffs crescents, Black Tide makes broken rings, Ink Trail drags pools, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. All marks use the same world-appropriate black/pale `INK` pigment as enemy blood, never decorative neon colors.
+
+**All weapon marks and enemy blood survive the entire independent ten-wave stage** without fading, including the final Guardian encounter. Only a completed/failed/abandoned stage or fresh run turns the sheet; Endless turns the sheet after each ten-wave region. Terrain marks now reuse cached painted sprites and are indexed in small world-space cells to avoid creating new texture canvases per hit or repainting every distant stain on mobile.
+
+The protagonist has also been repainted as a single weighted **living ink spot**, with a curved paper eye and a short tapering tail integrated into the body. The previous extra bristles and loose brush-like appendages are gone. Breathing, smoothed aim and the original movement/collision remain. The horizontal XP gauge and terrain effects are visual changes only; XP rewards and game balance were not retuned.
+
+Source: [`js/game.js`](js/game.js), [`js/render.js`](js/render.js), [`css/ink-xp.css`](css/ink-xp.css). [Stage persistence tests](tests/terrain-stages.test.cjs) and real desktop/mobile browser verification cover the new rendering lifecycle. All implementation is on `development` only; `main` is not merged.
 
 ## Phase 4A: the awakened brush and living ink seeds (development)
 
@@ -231,7 +241,7 @@ All balance knobs live in `js/config.js`:
 - `CFG.endless` — how fast the endless paper grows teeth after sheet three
 - `ENEMIES` — hp, speed, size, score and the wave each type enters
 - `UPGRADES` — the pool of strokes and weapons, and their level caps
-- `CFG.world` — spawn padding, stain cap and fade, ambient mark density
+- `CFG.world` — spawn padding and ambient mark density (stage stains now persist independently of the legacy cap/fade knobs)
 - `CFG.ranks` — waves-cleared thresholds for the end-of-run seal
 
 Campaign unlocks (`om_campaign_v1`), high score, run counter and mute preference
