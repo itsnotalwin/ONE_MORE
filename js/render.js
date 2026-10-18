@@ -309,6 +309,7 @@ const R = (() => {
     moth:     {style:'wings',arms:4,scatter:1.3,elong:1.1},
     titan:    {style:'flood',arms:7,scatter:2.1,elong:1.9},
     kage:     {style:'slash',arms:4,scatter:1.9,elong:1.7},
+    stilt:    {style:'needle',arms:5,scatter:2.2,elong:1.8},
     crane:    {style:'feather',arms:5,scatter:2.0,elong:1.5},
     oni:      {style:'crack',arms:6,scatter:1.45,elong:2.1},
   };
@@ -326,7 +327,7 @@ const R = (() => {
     const arms=hand.arms+(v%3);
     for(let i=0;i<arms;i++){
       let angle=TAU*(i+rnd()*.29)/arms;
-      if(hand.style==='speed'||hand.style==='slash'||hand.style==='feather')
+      if(['speed','slash','feather','needle'].includes(hand.style))
         angle=(rnd()-.5)*1.5+Math.PI*(i%2);
       if(hand.style==='wings')angle=(i%2?1:-1)*(.35+rnd()*1.1);
       if(hand.style==='crack')angle+=Math.sin(i*2.3)*.38;
