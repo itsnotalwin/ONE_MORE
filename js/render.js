@@ -9,6 +9,7 @@
 
 const R = (() => {
   const RED = '#b23a2b';
+  const AWAKEN_RED = '#ac1538'; /* deep vivid lacquer-crimson, mastered arts only */
   const TAU = Math.PI * 2;
 
   /* ---------------- paper themes ---------------- */
@@ -292,6 +293,75 @@ const R = (() => {
     c.restore();
   }
 
+  /* Five seeded variants per existing enemy type. Each beast retains its
+     original sprite/animation, but signs the paper in a different hand.
+     Splatter references: traditional haboku ink breakup, directional
+     dry-brush strokes, pooled pigment and expressive negative space. */
+  const BLOOD_HANDS = {
+    pulse:    {style:'pool',arms:3,scatter:.9,elong:1.0},
+    pulseling:{style:'dots',arms:2,scatter:.65,elong:.68},
+    dart:     {style:'speed',arms:3,scatter:1.6,elong:1.65},
+    spit:     {style:'spray',arms:6,scatter:1.8,elong:.85},
+    split:    {style:'fork',arms:5,scatter:1.35,elong:1.1},
+    slab:     {style:'weight',arms:4,scatter:1.0,elong:1.85},
+    shade:    {style:'ghost',arms:3,scatter:1.7,elong:1.45},
+    wraith:   {style:'mist',arms:5,scatter:1.4,elong:1.3},
+    moth:     {style:'wings',arms:4,scatter:1.3,elong:1.1},
+    titan:    {style:'flood',arms:7,scatter:2.1,elong:1.9},
+    kage:     {style:'slash',arms:4,scatter:1.9,elong:1.7},
+    crane:    {style:'feather',arms:5,scatter:2.0,elong:1.5},
+    oni:      {style:'crack',arms:6,scatter:1.45,elong:2.1},
+  };
+  function paintEnemyBlood(c,type,r,seed,variant,color){
+    const hand=BLOOD_HANDS[type]||BLOOD_HANDS.pulse;
+    const v=((variant%5)+5)%5,rnd=mulberry(seed+v*11497);
+    c.save();c.fillStyle=color;c.strokeStyle=color;
+    const ang=(v/5)*TAU; c.rotate(ang);
+    c.scale(hand.elong,1/Math.sqrt(hand.elong));
+    /* Five compositions, not five colorways. They alter the branching,
+       core silhouette, distance and texture with a deterministic seed. */
+    const center=r*(.43+(v%3)*.07);
+    blobPath(c,0,0,center,seed+v*31,.30+v*.033,11);
+    c.globalAlpha=.98;c.fill();
+    const arms=hand.arms+(v%3);
+    for(let i=0;i<arms;i++){
+      let angle=TAU*(i+rnd()*.29)/arms;
+      if(hand.style==='speed'||hand.style==='slash'||hand.style==='feather')
+        angle=(rnd()-.5)*1.5+Math.PI*(i%2);
+      if(hand.style==='wings')angle=(i%2?1:-1)*(.35+rnd()*1.1);
+      if(hand.style==='crack')angle+=Math.sin(i*2.3)*.38;
+      const distance=r*hand.scatter*(.56+rnd()*.9);
+      const tx=Math.cos(angle)*distance,ty=Math.sin(angle)*distance;
+      const thick=Math.max(.8,r*(.1+.09*rnd())*(v===4?1.3:1));
+      if(['weight','flood','crack','slash','speed','feather','fork'].includes(hand.style)){
+        inkStroke(c,[{x:Math.cos(angle)*center*.5,y:Math.sin(angle)*center*.5},
+          {x:tx*.62,y:ty*.62},{x:tx,y:ty}],thick,
+          {color,alpha:.85,seed:seed+i+v*17,taper:.73,jit:.08});
+      }
+      c.save();c.translate(tx,ty);c.rotate(angle);
+      c.globalAlpha=.78+rnd()*.21;
+      if(hand.style==='spray'||hand.style==='dots'||hand.style==='mist'){
+        blobPath(c,0,0,r*(.095+rnd()*.14),seed+i*19+v,.29,8);c.fill();
+      }else if(hand.style==='ghost'){
+        c.lineWidth=Math.max(.8,r*.09);c.beginPath();
+        c.arc(0,0,r*(.2+rnd()*.1),.3,2.6);c.stroke();
+      }else{
+        teardrop(c,r*(.07+rnd()*.13));c.fill();
+      }
+      c.restore();
+    }
+    if(hand.style==='pool'||hand.style==='weight'||hand.style==='flood'){
+      c.globalAlpha=.81;
+      blobPath(c,-r*.22,r*.24,r*.4,seed+v*100,.29,9);c.fill();
+    }
+    if(hand.style==='split'||hand.style==='fork'){
+      c.lineWidth=Math.max(.8,r*.12);c.globalAlpha=.8;
+      c.beginPath();c.moveTo(-r*.3,0);c.lineTo(r*.4,r*.45);
+      c.moveTo(-r*.1,-r*.2);c.lineTo(r*.5,-r*.42);c.stroke();
+    }
+    c.restore();
+  }
+
   /* angry paper eyes on an ink body */
   function eyeSlits(c, ang, r, len = 1) {
     c.save();
@@ -382,11 +452,14 @@ const R = (() => {
     if (!S.stainQueue.length) return;
     for (const q of S.stainQueue) {
       const r = Math.max(2.4, Math.min(100, q.r));
-      const weapon = q.kind === 'weapon' ? q.weapon : '';
+      const weapon=q.kind==='weapon'?q.weapon:'';
+      const bloodType=!weapon?(q.enemyType||'pulse'):'';
+      const bloodVariant=((q.variant??0)%5+5)%5;
       const radius = Math.max(3,Math.round(r/2)*2);
       const variant = ((Math.floor(Math.abs(q.x*13+q.y*7))%4)+4)%4;
-      const color = q.red ? RED : INK;
-      const key = themeKey+':'+weapon+':'+radius+':'+variant+':'+color;
+      const color=q.red?(weapon?AWAKEN_RED:RED):INK;
+      const key=themeKey+':'+weapon+':'+bloodType+':'+bloodVariant+
+        ':'+radius+':'+variant+':'+color;
       let sprite = stampCache.get(key);
       if(!sprite){
         const half = Math.ceil(radius*3.3+8), scale=2;
@@ -396,7 +469,7 @@ const R = (() => {
         g.setTransform(scale,0,0,scale,half*scale,half*scale);
         const seed=radius*181+variant*7919;
         if(weapon)paintWeaponImprint(g,weapon,radius,seed,color);
-        else splatPaint(g,0,0,radius,seed,.9,color);
+        else paintEnemyBlood(g,bloodType,radius,seed,bloodVariant,color);
         sprite={spr,half};
         stampCache.set(key,sprite);
         /* Eviction does not erase existing terrain: records keep the sprite. */
@@ -404,8 +477,12 @@ const R = (() => {
       }
       const mark={
         x:q.x,y:q.y,spr:sprite.spr,half:sprite.half,
-        angle:weapon ? (q.angle||0) : 0, a:q.alpha??.5,
+        angle:weapon?(q.angle||0):(q.angle||0)*.25,
+        /* Dense sumi or vermilion lacquer, never the old gray wash. */
+        a:weapon?Math.max(.92,q.alpha??.94):Math.max(.88,q.alpha??.9),
         kind:weapon||'blood',
+        enemyType:bloodType,variant:bloodVariant,
+        red:!!q.red,
       };
       stains.push(mark);
       const cell=stainCellKey(mark.x,mark.y);
@@ -419,6 +496,31 @@ const R = (() => {
 
   function updateStains(dt) {
     /* Stage memory is intentionally permanent. Never age away marks. */
+  }
+
+  /* Eraser deletes accumulated blood and weapon paint, not world decor,
+     enemies or the underlying paper. Index updates are localized to the
+     touched spatial cells and queued paint is screened in game.js. */
+  function eraseTerrain(x,y,r){
+    const r2=r*r,removed=new Set();
+    const pad=25;
+    for(let cy=Math.floor((y-r-pad)/STAIN_CELL);
+      cy<=Math.floor((y+r+pad)/STAIN_CELL);cy++){
+      for(let cx=Math.floor((x-r-pad)/STAIN_CELL);
+        cx<=Math.floor((x+r+pad)/STAIN_CELL);cx++){
+        const key=cx+','+cy,list=stainCells.get(key);
+        if(!list)continue;
+        const kept=[];
+        for(const mark of list){
+          if((mark.x-x)**2+(mark.y-y)**2<r2)removed.add(mark);
+          else kept.push(mark);
+        }
+        if(kept.length)stainCells.set(key,kept);
+        else stainCells.delete(key);
+      }
+    }
+    if(removed.size)stains=stains.filter(mark=>!removed.has(mark));
+    return removed.size;
   }
 
   function resetStains() {
@@ -1639,5 +1741,5 @@ const R = (() => {
     return {total:stains.length,blood,weapons};
   }
 
-  return { draw, resetStains, terrainStats };
+  return { draw, resetStains, eraseTerrain, terrainStats };
 })();
