@@ -206,7 +206,7 @@ only, and the game is 100% client-side by design.
 
 ## Test
 
-Run `node --test tests/*.test.cjs` (Node.js 18+). The [Film visual QA workflow](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml) additionally uses real desktop/phone-sized Chromium to render the short film and produces **10 real browser screenshots** as a downloadable artifact. Playwright is CI-only; the playable game still has zero third-party runtime dependencies. The suite checks
+Run `node --test tests/*.test.cjs` (Node.js 18+). **Combat Foundations / Phase 1** includes continuous swept projectile hits, pierce-once-per-target rules, hostile-needle and Spirit Scribe collision reliability, and clean keyboard/joystick state on restart, pause and focus loss. See [`tests/combat.test.cjs`](tests/combat.test.cjs); the visuals and weapon damage values remain unchanged. The [Film visual QA workflow](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml) additionally uses real desktop/phone-sized Chromium to render the short film and produces **10 real browser screenshots** as a downloadable artifact. Playwright is CI-only; the playable game still has zero third-party runtime dependencies. The suite checks
 all 30 stage clears, 300 wave transitions, sequential unlocks, world-specific
 enemy patterns, final bosses, storage fallback, Endless, and frozen original
 renderer/audio/CSS contents. It is a headless logic test; actual browser visual
