@@ -15,6 +15,8 @@ The ink remembers every stroke.</p>
 
 **Development milestone 02 / Wave Director 2.0:** Every Journey level now has an authored stage identity, featured enemy pairing and choreographed spawn formation. Across the 30 levels and 300 waves, encounters vary in group spacing, flanking direction, momentum and roster emphasis instead of simply adding health. Existing Guardian and world-special waves remain, and Endless retains its original random generation. This is **on `development` only**. See [`js/wave-director.js`](js/wave-director.js), [all 30 stages in the Game Bible](docs/GAME_BIBLE.md#wave-director-20--authored-encounter-design-phase-2), and [`tests/wave-director.test.cjs`](tests/wave-director.test.cjs).
 
+**Development milestone 03 / Multi-phase Guardians:** First Wash cracks the paper with ink seams, Night Scroll lashes out with targeted shadow rays, and Cinnabar Field brands the ground with delayed red seals. All three encounters have dodgeable warnings, distinct HP-based phase changes, short impact windows and a restrained, in-world Guardian HP bar. Final Level 10 world bosses have three phases; regular wave-10 Guardians have two. The original enemy art and movement remain intact. Implemented directly in `development`, still under evaluation. See [Guardian architecture and roadmap](docs/GAME_BIBLE.md#guardian-encounters--phase-3-development) and [automated Guardian tests](tests/guardians.test.cjs).
+
 ## A story hidden beneath the paper
 
 Before the world had a name, there was paper. The Painter imagined mountains, rivers, and living things in a single breath. But ink seeped through the other side, and abandoned marks learned to move. Afraid of these mistakes, the Painter tried to wash everything away. One unfinished brushstroke survived.
@@ -170,6 +172,7 @@ one-more/
 │   ├── ui.js                   # DOM screens, HUD, kanji numerals, upgrade cards
 │   ├── game.js                 # camera, combat, encounters, weapons, flow
 │   ├── wave-director.js        # authored campaign encounters and spawn formations
+│   ├── guardians.js            # multi-phase boss patterns and safe collision geometry
 │   ├── render.js               # original gameplay renderer
 │   ├── film.js                 # procedural actors, ink animations and live-drawn short film
 │   ├── intro.js                # film timeline, captions, sound + Chronicle
@@ -183,7 +186,8 @@ one-more/
 │   ├── progression.test.cjs    # existing campaign regression tests
 │   ├── story.test.cjs          # seven-shot film and archive regression tests
 │   ├── film-browser.cjs        # CI-only real Chromium animation QA
-│   └── wave-director.test.cjs  # 300 encounter legality and pacing checks
+│   ├── wave-director.test.cjs  # 300 encounter legality and pacing checks
+│   └── guardians.test.cjs      # Guardian phases, telegraphs, damage, cleanup
 ├── docs/
 │   ├── GAME_BIBLE.md           # canon lore, technical atlas, roadmap checklist
 │   ├── RESEARCH.md             # art, accessibility, hosting choices
