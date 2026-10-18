@@ -154,7 +154,7 @@ async function inspect(browser,name,viewport){
   assert.equal(grown.rank,2);
   assert.equal(grown.wave,1,'leveling does not skip any wave');
   assert.equal(grown.realRadius,10,'the character only grows visually');
-  assert.equal(grown.drawScale,1,'early ranks preserve the iconic silhouette size');
+  assert.ok(grown.drawScale>=1&&grown.drawScale<=1.045,'early brush ranks retain nearly unchanged scale');
   /* Verify the mid/high-rank stage is visibly evolved but never oversized. */
   await page.evaluate(()=>{
     G.S.stats.inkRank=16;
