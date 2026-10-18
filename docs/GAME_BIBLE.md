@@ -309,6 +309,22 @@ The director chooses:
 
 **Verification:** `tests/story.test.cjs` covers the film/replay while the full Node test suite protects combat and progression. Real Chromium at desktop and mobile dimensions screenshots the new home, onboarding, campaign and in-game sequences. Physical iPhone Safari review of touch spacing and transitions remains an acceptance step.
 
+## Phase 5B / the living paper, Eraser and mastered crimson
+
+**Implemented on `development`; iPhone device review outstanding.** The visual direction follows three references: [Ōkami](https://en.wikipedia.org/wiki/%C5%8Ckami) for meaningful brush techniques, [The Unfinished Swan](https://store.steampowered.com/app/1206430/The_Unfinished_Swan/) for expressive paint that transforms the world, and [haboku](https://en.wikipedia.org/wiki/Haboku) for the tension between a dense wet core and scattered uncontrolled streaks. These are inspirations; we use none of their artwork or code.
+
+**Preserve the current enemy roster and every creature's existing procedurally animated shape.** Only the death-paint operation branches by enemy type: there are **14 named enemy hands, each with five seeded variants**. BLOT pools, BLIP dots, SPEAR velocity slashes, SPIT spray, DRIP forks, BRUTE weighted blots, SHADE disconnected ghost washes, WISP mist, MOTH paired wing fans, TITAN flood washes, KAGE slashes, STILT needle marks, ONI cracks and CRANE feather strokes. Normal blood is current-scroll `INK`, **never red**.
+
+**Mastery:** a weapon that reaches its configured upgrade cap uses a **deep, vivid lacquer crimson `#ac1538`** for *its own* stage-long marks, while unmastered weapons and enemy blood remain black/pale themed ink. This includes Eraser rank 3, Fan rank 4, Spirit Scribes rank 3, Ink Knots rank 3, Black Tide rank 3, Trail rank 3 and Echo rank 2. Maxed shot modifiers, Paper Ward, Ink Burst and triggered passives may leave restrained red signatures without changing mechanics. Do not recolor the enemy silhouettes, paper, character, or all weapons at once.
+
+**The Eraser:** replaces rotating Ink Orbit visuals and damage with a continuous circular negative-space zone centered on the character. Rank radius **135 / 170 / 205 world pixels**, one damage per enemy at most every **0.82 s** (per-enemy cooldown, no burst stacking), very gentle knockback, erasure every **0.25 s**. The zone deletes both previously stamped and still-queued stage-terrain paint, without altering decorative world paper or erased creature AI. At mastery it leaves a thin deep-red boundary. Retain the internal `orbit` upgrade ID and `stats.orb` for backwards compatibility; the player-facing upgrade is **The Eraser**.
+
+**More meaningful terrain:** moving ink shots, mirrored Echo shots and Fan blades stamp at regular 38px intervals, Spirits leave wisps during movement, Knots print along the bound fibers and Black Tide paints its actual outer wavefront. Dense weapon marks use the existing stage-long cached Canvas2D terrain system rather than screen-space emitters, preserving each 10-wave stage's physical painted history except where the Eraser passes.
+
+**Protagonist:** no longer a brush tool or a generic rounded enemy clone. A recognizable asymmetrical flowing ink-soul has a soft floating hood, two lower folds and one curved expressive paper eye. It preserves original collision/targeting, visual-scale limits, motion restraint, world palette, and reduced-motion support.
+
+**Acceptance:** compare desktop and 393×852 phone browser screenshots, check 14 enemy splatter names and five variants each, verify that stage paint remains over wave transitions but is erased inside the field, ensure maxed crimson signatures appear and that Eraser damage is appropriately low. Then test a complete late-world ten-wave run on real iPhone Safari.
+
 ## Stage-long painting / persistent weapon signatures (development)
 
 **Status: implemented on `development` only.** The old semi-transient stain layer faded after several seconds and discarded marks when it hit its cap. This has been replaced with a **ten-wave stage memory** shared by enemy blood and the player's weapon impacts. Rendering uses reuseable cached Canvas2D stamps, grouped in world-space 240 px cells, so off-screen stains are not repainted on every frame. No raster files or external art packages are required.
@@ -318,7 +334,7 @@ The director chooses:
 | Ink Shot | Small splash and directional brush fleck |
 | Echo Stroke | Mirrored answer/crossing stroke |
 | Folded Fan | Long dry-brush slash |
-| Orbit | Crescent scuff and compact blot |
+| The Eraser | Clears enemy blood and weapon marks from a wide damage field; mastered boundary paints lacquer crimson |
 | Black Tide (nova) | Fractured wash ring |
 | Ink Trail | Pooled dragging wash |
 | Spirit Scribes | Thin wispy brush traces |
@@ -326,9 +342,9 @@ The director chooses:
 | Paper Ward | Rectangular stamped border |
 | Shockwave | Short radial cracked arcs |
 
-All combat stains remain in the world's enemy-colored **INK** palette, black on normal paper and appropriately inverted on Night Scroll. Red belongs to the rank/XP gauge (plus established screen-specific highlights). **Stains are cumulative for all ten waves** and deliberately clear at a new level, a finished/failed/abandoned stage, or after ten Endless waves, never simply because a wave turns. Physical damage, knockback, targeting and XP mathematics are untouched.
+Enemy blood and ordinary weapon marks stay in the themed **INK** palette, black on normal paper and inverted on Night Scroll. Individually maxed techniques now paint rich lacquer-crimson stage signatures, while the HUD keeps its original cinnabar-red XP fill. **Stains are cumulative for all ten waves** and deliberately clear at a new level, a finished/failed/abandoned stage, or after ten Endless waves, never simply because a wave turns. Physical damage, knockback, targeting and XP mathematics are untouched.
 
-The player was separately redesigned as a single rounded living ink creature, with one carved paper eye and a short attached tapering motion stroke. The added bristle ornament and disconnected tail have been removed; the stable enemy-like line-boil animation and unchanged hitbox remain.
+The player is now an independent flowing ink-soul with an expressive carved paper eye and subtle cloak-like folds, without a brush handle, attached bristles or a rigid separate tail. Existing collision geometry stays fixed.
 
 The XP HUD is now a **horizontal red liquid-ink meter alongside the existing wave progress at the top**, not a tall left-side column. Mobile layouts shrink it without covering the top-right health cells.
 
