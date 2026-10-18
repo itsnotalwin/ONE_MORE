@@ -25,13 +25,27 @@ Your **BRUSH rank** now fills a compact horizontal cinnabar-red ink gauge **at t
 
 Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
 
+## The Eraser and the living paper (development)
+
+**Visual references:** [Ōkami's Celestial Brush](https://en.wikipedia.org/wiki/%C5%8Ckami) for distinct techniques that change the world, [The Unfinished Swan](https://store.steampowered.com/app/1206430/The_Unfinished_Swan/) for readable black paint that transforms a blank landscape, and traditional [haboku ink painting](https://en.wikipedia.org/wiki/Haboku) for wet-to-dry splatters. These are design references, not reused sprites.
+
+**Original enemy silhouettes are unchanged.** Each of the 14 existing enemy types now has its own death-ink composition and **five deterministic splatter variants**. BLOT bleeds pooled drops; STILT flicks needle-thin streaks; MOTH makes wing-like fans; TITAN spills heavy layered washes, and so on. All enemy blood is black/pale sumi ink appropriate to the scroll.
+
+**Every weapon paints much darker marks as it moves**, using the existing stage-long washi layer. Moving shots, Echo and Folded Fan stamp their paths. Spirit Scribes paint while gliding, Ink Knots leave attached thread marks, and Black Tide stamps the true edge of its effect. Normal marks remain deep black. When an individual skill reaches its maximum rank, its ink turns **deep lacquer crimson `#ac1538`**, including weapon effects and understated signatures from mastered passive techniques. No neon or extra asset packs are used.
+
+**Ink Orbit is now The Eraser**, a round negative-space field that does not have orbiting projectiles. It damages nearby creatures for **1 HP per eligible target every 0.82 seconds** and physically removes enemy blood and weapon marks from the paper every quarter-second. Its radius grows from **135px → 170px → 205px** across three ranks, and at mastery a sparse crimson perimeter shows where the field is washing the world. It does not alter the player's movement, collision size or XP mathematics.
+
+**The protagonist is now a separate flowing ink-soul**, not a paintbrush with bristles: an asymmetric soft hood, two gently moving lower folds and one expressive paper eye. The existing attack effects still paint the map; the enemy animation atlas is preserved.
+
+[Focused terrain/Eraser test suite](tests/terrain-stages.test.cjs) · [Browser visual QA](tests/film-browser.cjs) · [Living Game Bible](docs/GAME_BIBLE.md). Implemented on `development` only; `main` remains untouched.
+
 ## Stage-long ink painting and the new protagonist (development)
 
-**Every weapon signs the paper.** Basic ink shots make small dabs, Echo leaves mirrored marks, Folded Fan cuts directional slash marks, Orbit scuffs crescents, Black Tide makes broken rings, Ink Trail drags pools, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. All marks use the same world-appropriate black/pale `INK` pigment as enemy blood, never decorative neon colors.
+**Every weapon signs the paper.** Basic ink shots make small dabs, Echo leaves mirrored marks, Folded Fan cuts directional slash marks, The Eraser clears accumulated marks, Black Tide makes broken rings, Ink Trail drags pools, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. Ordinary marks use the scroll's black/pale ink. Mastered weapons use deep lacquer crimson; enemy blood stays black.
 
 **All weapon marks and enemy blood survive the entire independent ten-wave stage** without fading, including the final Guardian encounter. Only a completed/failed/abandoned stage or fresh run turns the sheet; Endless turns the sheet after each ten-wave region. Terrain marks now reuse cached painted sprites and are indexed in small world-space cells to avoid creating new texture canvases per hit or repainting every distant stain on mobile.
 
-The protagonist has also been repainted as a single weighted **living ink spot**, with a curved paper eye and a short tapering tail integrated into the body. The previous extra bristles and loose brush-like appendages are gone. Breathing, smoothed aim and the original movement/collision remain. The horizontal XP gauge and terrain effects are visual changes only; XP rewards and game balance were not retuned.
+The protagonist is now a distinct **flowing ink-soul**, with a curved paper eye and gently animated lower folds, not an actual brush. The previous extra bristles and loose brush-like appendages are gone. Breathing, smoothed aim and the original movement/collision remain. The horizontal XP gauge and terrain effects are visual changes only; XP rewards and game balance were not retuned.
 
 Source: [`js/game.js`](js/game.js), [`js/render.js`](js/render.js), [`css/ink-xp.css`](css/ink-xp.css). [Stage persistence tests](tests/terrain-stages.test.cjs) and real desktop/mobile browser verification cover the new rendering lifecycle. All implementation is on `development` only; `main` is not merged.
 
@@ -158,7 +172,7 @@ reappears; read the paper.
 **The brush arts — 19 upgrades**, including four weapons:
 
 - *Strokes*: Quick Hand, Bitter Ink, Twin Stroke, Through Mist, Flick,
-  Fleeting Foot, Thick Ink, Red Seal, Ink Burst, Echo Stroke, Ink Orbit,
+  Fleeting Foot, Thick Ink, Red Seal, Ink Burst, Echo Stroke, The Eraser,
   Black Tide, Wet Paper, Crimson Tip, Paper Ward
 - *Weapons* (marked 武 in vermilion on their cards):
   **Folded Fan** — a snapping spray of paper blades;
