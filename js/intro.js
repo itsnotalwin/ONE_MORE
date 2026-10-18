@@ -77,17 +77,16 @@ const INTRO = (() => {
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const LENGTH=SCENES.reduce((n,s)=>n+s.seconds,0);
   let index=0,elapsed=0,priorFrame=null,dissolve=1,visible=false,lastTime=0;
-  let raf=0,audio=null,soundOn=false,sceneW=1,sceneH=1;
+  let raf=0,audio=null,soundOn=false,sceneW=1,sceneH=1,exitTimer=0;
 
   function selectScene(n){
     const prev=index;
     if(visible&&n!==prev&&sceneW>1){
+      /* Carry the exact outgoing camera frame into the next shot.
+         Previously the film repainted a different end-frame, causing a jump. */
       const plate=document.createElement('canvas');
       plate.width=canvas.width;plate.height=canvas.height;
-      const painter=plate.getContext('2d');
-      painter.setTransform(canvas.width/sceneW,0,0,canvas.height/sceneH,0,0);
-      FILM.scene(painter,sceneW,sceneH,prev,SCENES[prev].seconds,
-        SCENES[prev].seconds,reduced);
+      plate.getContext('2d').drawImage(canvas,0,0);
       priorFrame=plate;
     }
     index=Math.max(0,Math.min(SCENES.length-1,n));elapsed=0;dissolve=0;
@@ -121,7 +120,7 @@ const INTRO = (() => {
     const dt=Math.max(0,Math.min(.08,(now-lastTime)/1000||0));
     lastTime=now;
     if(!document.hidden){
-      elapsed+=dt;dissolve=Math.min(1,dissolve+dt/1.3);
+      elapsed+=dt;dissolve=Math.min(1,dissolve+dt/1.08);
       if(elapsed>=SCENES[index].seconds){
         if(index===SCENES.length-1){finish();return;}
         selectScene(index+1);
@@ -140,9 +139,10 @@ const INTRO = (() => {
     FILM.scene(ctx,sceneW,sceneH,index,elapsed,SCENES[index].seconds,reduced);
     ctx.restore();
     if(priorFrame&&dissolve<1&&!reduced){
+      const p=FILM.ease(0,1,dissolve);
       ctx.save();
       ctx.setTransform(1,0,0,1,0,0);
-      ctx.globalAlpha=Math.pow(1-dissolve,1.4);
+      ctx.globalAlpha=1-p;
       ctx.drawImage(priorFrame,0,0,canvas.width,canvas.height);
       ctx.restore();
     }
@@ -201,7 +201,9 @@ const INTRO = (() => {
   }
   function play(){
     if(visible)return true;
+    clearTimeout(exitTimer);exitTimer=0;
     visible=true;priorFrame=null;
+    stage.classList.remove('is-exiting');
     G.mode='intro';UI.show('intro');
     selectScene(0);
     lastTime=performance.now();
@@ -215,6 +217,20 @@ const INTRO = (() => {
     visible=false;cancelAnimationFrame(raf);stage.setAttribute('aria-hidden','true');
     if(audio)audio.ctx.suspend().catch(()=>{});
     G.mode='title';UI.show('title');
+    if(reduced){priorFrame=null;return;}
+    /* Keep the outgoing ink image over the new menu until it dissolves.
+       The title exists and is interactive as soon as the film is skipped,
+       but the transition doesn't reveal a blank or flashing frame. */
+    stage.classList.remove('hidden');
+    stage.getBoundingClientRect(); /* establish the start of the transition */
+    stage.classList.add('is-exiting');
+    exitTimer=setTimeout(()=>{
+      if(visible)return;
+      stage.classList.add('hidden');
+      stage.classList.remove('is-exiting');
+      priorFrame=null;
+      exitTimer=0;
+    },850);
   }
   function next(){
     if(!visible)return;
