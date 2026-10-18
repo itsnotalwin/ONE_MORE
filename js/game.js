@@ -29,7 +29,7 @@ const G = (() => {
 
     bullets: [], ebullets: [], enemies: [], markers: [], particles: [], popups: [], rings: [], idle: [],
     puddles: [], spirits: [], knots: [], guardianMarks: [],
-    stainQueue: [],
+    stainQueue: [], inkDrops: [], inkRecall: false,
     queue: [], waveInitial: 0, waveActive: false, spawnTimer: 0, clearedT: 0,
     wavePlan: null,
 
@@ -49,6 +49,7 @@ const G = (() => {
       echo: 0, orb: 0, nova: 0, slow: 0, crit: 0, ward: false, wardCd: 0,
       fan: 0, trailW: 0, spirit: 0, knot: 0,
       score: 0, kills: 0, time: 0, wave: 0,
+      inkRank: 1, inkXp: 0, inkPending: 0, inkCollected: 0,
     };
   }
 
@@ -183,6 +184,11 @@ const G = (() => {
       alpha: e.elite ? 0.6 : 0.5,
       red: e.elite || e.type === 'oni',
     });
+    /* The living heart of the stain can be reclaimed. The dried splat
+       remains on the paper as a visual record of the battle. */
+    INK_XP.drop(S.inkDrops, e.x, e.y,
+      INK_XP.value(def, e, { wave:S.stats.wave, worldIndex:S.worldIndex, level:S.level }),
+      !!e.elite, S.stats.kills);
     if (e.type === 'slab' || e.type === 'titan' || e.type === 'oni' || e.elite) SFX.bigKill(); else SFX.kill();
     if (e.elite) { S.shake = Math.max(S.shake, 9); }
     if (e.type === 'split') {
@@ -231,6 +237,7 @@ const G = (() => {
   }
 
   function startWave(n) {
+    S.inkRecall = false;
     S.guardianMarks = [];
     const st = S.stats;
     st.wave = n;
@@ -298,7 +305,7 @@ const G = (() => {
   }
 
   function openUpgrade() {
-    if (S.mode !== 'playing') return;
+    if (S.mode !== 'playing' || S.stats.inkPending <= 0) return;
     S.mode = 'upgrade';
     /* globs still aloft settle into the paper */
     for (const b of S.ebullets) S.stainQueue.push({ x: b.x, y: b.y, r: 2.4, alpha: 0.22 });
@@ -306,11 +313,11 @@ const G = (() => {
     S.choices = pickUpgrades(3);
     S.selected = null;
     const as = areaStateFor(S.stats.wave);
-    UI.setUpgradeHeader(as.waveInArea, as.area, S.stats.wave + 1);
+    UI.setUpgradeHeader(as.waveInArea, as.area, S.stats.wave + 1, 'ink', S.stats.inkRank);
     UI.fillUpgrades(S.choices, S.stats.levels);
     UI.markSelected(null);
     const nxt = areaStateFor(S.stats.wave + 1);
-    UI.setDeploy(false, nxt.waveInArea === 1 ? nxt.area : null, nxt.waveInArea, nxt.cycle);
+    UI.setDeploy(false, nxt.waveInArea === 1 ? nxt.area : null, nxt.waveInArea, nxt.cycle, S.waveActive);
     UI.show('upgrade');
     SFX.wave();
   }
@@ -326,6 +333,7 @@ const G = (() => {
     S.stats = freshStats();
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
+    S.inkDrops = []; S.inkRecall = false;
     S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
     S.queue = []; S.wavePlan = null; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
@@ -349,6 +357,7 @@ const G = (() => {
     UI.hud(true);
     UI.setMode(S.runMode, S.level);
     UI.setScore(0);
+    UI.setInkProgress(S.stats.inkRank, S.stats.inkXp, INK_XP.needed(S.stats.inkRank), true);
     UI.setHp(S.stats.hp, S.stats.maxHp);
     UI.setLoadout({});
     S.mode = 'playing';
@@ -390,6 +399,7 @@ const G = (() => {
     S.inputVec.x = 0; S.inputVec.y = 0;
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = []; S.queue = [];
+    S.inkDrops = []; S.inkRecall = false;
     S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
     UI.hud(false);
     UI.show('title');
@@ -405,10 +415,13 @@ const G = (() => {
     if (!u.patch) S.stats.levels[u.id] = (S.stats.levels[u.id] || 0) + 1;
     UI.setHp(S.stats.hp, S.stats.maxHp);
     UI.setLoadout(S.stats.levels);
+    S.stats.inkPending = Math.max(0, S.stats.inkPending - 1);
     SFX.deploy();
     UI.show(null);
     S.mode = 'playing';
-    startWave(S.stats.wave + 1);
+    /* XP choices resume the same fight rather than skipping waves.
+       A burst of absorbed ink can queue more than one choice. */
+    if(S.stats.inkPending > 0) openUpgrade();
   }
 
   function pickAt(i) {
@@ -419,7 +432,7 @@ const G = (() => {
     S.selected = i;
     UI.markSelected(i);
     const nxt = areaStateFor(S.stats.wave + 1);
-    UI.setDeploy(true, nxt.waveInArea === 1 ? nxt.area : null, nxt.waveInArea, nxt.cycle);
+    UI.setDeploy(true, nxt.waveInArea === 1 ? nxt.area : null, nxt.waveInArea, nxt.cycle, S.waveActive);
     SFX.pick();
   }
 
@@ -1376,6 +1389,37 @@ const G = (() => {
     if (S.shake > 0) S.shake *= Math.exp(-6.5 * dt);
   }
 
+  /* Ink cores glide toward the brush, with a stronger recall at wave end.
+     Level-up choices use the existing 3-card upgrade screen mid-combat. */
+  function collectInk(value, x, y) {
+    const st = S.stats;
+    st.inkCollected += value;
+    const ranks = INK_XP.grant(st, value);
+    UI.setInkProgress(st.inkRank, st.inkXp, INK_XP.needed(st.inkRank), ranks > 0);
+    if (ranks) {
+      S.rings.push({ x:S.player.x, y:S.player.y,
+        max:35 + st.inkRank * 2, life:.65, maxLife:.65, red:true });
+      S.popups.push({ x:S.player.x, y:S.player.y - 23,
+        txt:'BRUSH '+String(st.inkRank).padStart(2,'0'), red:true, life:1.5, max:1.5 });
+      SFX.pick();
+    } else if(value >= 15) {
+      S.popups.push({ x, y:y-12, txt:'INK +'+value, red:true,life:.55,max:.55 });
+    }
+  }
+  function updateInkDrops(dt) {
+    if(!S.inkDrops.length)return;
+    const st=S.stats,p=S.player;
+    INK_XP.update(S.inkDrops,{x:p.x,y:p.y,inkRank:st.inkRank},
+      dt,S.inkRecall,collectInk);
+  }
+  function flushInkDrops() {
+    /* Never lose XP because the next wave starts before a far-away drop
+       can finish flying back. Remaining cores are awarded only at wave end. */
+    if(!S.inkDrops.length)return;
+    for(const d of S.inkDrops)collectInk(d.value,d.x,d.y);
+    S.inkDrops.length=0;
+  }
+
   function update(dt) {
     const st = S.stats;
     if (!st) return;
@@ -1398,22 +1442,29 @@ const G = (() => {
     updateMarkers(dt);
     updateSpawning(dt);
     updateFx(dt);
+    updateInkDrops(dt);
+    if(S.mode !== 'playing')return;
+    if(st.inkPending > 0){openUpgrade();return;}
 
     const remaining = S.queue.length + S.markers.length + S.enemies.length;
     UI.setProgress(S.waveInitial ? 1 - remaining / S.waveInitial : 1);
 
     if (S.waveActive && remaining === 0) {
       S.waveActive = false;
-      S.clearedT = 0.55;
+      S.inkRecall = true;
+      S.clearedT = 1.1; /* a small cinematic suction before the next wave */
     }
     if (!S.waveActive && S.clearedT > 0) {
       S.clearedT -= dt;
       if (S.clearedT <= 0) {
-        /* Every level is exactly ten waves and a separate run. */
+        flushInkDrops();
+        if(st.inkPending > 0) { openUpgrade(); return; }
+        /* Exactly ten waves per Journey stage; XP, not automatic
+           wave completion, now awards build choices. */
         if (S.runMode === 'journey' && st.wave >= CAMPAIGN.WAVES_PER_LEVEL) {
           showOver(true);
         } else {
-          openUpgrade();
+          startWave(st.wave + 1);
         }
       }
     }
