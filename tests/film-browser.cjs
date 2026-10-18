@@ -177,14 +177,43 @@ async function inspect(browser,name,viewport){
   /* Palettes must still render living ink on the reverse/night scroll. */
   await page.evaluate(()=>{
     G.S.areaIdx=1;
+    UI.setArea(AREAS[1],3,false);
     G.S.inkDrops=[];
+    /* Night's old spectral bodies were visually lost in the paper.
+       Render both a fading Shade and a ring-like Wisp on the real
+       indigo paper and exercise the full HUD contrast. */
+    G.S.enemies=[
+      {type:'shade',x:G.S.player.x+86,y:G.S.player.y-62,r:12,
+       hp:3,maxHp:3,t:1,seed:.34,state:'dissolve',stateT:.41,
+       ang:0,hitFlash:0,slowT:0,elite:false,orbCd:0,kbx:0,kby:0,
+       px:0,py:0,stun:0,dirT:0,spawnT:0,speed:0},
+      {type:'wraith',x:G.S.player.x-72,y:G.S.player.y+74,r:11,
+       hp:2,maxHp:2,t:1,seed:.22,state:'cruise',stateT:0,
+       ang:0,hitFlash:0,slowT:0,elite:false,orbCd:0,kbx:0,kby:0,
+       px:0,py:0,stun:0,dirT:0,spawnT:0,speed:0},
+    ];
     for(let n=0;n<18;n++)INK_XP.drop(G.S.inkDrops,
       G.S.player.x+45+(n%6)*18,G.S.player.y-44+Math.floor(n/6)*18,
       6,false,n*7);
   });
   await page.waitForTimeout(180);
   await page.screenshot({path:path.join(out,name+'-14-night-ink-seeds.png')});
-  await page.evaluate(()=>{G.S.areaIdx=0;G.S.inkDrops=[];});
+  const night=await page.evaluate(()=>({
+    body:R.terrainStats(),
+    paper:(()=>{const c=document.getElementById('game'),g=c.getContext('2d');
+      /* Only the palette is asserted by exact values; canvas pixel
+         checks are deliberately independent of GPU color management. */
+      return getComputedStyle(document.getElementById('hud')).getPropertyValue('--ink').trim();
+    })(),
+    hud:document.getElementById('hud').classList.contains('is-night'),
+    banner:document.getElementById('waveBanner').classList.contains('is-night'),
+  }));
+  assert.equal(night.paper,'#fff1da',name+' Night HUD uses bright ivory text');
+  assert.ok(night.hud&&night.banner,name+' Night HUD and banners both adopt ivory ink');
+  await page.evaluate(()=>{
+    G.S.areaIdx=0;G.S.inkDrops=[];G.S.enemies=[];
+    UI.setArea(AREAS[0],3,false);
+  });
   /* Exercise an actual 3-phase Guardian using the live game loop,
      retaining the same Canvas render path and mobile-sized viewport. */
   await page.evaluate(()=>{
