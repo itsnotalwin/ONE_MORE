@@ -479,6 +479,35 @@ const R = (() => {
           {alpha:.88,color,seed,jit:.025,dry:false});
         break;
       }
+      case 'lantern': { /* restrained concentric paper-light reveal seal */
+        g.globalAlpha=.67;g.lineWidth=Math.max(1,r*.17);
+        for(const a of [.25,2.35,4.47]){
+          g.beginPath();g.arc(0,0,r*.98,a,a+1.35);g.stroke();
+        }
+        g.globalAlpha=.65;
+        blobPath(g,0,0,r*.22,seed,.12,9);g.fill();
+        break;
+      }
+      case 'crescent': {
+        g.lineWidth=Math.max(1.4,r*.42);g.globalAlpha=.78;
+        g.beginPath();g.arc(0,0,r*1.15,-1.4,1.32);g.stroke();
+        g.lineWidth=.9;g.globalAlpha=.36;
+        g.beginPath();g.arc(-r*.28,0,r*.8,-1.18,1.08);g.stroke();
+        break;
+      }
+      case 'mirror': {
+        g.globalAlpha=.77;g.lineWidth=Math.max(1,r*.22);
+        g.beginPath();g.moveTo(-r*.9,-r*.9);
+        g.lineTo(0,r*.85);g.lineTo(r*.9,-r*.65);g.stroke();
+        break;
+      }
+      case 'shroud': {
+        g.globalAlpha=.55;
+        inkStroke(g,[{x:-r*1.0,y:r*.35},{x:0,y:-r*.2},
+          {x:r*.75,y:-r*.48}],r*.38,
+          {alpha:.6,color,seed,jit:.04});
+        break;
+      }
       case 'spirit': /* little afterimage of a visiting lesser brush */
         inkStroke(g,[{x:-r*1.5,y:r*.5},{x:-r*.1,y:0},{x:r*1.65,y:-r*.6}],
           Math.max(1,r*.29),{alpha:.63,color,seed});
@@ -1362,11 +1391,68 @@ const R = (() => {
     c.restore();
   }
 
+  /* Night Scroll powers are made only from the current paper and ink
+     palette: one suspended lantern, a tapered crescent, a fading soul. */
+  function drawLantern(c,S,t){
+    if(!S.stats?.lantern)return;
+    const p=S.player,lv=S.stats.lantern;
+    const x=p.x+22,y=p.y-31+(S.reduced?0:Math.sin(t*1.6)*1.7);
+    c.save();c.translate(x,y);
+    c.fillStyle=PAPER;c.strokeStyle=INK;
+    c.lineWidth=1.6;c.globalAlpha=.91;
+    c.beginPath();c.moveTo(-6,-6);c.quadraticCurveTo(0,-9,6,-6);
+    c.lineTo(6,5);c.quadraticCurveTo(0,8,-6,5);c.closePath();
+    c.fill();c.stroke();
+    c.beginPath();c.moveTo(0,-12);c.lineTo(0,-7);c.moveTo(-3,8);
+    c.lineTo(3,8);c.stroke();
+    c.globalAlpha=.74;c.fillStyle=INK;
+    c.beginPath();c.arc(0,0,1.6,0,TAU);c.fill();
+    if(S.lanternFlash>0){
+      const a=S.lanternFlash/.48;
+      c.strokeStyle=INK;c.lineWidth=1.3;
+      c.globalAlpha=.31*a;
+      c.beginPath();c.arc(0,0,CFG.lantern.radius(lv)*(1-a*.12),0,TAU);
+      c.stroke();
+    }
+    c.restore();
+  }
+  function drawCrescent(c,b){
+    c.save();c.translate(b.x,b.y);
+    c.rotate(b.ang);c.strokeStyle=INK;c.lineCap='round';
+    c.lineWidth=3.3;c.globalAlpha=.92;
+    c.beginPath();c.arc(0,0,10,-1.18,1.18);c.stroke();
+    c.globalAlpha=.50;c.lineWidth=1.05;
+    c.beginPath();c.arc(-2.4,0,7.2,-1.05,1.05);c.stroke();
+    c.restore();
+  }
+  function drawShroudEcho(c,e){
+    c.save();c.translate(e.x,e.y);
+    c.globalAlpha=.35*(e.life/e.max);c.fillStyle=INK;
+    blobPath(c,0,0,9,0x51a7,.11,10);c.fill();
+    c.strokeStyle=PAPER;c.lineWidth=1.25;
+    c.beginPath();c.moveTo(-2,-2);c.lineTo(2,-2);c.stroke();
+    c.restore();
+  }
+  function drawLanternRevelation(c,e){
+    if((e.lanternReveal||0)<=0)return;
+    c.save();c.strokeStyle=INK;c.globalAlpha=.82*Math.min(1,e.lanternReveal/.5);
+    c.lineWidth=1.45;c.setLineDash([3,4]);
+    c.beginPath();c.arc(e.x,e.y,e.r+4,0,TAU);c.stroke();
+    c.setLineDash([]);c.restore();
+  }
+
   /* ---------------- projectiles, zones, fx ---------------- */
   function drawBullet(c, b) {
     c.save();
     c.translate(b.x, b.y);
-    if (b.kind === 'blade') { /* a folded paper blade, spinning */
+    if(b.kind==='mirror'){
+      c.rotate(b.ang);c.strokeStyle=INK;c.lineWidth=2.25;
+      c.lineCap='round';c.lineJoin='round';
+      c.beginPath();c.moveTo(-10,-5);c.lineTo(0,5);
+      c.lineTo(11,-5);c.stroke();
+      c.globalAlpha=.58;c.lineWidth=.85;
+      c.beginPath();c.moveTo(-8,-7);c.lineTo(3,2);c.stroke();
+    } else if (b.kind === 'blade') { /* a folded paper blade, spinning */
       c.rotate(b.ang + b.age * b.spin);
       c.fillStyle = INK;
       c.beginPath();
@@ -1853,10 +1939,13 @@ const R = (() => {
     for (const m of S.markers) drawMarker(ctx, m);
     for (const r of S.rings) drawRing(ctx, r);
     for (const b of S.bullets) drawBullet(ctx, b);
+    for (const b of S.crescents||[]) drawCrescent(ctx,b);
+    for (const e of S.shroudEchoes||[])drawShroudEcho(ctx,e);
     for (const b of S.ebullets) drawEBullet(ctx, b);
     for (const e of S.enemies) {
       if(themeKey==='dark')drawNightSighting(ctx,e);
       drawEnemy(ctx,e,t);
+      drawLanternRevelation(ctx,e);
     }
     for (const d of S.idle) drawEnemy(ctx, d, t);
     /* Living splat cores are drawn above dried ink, below the brush.
@@ -1864,6 +1953,7 @@ const R = (() => {
     if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);
     for (const sp of S.spirits) drawSpirit(ctx, sp);
     if (playing) drawPlayer(ctx, t);
+    if (playing) drawLantern(ctx,S,t);
     for (const knot of S.knots) drawKnot(ctx, knot, t);
     for (const p of S.particles) drawParticle(ctx, p);
     for (const p of S.popups) drawPopup(ctx, p);
