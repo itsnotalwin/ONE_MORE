@@ -237,9 +237,32 @@ async function inspect(browser,name,viewport){
     G.startLevel(0,1);return R.terrainStats();
   });
   assert.equal(nextSheet.total,0,'new separate level wipes the old stage');
+  /* Browser-level proof: the Eraser removes the actual cached terrain.
+     At mastery it paints a deep-red boundary on the otherwise blank paper. */
+  await page.evaluate(()=>{
+    G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
+    const p=G.S.player;
+    for(let i=0;i<5;i++)G.S.stainQueue.push({
+      x:p.x+25+i*12,y:p.y+12,kind:i%2?'weapon':'blood',
+      weapon:'shot',enemyType:'pulse',variant:i%5,alpha:.97,r:10,red:false,
+    });
+  });
+  await page.waitForFunction(()=>R.terrainStats().total>=5,null,{timeout:3000});
+  const inkBefore=await page.evaluate(()=>R.terrainStats().total);
+  await page.evaluate(()=>{G.S.stats.orb=1;G.S.stats.levels.orbit=1;});
+  await page.waitForTimeout(430);
+  const erased=await page.evaluate(()=>R.terrainStats().total);
+  assert.ok(erased<inkBefore,'Eraser clears cached blood and weapon impressions');
+  await page.evaluate(()=>{
+    G.S.stats.orb=3;G.S.stats.levels.orbit=3;
+    G.S.eraserT=0;
+  });
+  await page.waitForFunction(()=>R.terrainStats().weapons.eraser>0,
+    null,{timeout:4000});
+  await page.screenshot({path:path.join(out,name+'-15-mastered-red-eraser.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:17,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
+  return {name,shots:18,eraserVerified:true,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
