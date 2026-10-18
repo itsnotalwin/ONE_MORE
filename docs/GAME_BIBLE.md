@@ -360,7 +360,8 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [x] Restore the original rounded living blob, now animated by smoothly evolving seeded contour points independent of character position; its tail and aim stay eased.
 - [x] Replace instant whole-player growth with 1.18×-capped, eased blob-body growth; orbit/ward and collision radius unchanged.
 - [x] Replace circular XP orbs with five seeded living ink-nib silhouettes and tapered magnetic return ribbons; XP reward logic and no-loss rule unchanged.
-- [x] Reposition XP to a compact, left-side vertical cinnabar ink gauge that fills upward, with accessible vertical progress and mobile safe-area spacing.
+- [x] Reposition XP to a compact left-side vertical cinnabar ink gauge with a wet irregular red surface that fills upward, accessible progress and mobile safe-area spacing.
+- [x] Match player to enemy BLOT outline and line-boil cadence, with smooth transitions and the same world-theme `INK` body color. Remove character-red accents; enemy deaths now paint red splats, blood particles and XP seeds that feed the red meter.
 - [x] Automated gameplay regression tests passed; desktop/phone-sized Chromium screenshot suite runs for this code.
 - [ ] Owner's physical iPhone Safari review of long fights, Night Scroll contrast, pickup density and movement jitter.
 - [ ] Merge nothing to `main` without explicit approval.
