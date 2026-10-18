@@ -1,8 +1,8 @@
 # ONE MORE — Game Bible & Living Production Board
 
-> **Edition:** Story Experiment 01, "The Last Stroke"  
-> **Branch:** [experiment/the-last-stroke](https://github.com/itsnotalwin/ONE_MORE/tree/experiment/the-last-stroke)  
-> **Status:** Experimental, *not approved for production*. The default \`main\` site is the gameplay reference.  
+> **Edition:** Living game systems / Ink Absorption progression  
+> **Branch:** [development](https://github.com/itsnotalwin/ONE_MORE/tree/development)  
+> **Status:** Cinematic released on `main`; the new progression, combat and interface features are in development only.  
 > **Owner's direction:** Keep existing sumi-e/washi identity, procedural sprites, combat systems, animations and UI; add storytelling without reauthoring them.
 
 ![Three worlds: original illustrative triptych, not in-game screenshots](images/three-scrolls.svg)
@@ -21,9 +21,9 @@
 
 - Browser stack: plain HTML5, CSS, JavaScript, Canvas2D and synthesized WebAudio. Zero build step and no third-party runtime packages.
 - Static hosting: the public GitHub Pages URL is currently being built successfully from `development`, as confirmed by [GitHub Actions](https://github.com/itsnotalwin/ONE_MORE/actions/runs/39126685811). The normal `main` source remains an available rollback branch.
-- Movement: WASD, arrow keys or touch joystick. Player auto-targets and shoots. Pause with P/Escape, mute with M. Pick one of three cards between waves; deploy using 1/2/3 and Enter/click.
+- Movement: WASD, arrow keys or touch joystick. Player auto-targets and shoots. Pause with P/Escape, mute with M. Absorb living ink from defeated enemies to rank up and choose from three cards during combat; deploy with 1/2/3 and Enter/click.
 - World architecture: **3 worlds × 10 separate levels × 10 waves each = 30 levels / 300 authored wave slots**. Wave 10 has a Guardian, with a stronger world boss at level 10.
-- Waves 1–9 end with a three-upgrade choice. There is **no XP-based leveling yet**: do not advertise XP pickups as existing.
+- Defeated enemies now release collectible living ink. The brush magnetically absorbs nearby kernels, and every filled XP meter grants an upgrade choice. Wave transitions recall stray ink and flow forward automatically. The meter persists within a 10-wave run but resets for the next independent level.
 - A run loses temporary weapon upgrades on death or when completing a level. The campaign saves the number of completed levels in each world to \`om_campaign_v1\` on the player's device; legacy best score and run counter remain separate.
 - Endless Scroll remains selectable from the title and increases difficulty across cycling paper environments.
 - Difficulty increases with wave and level and differs by world via multipliers. Splitting, ambush, and charger encounter mixes distinguish the present worlds.
@@ -111,9 +111,13 @@ There is no final boss called the Painter. The act of removing the premature sea
 \`\`\`
 Title → Journey → Scroll picker → Level (new 10-wave run)
         ↓
-       Move / auto-fire → kill enemies → stain paper → clear wave
+       Move / auto-fire → defeat ink beasts → leave dried stains + living ink
         ↓
-       Choose 1 of 3 weapon/upgrades → next wave
+       Walk near living splats → ink streams into the brush → XP meter fills
+        ↓
+       Brush rank up → choose 1 of 3 upgrades → resume same wave
+        ↓
+       Clear wave → remaining ink recalls → next wave automatically
         ↓
        Wave 10 Guardian → victory → unlock next level
                                ↳ Level 10 unlocks next scroll
@@ -124,7 +128,9 @@ Title → Journey → Scroll picker → Level (new 10-wave run)
 - \`js/config.js\`: CFG balance, enemy definitions, areas, wave formulas, upgrade definitions.
 - \`js/game.js\`: current run state and update systems, collision, spawning, enemy AI, wave completion and special weapons.
 - \`js/render.js\`: **canonical renderer** for all combat visuals.
-- \`js/ui.js\`: screen registry, upgrades, HUD and selection screens.
+- \`js/ui.js\`: screen registry, upgrade choices, brush-rank XP HUD and selection screens.
+- \`js/ink-xp.js\`: ink XP economy, living splat drops, magnet/recall motion, rank thresholds and growth factor (no DOM, art assets or external packages).
+- \`css/ink-xp.css\`: scoped responsive brush-rank meter, including high-contrast Night Scroll variant.
 - \`js/campaign.js\`: unlock validation and local persistence.
 - \`js/audio.js\`: original WebAudio synthesis.
 - \`js/film.js\`: the procedural animated-film renderer: 7 independently choreographed shots, world creation, moving creatures, water wash, spirit, scroll unroll and title. \`js/intro.js\`: 61-second timeline, camera movement, subtitling, sound opt-in, skip/replay and Chronicle.
@@ -156,6 +162,19 @@ Title → Journey → Scroll picker → Level (new 10-wave run)
 There are **19 upgrade entries**, four currently flagged as weapons. Existing stroke upgrades: Quick Hand (fire cadence), Bitter Ink (droplet damage), Twin Stroke (additional droplet), Through Mist (pierce), Flick (projectile speed), Fleeting Foot (movement), Thick Ink (integrity), Red Seal (short speed bonus after kills), Ink Burst (hit knockback), Echo Stroke (rear volley), Ink Orbit, Black Tide, Wet Paper (slow), Crimson Tip (critical hit), Paper Ward (one absorbed hit). Weapon upgrades: **Folded Fan** (blade fan), **Ink Trail** (hazardous movement trace), **Spirit Scribes** (homing brush spirits), **Ink Knots** (2–4 linked enemies, temporary slow and a single delayed hit).
 
 **Important balancing note:** Crimson Hanko has been removed and should not be reintroduced. Ink Knots was deliberately tuned away from massive instantaneous AOE damage.
+
+## 4A. Ink Absorption progression (development, not in main)
+
+The new run progression is **experience-based**. Every enemy's dried splat remains part of the painting, but its small glowing ink heart can be reclaimed. The player draws it in using a fast, curved ink-tail animation. The meter **BRUSH 01, 02...** fills in a restrained vermilion strip. Late enemies yield more XP to offset later rank costs.
+
+- **Rewards:** Living ink is issued when an enemy actually dies, not when a wave is simply cleared. Costlier enemies and Guardians are worth more; world/stage/wave modifiers prevent late-game stagnation. The cost of the next rank rises smoothly; XP overflow and simultaneous rank thresholds queue separate upgrade choices.
+- **Collection:** Ink kernels bounce slightly from the original dried splat, then curve toward the brush once within a generous magnet radius. At wave end, strays fly home across the sheet for approximately a second before the next wave. A bounded pickup pool combines older kernel values rather than losing rewards.
+- **Upgrade flow:** Reaching a brush rank opens the *same* three-choice paper upgrade interface midwave. Choosing a card resumes the **same current wave**; multiple rank rewards queue up. Clearing a wave no longer guarantees a free upgrade. Waves continue automatically after collection and any pending choices.
+- **Brush growth:** The original spirit silhouette enlarges smoothly in proportion to ink rank and maximum HP, capped at 1.55× visual size. **The physical collision radius never increases**, so becoming stronger does not cause unfair hits. Growth resets when a fresh independent level run begins, preserving campaign architecture.
+- **Art integration:** `js/ink-xp.js` paints ink kernels directly with Canvas2D, using the active scroll's ink/paper palette and a small vermilion core. New graphics and one isolated scaling wrapper are additive; no existing sprite or combat drawing routine was reauthored.
+- **Balance:** Targets approximately one to two meaningful rank choices per wave depending on kills/collection, including later waves. Actual pacing must be measured from physical runs before release. The 19 existing upgrade choices and campaign progress remain intact.
+
+Automated coverage: `tests/ink-xp.test.cjs` validates rewards, overflow, fair same-wave return, banked ink, soft pickup motion, independent run resets and visual-only growth. Browser QA also captures real ink pickups, level-up cards and the growing brush. Physical iPhone timing remains an acceptance gate.
 
 ## 5. Art, sprites, textures and animation atlas
 
@@ -341,6 +360,8 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [x] **Phase 2 — Wave Director:** Authored 30 level compositions, 8 wave-arrival patterns, bounded tempo changes, named wave cues, maintained all 3 world signatures. Tests cover all 300 wave plans.
 - [x] **Phase 3 — Guardians:** Introduced different attack geometry, phase shifts, and boss HP ticks on development.
 - [x] **Menu and onboarding polish:** Mobile-first title hierarchy, optional how-to sheet, gentle first-play hint and exact-frame cinematic-to-home transitions (development only).
+- [x] **Ink Absorption progression:** XP from reclaimable splat hearts, magnet pickup and wave-end suction, brush-rank choices midfight, compact HUD and collision-safe visual growth on development.
+- [ ] Play-test later levels for actual number of upgrades, pickup accessibility and build pacing on a physical phone.
 - [ ] Physical iPhone verification of home screen fit, How to Play interactions and Skip/Replay fading.
 - [ ] Physically play-test Guardians on iPhone and adjust unfair or ineffective patterns before releasing to main.
 - [x] Automated regression coverage: 11 targeted tests in `tests/combat.test.cjs`, plus the existing campaign/cinematic suite. GitHub Actions passed for this development milestone.
