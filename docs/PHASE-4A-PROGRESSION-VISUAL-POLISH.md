@@ -39,7 +39,7 @@ These are code-level findings. The precise subjective contribution of each to *j
 
 ## 3. Brush redesign: an awakened calligraphic stroke
 
-**Shape direction:** keep the iconic tiny living brush-spirit, but give it a recognizable, sculpted form instead of a changing noisy blob. A tear-shaped wet ink **nib/head**, a gently tapered **dry-brush tail** that follows motion, and the existing **single light-paper eye slit**. A subtle cinnabar fleck is permitted at later ranks only. It must still read as ONE MORE from a mobile screen.
+**Shape direction (updated after feedback):** keep the iconic tiny living brush-spirit as a **rounded, continuously breathing ink blob**, not a flattened sculpted nib. A tear-shaped wet ink **nib/head**, a gently tapered **dry-brush tail** that follows motion, and the existing **single light-paper eye slit**. A subtle cinnabar fleck is permitted at later ranks only. It must still read as ONE MORE from a mobile screen.
 
 **Tier vocabulary** (cosmetic visual states, not power mechanics):
 
@@ -89,10 +89,19 @@ Treat extra **maximum HP** as nib fullness/pigment density (slightly darker, thi
 - Do not repeatedly add effects when a large pack dies. Prefer a few legible seeds and automatic visual-value aggregation.
 - Reduced-motion mode should use stable silhouettes, no boil blending/sway, no visual wobble, and simplified direct ink movement while preserving pickup behavior.
 
+## Follow-up correction: preserve the living blob (18 October 2026)
+
+The initial Phase 4A shape was too rigid: a static nib silhouette looked flat and lost the original breathing personality. This was corrected directly on `development` at the user's request.
+
+- `js/render.js` restores a **round organic living blob**, painted using the original midpoint/quadratic-curved contour technique. Thirteen seeded contour points deform continuously at a restrained amplitude (two gentle harmonics) without reseeding from player position. The iconic paper eye, eased movement/tail, rank growth and original combat animation remain.
+- `css/ink-xp.css` moves the XP gauge to the **left edge** of the playing area, vertically oriented with a vermilion fill that rises from bottom to top, respecting landscape/mobile left safe areas. `js/ui.js` now updates `style.height` instead of `style.width`, and the HTML progressbar declares `aria-orientation="vertical"`.
+- `tests/ink-xp.test.cjs` protects the round morphing silhouette and left-side upward progress. The Playwright/Chromium suite captures and checks the actual XP gauge geometry at a phone viewport, along with existing game and Guardian smoke tests.
+- Player physics, pickup economics, existing procedural enemy art, campaign unlock rules and `main` are untouched.
+
 ## Implementation notes (18 October 2026)
 
 - **Stable character:** `js/game.js` initializes a fixed brush seed, smoothed cosmetic aim/tilt/movement and a display-scale value that approaches its target with an exponential time constant of 0.34 seconds. Hitbox radius and speed are unchanged.
-- **Scoped repaint:** `js/render.js` now draws a consistent calligraphic nib with one paper eye, tier-based dry-brush fibers and a restrained tail. The global player-scale wrapper is removed. Orbit and Ward geometry remain at their original world-space sizes. Fast invulnerability strobing has been replaced with a low-amplitude warning outline.
+- **Scoped repaint:** `js/render.js` now draws the original round ink blob with a smooth, stable line-boil contour, one paper eye, optional tier-based dry-brush fibers and a restrained tail. The global player-scale wrapper is removed. Orbit and Ward geometry remain at their original world-space sizes. Fast invulnerability strobing has been replaced with a low-amplitude warning outline.
 - **Reclaimed ink:** `js/ink-xp.js` now draws five seeded asymmetrical nib variants with trailing tapered ribbons when magnetized, instead of circular XP orbs. XP awarding, proximity and wave-end recall calculations remain as before. Max cosmetic scale is **1.18×**.
 - **Tests:** `tests/ink-xp.test.cjs` includes tier bounds, no-hitbox-change, easing and non-circular drop assertions. `tests/progression.test.cjs` and `tests/guardians.test.cjs` retain a byte-for-byte checksum for **all non-player rendering**; the original non-player baseline is `70a61c56`.
 - **Real browser captures:** `tests/film-browser.cjs` now exercises the same flow with movement shots, an awakened rank-16 character, and Night Scroll ink seeds in desktop and 393×852 phone Chromium. [Automated desktop and mobile browser QA passed](https://github.com/itsnotalwin/ONE_MORE/actions/runs/39145573561), with 16 screenshots per viewport and no browser exceptions. Physical device results are still unverified.
