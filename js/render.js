@@ -1229,20 +1229,28 @@ const R = (() => {
      living folds instead of a tool handle or attached bristles.
      Its recognizable face and silhouette stay coherent as it moves. */
   function inkSoulPath(c,r,t,seed,reduced,motion){
-    const wave=reduced?0:Math.sin(t*3.0+seed*.003);
-    const fold=reduced?0:Math.sin(t*3.9+seed*.007);
-    const lean=motion*.035;
+    const p=G.S.player,mode=p.visualState||'idle';
+    const run=mode==='run'||mode==='turn'||mode==='anticipate';
+    const strength=reduced?0:Math.max(0,Math.min(1,p.visualSpeed||0));
+    const phase=p.flowPhase||0;
+    const left=run?Math.sin(phase):Math.sin(t*2.25+seed*.003)*.09;
+    const right=run?Math.sin(phase+Math.PI):Math.sin(t*2.25+seed*.003+1.1)*.09;
+    const step=strength*.17;
+    const flutter=reduced?0:Math.sin(t*2.3+seed*.001)*.014;
+    /* Smooth connected brush curves: the lower hem alternates in a
+       visible two-beat RUN without detached legs or sprite-frame jumps. */
     c.beginPath();
-    c.moveTo(-r*.34,-r*1.12);
-    c.bezierCurveTo(r*.05,-r*1.38,r*.83,-r*1.04,r*.97,-r*.42);
-    c.bezierCurveTo(r*1.18,r*.09,r*.89,r*.64,r*.55,r*.7);
-    c.quadraticCurveTo(r*.70,r*(1.10+wave*.08),
-      r*.23,r*(1.01+wave*.12));
-    c.quadraticCurveTo(-r*.03,r*.65,-r*.28,r*(1.08-fold*.09));
-    c.quadraticCurveTo(-r*.62,r*(1.26+fold*.07),
-      -r*.70,r*.68);
-    c.bezierCurveTo(-r*(1.12+lean),r*.42,
-      -r*(1.12-lean),-r*.42,-r*.34,-r*1.12);
+    c.moveTo(-r*.34,-r*(1.10+flutter));
+    c.bezierCurveTo(r*.04,-r*1.35,r*.83,-r*1.04,r*.97,-r*.44);
+    c.bezierCurveTo(r*1.13,r*.08,r*.91,r*.62,r*.53,r*.75);
+    c.quadraticCurveTo(r*(.76+right*step*.55),r*(1.12+right*step),
+      r*(.20+right*.08),r*(1.03+right*step*.83));
+    c.quadraticCurveTo(-r*.03,r*(.70+right*step*.13),
+      -r*(.26+left*.035),r*(1.05-left*step*.9));
+    c.quadraticCurveTo(-r*(.66+left*.04),r*(1.22-left*step),
+      -r*(.71+left*.04),r*(.68+left*step*.3));
+    c.bezierCurveTo(-r*(1.10+motion*.035),r*.42,
+      -r*(1.11-motion*.035),-r*.42,-r*.34,-r*(1.10+flutter));
     c.closePath();
   }
 
@@ -1280,10 +1288,22 @@ const R = (() => {
     c.save();c.translate(p.x,p.y);
     const recoil=Math.min(.55,Math.max(0,p.recoil)*.24);
     c.translate(-Math.cos(aim)*recoil,-Math.sin(aim)*recoil);
-    c.rotate((p.visualTilt||0)*.65);
-    c.scale(size*(1+motion*.018),size*(1-motion*.026));
-    /* Incredibly slight flotation; the face never hops or jitters. */
-    if(!reduced)c.translate(0,Math.sin(t*2.3+seed*.001)*.28);
+    const active=p.visualState==='run'||p.visualState==='turn';
+    const speed=Math.max(0,Math.min(1,p.visualSpeed||0));
+    const stride=reduced?0:Math.sin(p.flowPhase||0);
+    const impulse=reduced?0:Math.min(1,(p.hitPulse||0)/.18);
+    const delight=reduced?0:Math.sin(Math.PI*Math.min(1,(p.rankPulse||0)/.48));
+    const absorb=reduced?0:Math.min(1,(p.absorbPulse||0)/.13);
+    const anticipation=p.visualState==='anticipate'?.025:0;
+    const braking=p.visualState==='brake'?.032:0;
+    c.rotate((p.visualTilt||0)*.65+(p.visualState==='turn' ? .047*stride : 0));
+    c.scale(size*(1+speed*.065-impulse*.075+delight*.05-braking),
+      size*(1-speed*.055+impulse*.065+anticipation+absorb*.018));
+    /* Torso stays poised while the two bottom folds visibly trade
+       weight; the full spirit never hops wildly or shakes. */
+    if(!reduced)c.translate(0,
+      (active?Math.sin((p.flowPhase||0)*2)*.42*speed:
+        Math.sin(t*2.3+seed*.001)*.23)-impulse*1.15);
     c.fillStyle=INK;c.globalAlpha=1;
     inkSoulPath(c,p.r,t,seed,reduced,motion);
     c.fill();
