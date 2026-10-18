@@ -7,7 +7,7 @@ The ink remembers every stroke.</p>
 
 > **Experimental story branch:** [experiment/the-last-stroke](https://github.com/itsnotalwin/ONE_MORE/tree/experiment/the-last-stroke). This is a creative preview, **not the live production release**. The current original game remains on [main](https://github.com/itsnotalwin/ONE_MORE/tree/main).
 
-**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. The public [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/) URL is explicitly approved for testing from the `development` publishing branch. The publishing configuration and deployment must be confirmed independently.
+**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. The owner approved using the public [ONE MORE Pages URL](https://itsnotalwin.github.io/ONE_MORE/) to test the `development` branch. **Action still required:** an automated source-switch attempt was rejected by GitHub (HTTP 403: insufficient settings privileges). In [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages), set **Deploy from a branch → development → / (root) → Save**. Do not interpret successful branch checks as proof the live source was switched.
 
 ## A story hidden beneath the paper
 
