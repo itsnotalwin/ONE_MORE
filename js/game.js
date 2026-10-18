@@ -20,7 +20,9 @@ const G = (() => {
     W: 0, H: 0, dpr: 1,
     reduced: false,
 
-    player: { x: 0, y: 0, r: CFG.player.r, aim: 0, fireT: 0, recoil: 0 },
+    player: { x: 0, y: 0, r: CFG.player.r, aim: 0, fireT: 0, recoil: 0,
+      visualSeed: 0x51a7, visualAim: 0, visualMoveX: 0, visualMoveY: 0,
+      displayScale: 1, visualTilt: 0 },
     cam: { x: 0, y: 0 },
     stats: null,
     runMode: 'journey',            // 'journey' | 'endless'
@@ -350,7 +352,12 @@ const G = (() => {
 
     const p = S.player;
     p.x = 0; p.y = 0;
-    p.fireT = 0.3; p.recoil = 0;
+    p.fireT = 0.3; p.recoil = 0; p.aim = 0;
+    /* Cosmetic appearance is initialized once, never derived from world
+       position; the actual hitbox and motion remain untouched. */
+    p.visualSeed = 0x51a7;
+    p.visualAim = 0; p.visualMoveX = 0; p.visualMoveY = 0;
+    p.visualTilt = 0; p.displayScale = 1;
     S.cam.x = 0; S.cam.y = 0;
 
     UI.show(null);
@@ -701,6 +708,15 @@ const G = (() => {
       }
     }
 
+    /* Phase 4A: cosmetics are independent of the combat velocity and
+       collision radius. Exponential damping never overshoots or jitters. */
+    const visualK = S.reduced ? 1 : 1 - Math.exp(-dt / 0.34);
+    const targetScale = INK_XP.visualScale(st);
+    p.displayScale += (targetScale - p.displayScale) * visualK;
+    p.visualMoveX += (vx - p.visualMoveX) * (S.reduced ? 1 : 1 - Math.exp(-dt * 8));
+    p.visualMoveY += (vy - p.visualMoveY) * (S.reduced ? 1 : 1 - Math.exp(-dt * 8));
+    const lean = Math.max(-0.045, Math.min(0.045, p.visualMoveX * 0.036));
+    p.visualTilt += (lean - p.visualTilt) * (S.reduced ? 1 : 1 - Math.exp(-dt * 7));
     p.fireT -= dt;
     if (p.fireT <= 0) {
       const tgt = nearestEnemy();
@@ -712,6 +728,10 @@ const G = (() => {
         p.fireT = 0.08;
       }
     }
+    /* The eye turns smoothly after targeting, even when targets swap sides. */
+    const delta = Math.atan2(Math.sin(p.aim - p.visualAim),
+      Math.cos(p.aim - p.visualAim));
+    p.visualAim += delta * (S.reduced ? 1 : 1 - Math.exp(-dt * 12));
   }
 
   const TAU = Math.PI * 2;
