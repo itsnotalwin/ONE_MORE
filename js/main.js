@@ -78,6 +78,7 @@
 
   window.addEventListener('keydown', e => {
     const k = e.code;
+    if (INTRO.handleKey(k)) { e.preventDefault(); return; }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(k)) e.preventDefault();
     SFX.ensure();
     if (e.repeat) { keys[k] = true; return; }
@@ -181,6 +182,7 @@
   G.initAttract();
   UI.show('title');
   G.mode = 'title';
+  INTRO.play(); /* one cinematic viewing per session; replay on title */
 
   /* ---------------- main loop ---------------- */
   let last = performance.now();
