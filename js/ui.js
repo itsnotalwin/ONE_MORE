@@ -13,6 +13,7 @@ const UI = (() => {
     hudWaveTotal: $('hudWaveTotal'), hudMode: $('hudMode'),
     banner: $('waveBanner'), bannerKicker: $('bannerKicker'), bannerTitle: $('bannerTitle'),
     screens: {
+      intro: $('screenIntro'), chronicle: $('screenChronicle'),
       title: $('screenTitle'), select: $('screenSelect'), upgrade: $('screenUpgrade'),
       pause: $('screenPause'), over: $('screenOver'),
     },
