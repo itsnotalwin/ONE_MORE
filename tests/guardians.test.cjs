@@ -55,6 +55,28 @@ test('each scroll has a distinct attack language with fair 1s+ warnings',()=>{
   assert.equal(signatures[1][0],'line');
   assert.equal(signatures[2][0],'seal');
 });
+test('divine calligraphy only damages sections the visible stroke has already reached',()=>{
+  const {GUARDIANS:D}=harness();
+  const target={x:0,y:0,r:10},view={width:393,height:852};
+  const mark=D.attack(0,1,true,{x:200,y:0},target,view,0).marks[0];
+  const midway=mark.points[Math.floor(mark.points.length*.55)];
+  const atMid={x:midway.x,y:midway.y,r:10};
+  assert.ok(D.hits(mark,atMid),'full authored curve crosses the midpoint');
+  mark.t=.02;
+  assert.equal(D.strokeReveal(mark),0);
+  assert.equal(D.hits(mark,atMid),false,'warning remains harmless');
+  mark.t=-.04;
+  assert.ok(D.strokeReveal(mark)>.15&&D.strokeReveal(mark)<.2);
+  assert.equal(D.hits(mark,atMid),false,'no invisible midpoint hit early');
+  mark.t=-.17;
+  assert.equal(D.hits(mark,atMid),true,'the stroke reaches that position');
+  mark.t=-.24;
+  assert.equal(D.strokeReveal(mark),1);
+  assert.equal(D.hits(mark,atMid),true);
+  assert.equal(D.attack(0,1,true,{x:0,y:0},target,view,0).title,
+    'THE HAND ABOVE');
+});
+
 test('mid-level guardians have only two stages and world final bosses have three',()=>{
   const {GUARDIANS:D}=harness();
   assert.equal(D.phases(100,100,false),1);
