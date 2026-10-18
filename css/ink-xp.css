@@ -1,48 +1,84 @@
-/* ONE MORE / living ink progression; isolated in-run HUD. */
+/* ONE MORE / the living ink gauge, mounted on the left of the sheet.
+   A quiet vertical brush mark that fills UP as ink is absorbed.
+   No obstructions over joystick, wave HUD or physical iPhone safe areas. */
 .ink-meter{
-  position:absolute;left:50%;bottom:calc(66px + env(safe-area-inset-bottom));
-  transform:translateX(-50%);
-  width:min(225px,54vw);
-  display:flex;flex-direction:column;gap:6px;
-  font:600 9px var(--mono);letter-spacing:.08em;
+  position:absolute;
+  left:max(12px, calc(env(safe-area-inset-left) + 12px));
+  top:49%;bottom:auto;transform:translateY(-50%);
+  width:40px;height:clamp(138px,30vh,240px);
+  display:flex;flex-direction:row;align-items:stretch;justify-content:center;
+  gap:6px;
   color:var(--ink);pointer-events:none;
-  filter:drop-shadow(0 1px 1px rgba(237,231,217,.55));
+  font-family:var(--mono);
+  filter:drop-shadow(0 1px 1px rgba(237,231,217,.66));
 }
-.ink-meter-label{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.ink-meter-title{white-space:nowrap;font-size:8px;opacity:.70}
-#inkRank{font-variant-numeric:tabular-nums;color:var(--red);font-size:10px;white-space:nowrap}
+.ink-meter-label{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;gap:9px;
+  min-width:22px;height:100%;
+}
+.ink-meter-title{
+  font:19px/1 var(--display);
+  color:var(--red);letter-spacing:0;white-space:nowrap;
+}
+#inkRank{
+  font:600 9px/1.2 var(--mono);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.12em;color:var(--ink-70);
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  white-space:nowrap;
+}
 .ink-meter-track{
-  width:100%;height:7px;padding:1px;overflow:hidden;
-  border:1px solid var(--ink-45);background:rgba(237,231,217,.72);
-  transform:rotate(-.6deg);
+  position:relative;flex:0 0 8px;
+  width:8px;height:100%;padding:1px;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  border:1px solid var(--ink-45);
+  background:rgba(237,231,217,.77);
+  transform:rotate(.65deg);
+}
+.ink-meter-track::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to top, transparent 0 25px,
+    rgba(237,231,217,.45) 25px 26px);
 }
 .ink-meter-fill{
-  width:0;height:100%;background:var(--red);
-  transition:width .17s cubic-bezier(.15,.7,.3,1);
-  will-change:width;
+  width:100%;height:0%;flex:0 0 auto;
+  background:var(--red);
+  transition:height .22s cubic-bezier(.16,.67,.28,1);
+  will-change:height;
 }
-.ink-meter.is-ranking .ink-meter-track{animation:inkRankPulse .64s ease-out}
-@keyframes inkRankPulse {
-  0%{filter:brightness(1.4);transform:scaleX(1) rotate(-.6deg)}
-  30%{filter:brightness(1.8);transform:scaleX(1.045) rotate(-.6deg)}
-  100%{filter:brightness(1);transform:scaleX(1) rotate(-.6deg)}
+.ink-meter.is-ranking .ink-meter-track{animation:inkVerticalPulse .56s ease-out}
+@keyframes inkVerticalPulse{
+  0%{filter:brightness(1);transform:rotate(.65deg) scaleX(1)}
+  40%{filter:brightness(1.38);transform:rotate(.65deg) scaleX(1.35)}
+  100%{filter:brightness(1);transform:rotate(.65deg) scaleX(1)}
 }
 @media(max-width:600px){
-  .ink-meter{bottom:calc(71px + env(safe-area-inset-bottom));width:min(196px,52vw)}
-  .ink-meter-title{font-size:7px;letter-spacing:0}
-  #inkRank{font-size:9px}
-  .ink-meter-track{height:6px}
+  .ink-meter{
+    left:max(8px, calc(env(safe-area-inset-left) + 8px));
+    top:47%;
+    width:32px;height:clamp(126px,26vh,190px);gap:5px;
+  }
+  .ink-meter-label{min-width:18px}
+  .ink-meter-title{font-size:17px}
+  #inkRank{font-size:8px;letter-spacing:.07em}
+  .ink-meter-track{flex-basis:7px;width:7px}
 }
 @media(max-height:620px){
-  .ink-meter{bottom:calc(52px + env(safe-area-inset-bottom))}
+  .ink-meter{top:50%;height:min(38vh,155px)}
 }
 @media(prefers-reduced-motion:reduce){
   .ink-meter-fill{transition:none}
   .ink-meter.is-ranking .ink-meter-track{animation:none}
 }
-
-/* The middle scroll reverses ink and paper, not just the battlefield. */
-.ink-meter.is-night{color:#e9e2d2;filter:drop-shadow(0 1px 2px rgba(0,0,0,.75))}
-.ink-meter.is-night .ink-meter-title{color:#e9e2d2}
-.ink-meter.is-night .ink-meter-track{border-color:rgba(233,226,210,.6);background:rgba(23,19,15,.78)}
-.ink-meter.is-night #inkRank{color:#f0c4b8}
+/* The reverse scroll swaps paper and ink, while the progress remains red. */
+.ink-meter.is-night{
+  color:#e9e2d2;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.7));
+}
+.ink-meter.is-night #inkRank{color:#e9e2d2}
+.ink-meter.is-night .ink-meter-track{
+  border-color:rgba(233,226,210,.67);
+  background:rgba(23,19,15,.80);
+}
