@@ -7,7 +7,7 @@ function harness(){
   const localStorage={getItem(k){return values.get(k)||null;},setItem(k,v){values.set(k,String(v));}};
   const UI=new Proxy({},{get(_o,k){return (...a)=>events.push([k,a]);}});
   const SFX=new Proxy({},{get(){return ()=>{};}});
-  const R={resetStains(){paper.resets++;}};
+  const R={resetStains(){paper.resets++;},eraseTerrain(x,y,r){(paper.erases||(paper.erases=[])).push({x,y,r});return 0;}};
   const ctx=vm.createContext({localStorage,UI,SFX,R});
   for(const f of ['js/config.js','js/campaign.js','js/wave-director.js','js/guardians.js','js/ink-xp.js','js/game.js'])
     vm.runInContext(file(f),ctx,{filename:f});
@@ -16,17 +16,58 @@ function harness(){
 }
 test('every authored offensive or defensive weapon has its own terrain impression',()=>{
   const source=file('js/game.js');
-  for(const weapon of ['shot','echo','fan','orbit','nova','trail','spirit','knot','ward','shock']){
+  for(const weapon of ['shot','echo','fan','eraser','nova','trail','spirit','knot','ward','shock']){
     assert.ok(source.includes("'"+weapon+"'"),'missing '+weapon+' mark vocabulary');
   }
   assert.ok(source.includes("kind: 'weapon', weapon"));
-  assert.ok(source.includes("markWeapon('orbit', ox, oy"));
+  assert.ok(source.includes("markWeapon('eraser',cx+Math.cos(theta)"));
   assert.ok(source.includes("markWeapon('nova', S.player.x"));
   assert.ok(source.includes("markWeapon('trail', pd.x"));
   assert.ok(source.includes("markWeapon('spirit', x0"));
   assert.ok(source.includes("markWeapon('knot', e.x"));
   assert.ok(source.includes("markWeapon('ward', S.player.x"));
   assert.ok(source.includes("markWeapon('shock', S.player.x"));
+});
+test('Eraser is a far-reaching balanced damage field with expanding radius and real map cleanup',()=>{
+  const {G,paper}=harness();
+  G.startLevel(0,1);
+  G.S.stats.orb=1;G.S.stats.levels.orbit=1;
+  G.S.player.fireT=9999;
+  G.S.queue=['pulse'];G.S.spawnTimer=9999;G.S.markers=[];
+  G.update(.05);
+  assert.equal(paper.erases.length,1,'the field actually requests terrain erasure');
+  assert.equal(paper.erases[0].r,135,'initial field has a far larger range than old orbit');
+  G.update(.1);
+  assert.equal(paper.erases.length,1,'erasure is throttled for mobile');
+  G.S.stats.orb=3;G.S.stats.levels.orbit=3;
+  G.update(.20);
+  assert.equal(paper.erases.at(-1).r,205,'upgrades expand the area substantially');
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='eraser'&&m.red),
+    'maxed Eraser makes a deep red boundary outside its own clearing field');
+});
+test('all enemy sprites retain their style, with at least five splatter compositions each',()=>{
+  const render=file('js/render.js');
+  const config=file('js/config.js');
+  const families=vm.runInNewContext(config+'; Object.keys(ENEMIES)');
+  for(const name of families){
+    assert.ok(render.includes(name+':') || render.includes(name+':{'),
+      'a distinctive black ink hand is assigned to '+name);
+  }
+  assert.ok(render.includes('function paintEnemyBlood('));
+  assert.ok(render.includes('v/5')&&render.includes('v%3'));
+  assert.ok(render.includes('BLOOD_HANDS[type]'));
+  assert.ok(render.includes('bloodVariant'));
+});
+test('black weapon flights and maxed red techniques paint the paper without altering combat',()=>{
+  const game=file('js/game.js'),render=file('js/render.js');
+  assert.ok(game.includes('function paintFlight('));
+  assert.ok(game.includes('if(travel>0)paintFlight('));
+  assert.ok(game.includes("markWeapon('spirit',sp.x,sp.y"));
+  assert.ok(game.includes('Math.max(.78,opts.alpha??.9)'));
+  assert.ok(game.includes('function awakenedWeapon('));
+  assert.ok(render.includes("const AWAKEN_RED = '#ac1538'"));
+  assert.ok(render.includes('function eraseTerrain('));
+  assert.ok(render.includes('if(removed.size)stains=stains.filter('));
 });
 test('weapon marks live through the full 10-wave level, not just the current wave',()=>{
   const {G,paper}=harness();
