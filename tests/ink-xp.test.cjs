@@ -173,7 +173,7 @@ test('ink pickups render as small breathing rounded black blobs, never spearhead
 });
 test('player is a distinct fluid ink soul, without the old weapon-shaped brush',()=>{
   const render=src('js/render.js');
-  const body=render.slice(render.indexOf('  function drawPlayer(c,t) {'),
+  const body=render.slice(render.indexOf('  function drawPlayer(c,t){'),
     render.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */'));
   assert.ok(render.includes('function inkSoulPath('),'a shaped protagonist exists');
   assert.ok(body.includes('inkSoulPath(c,p.r,t,seed,reduced,motion);'));
@@ -191,7 +191,7 @@ test('enemy blood and moving XP blobs stay black; only thick progression ink is 
   assert.ok(game.includes("burst(e.x, e.y, e.r, e.type === 'titan' || e.elite);"),
     'enemy death emits only original black particles');
   const death=game.slice(game.indexOf('  function killEnemy(e) {'),game.indexOf("    if (e.type === 'split')",game.indexOf('  function killEnemy(e) {')));
-  assert.ok(death.includes('red: false,'),'even guardian blood stains stay black');
+  assert.ok(death.includes('red:false'),'even guardian blood stains stay black');
   assert.ok(!death.includes('burst(e.x, e.y, e.r, e.type === \'titan\' || e.elite, true)'));
   assert.ok(!game.includes('red: !!p.red'),'landing blood remains black');
   const particles=render.slice(render.indexOf('  function drawParticle(c, p) {'),render.indexOf('  function drawPopup(',render.indexOf('  function drawParticle(c, p) {')));
@@ -223,7 +223,7 @@ test('mobile HUD and the original sumi-e renderer use the new XP independently',
   assert.ok(html.includes('<script src="./js/ink-xp.js"></script>'));
   assert.ok(html.indexOf('/js/ink-xp.js')<html.indexOf('/js/game.js'));
   assert.ok(render.includes('INK_XP.draw(ctx, S, t, INK, PAPER, RED)'));
-  assert.ok(render.includes('livingBlobPath(c,r*1.06,seed,t,reduced)'));
+  assert.ok(render.includes('inkSoulPath(c,p.r,t,seed,reduced,motion)'));
   assert.ok(render.includes('p.displayScale||1'));
   assert.ok(!render.includes('ctx.scale(scale,scale)'));
   assert.ok(!render.includes('p.x * 31 + p.y * 17'));
