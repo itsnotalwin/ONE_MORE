@@ -42,8 +42,13 @@ test('Eraser is a far-reaching balanced damage field with expanding radius and r
   G.S.stats.orb=3;G.S.stats.levels.orbit=3;
   G.update(.20);
   assert.equal(paper.erases.at(-1).r,205,'upgrades expand the area substantially');
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='eraser'&&!m.red),
+    'maxed Eraser unlocks a black boundary, not free red mastery');
+  G.S.stats.levels.seal_orbit=1;
+  G.S.eraserT=0;
+  G.update(.05);
   assert.ok(G.S.stainQueue.some(m=>m.weapon==='eraser'&&m.red),
-    'maxed Eraser makes a deep red boundary outside its own clearing field');
+    'the separate post-max Vermilion upgrade paints the crimson boundary');
 });
 test('all enemy sprites retain their style, with at least five splatter compositions each',()=>{
   const render=file('js/render.js');
@@ -58,7 +63,7 @@ test('all enemy sprites retain their style, with at least five splatter composit
   assert.ok(render.includes('BLOOD_HANDS[type]'));
   assert.ok(render.includes('bloodVariant'));
 });
-test('black weapon flights and maxed red techniques paint the paper without altering combat',()=>{
+test('black ink only at max, with post-max Vermilion seals for later crimson terrain',()=>{
   const game=file('js/game.js'),render=file('js/render.js');
   assert.ok(game.includes('function paintFlight('));
   assert.ok(game.includes('if(travel>0)paintFlight('));
@@ -66,7 +71,9 @@ test('black weapon flights and maxed red techniques paint the paper without alte
     'only acquired Fan and Echo projectiles may paint a flight path');
   assert.ok(game.includes("markWeapon('spirit',sp.x,sp.y"));
   assert.ok(game.includes('Math.max(.78,opts.alpha??.9)'));
-  assert.ok(game.includes('function awakenedWeapon('));
+  assert.ok(game.includes('function terrainState('));
+  assert.ok(game.includes("if(!tier)return"));
+  assert.ok(game.includes("levels['seal_'+skill]?2:1"));
   assert.ok(render.includes("const AWAKEN_RED = '#ac1538'"));
   assert.ok(render.includes('function eraseTerrain('));
   assert.ok(render.includes('if(removed.size)stains=stains.filter('));
@@ -102,38 +109,95 @@ test('default weapon never paints terrain while moving, on hit, at expiry or aft
   assert.ok(!G.S.stainQueue.some(m=>m.kind==='weapon'&&m.weapon==='shot'),
     'the starter auto-fire never inks the world directly');
 });
-test('acquired Echo and Fan shots still leave ordinary black and awakened red marks',()=>{
+test('Echo and Fan paint only at max rank; separate red seal recolors only after selection',()=>{
   const {G}=harness();
   G.startLevel(0,1);
   G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
-  G.S.bullets.push({x:-120,y:0,vx:560,vy:0,ang:0,dmg:1,hits:1,
-    age:0,life:.9,kind:'echo'});
+  const bullet=(kind,y)=>({x:-120,y,vx:560,vy:0,ang:0,dmg:1,
+    hits:1,age:0,life:.9,kind,spin:0});
+  // Rank 1 already enables weapon damage, but not world marks.
+  G.S.stats.levels.echo=1;G.S.stats.echo=1;
+  G.S.bullets.push(bullet('echo',0));
+  G.update(.05);G.update(.05);
+  assert.ok(!G.S.stainQueue.some(m=>m.weapon==='echo'),
+    'under-max Echo remains clean');
+  G.S.stats.levels.echo=2;G.S.stats.echo=2;
+  G.S.bullets.push(bullet('echo',30));
   G.update(.05);G.update(.05);
   assert.ok(G.S.stainQueue.some(m=>m.weapon==='echo'&&!m.red),
-    'the distinct Echo skill continues painting black');
-  G.S.stats.levels.echo=2;
-  G.S.bullets.push({x:-120,y:30,vx:560,vy:0,ang:0,dmg:1,hits:1,
-    age:0,life:.9,kind:'echo'});
+    'maxed Echo begins with black ink');
+  assert.ok(!G.S.stainQueue.some(m=>m.weapon==='echo'&&m.red),
+    'max rank alone must not grant Vermilion');
+  G.S.stats.levels.seal_echo=1;
+  G.S.bullets.push(bullet('echo',60));
   G.update(.05);G.update(.05);
   assert.ok(G.S.stainQueue.some(m=>m.weapon==='echo'&&m.red),
-    'mastered Echo becomes lacquer-crimson');
-  G.S.stats.levels.fan=4;
-  G.S.bullets.push({x:-120,y:60,vx:560,vy:0,ang:0,dmg:1,hits:1,
-    age:0,life:.9,kind:'blade',spin:0});
+    'separately purchased Vermilion upgrades mastered Echo to crimson');
+  G.S.stats.levels.fan=3;G.S.stats.fan=3;
+  G.S.bullets.push(bullet('blade',90));
   G.update(.05);G.update(.05);
-  assert.ok(G.S.stainQueue.some(m=>m.weapon==='fan'&&m.red),
-    'mastered Folded Fan still paints the paper');
+  assert.ok(!G.S.stainQueue.some(m=>m.weapon==='fan'),
+    'rank 3 of 4 Folded Fan cannot paint terrain');
+  G.S.stats.levels.fan=4;G.S.stats.fan=4;
+  G.S.bullets.push(bullet('blade',120));
+  G.update(.05);G.update(.05);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='fan'&&!m.red));
+  assert.ok(!G.S.stainQueue.some(m=>m.weapon==='fan'&&m.red));
+  G.S.stats.levels.seal_fan=1;
+  G.S.bullets.push(bullet('blade',150));
+  G.update(.05);G.update(.05);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='fan'&&m.red));
 });
-test('mastered movement contributes a sparse red terrain seal without changing speed or hitbox',()=>{
+test('maxed passive skill earns black terrain, then separate red seal turns it crimson',()=>{
   const {G}=harness();
   G.startLevel(0,1);
   G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
-  G.S.stats.levels.over=4;
   const radius=G.S.player.r;
   G.S.inputVec.x=1;
+  G.S.stats.levels.over=3;
   G.update(.05);
-  assert.equal(G.S.player.r,radius);
+  assert.ok(!G.S.stainQueue.some(m=>m.weapon==='over'));
+  G.S.stats.levels.over=4;
+  G.update(.05);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='over'&&!m.red));
+  assert.ok(!G.S.stainQueue.some(m=>m.weapon==='over'&&m.red));
+  G.S.stats.levels.seal_over=1;
+  G.S.passiveFootT=0;
+  G.update(.05);
   assert.ok(G.S.stainQueue.some(m=>m.weapon==='over'&&m.red));
+  assert.equal(G.S.player.r,radius);
+});
+
+test('red upgrades appear only after normal max rank, as a real one-time choice',()=>{
+  const {G}=harness();
+  G.startLevel(0,1);
+  G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
+  G.S.stats.levels.echo=1;G.S.stats.echo=1;
+  G.S.stats.inkPending=1;
+  G.update(.01);
+  assert.equal(G.mode,'upgrade');
+  assert.ok(!G.S.choices.some(u=>u.id==='seal_echo'),
+    'red cards are not available before the original technique is maxed');
+  const next=harness().G;
+  next.startLevel(0,1);
+  next.S.queue=['pulse'];next.S.spawnTimer=99999;next.S.player.fireT=99999;
+  next.S.stats.levels.echo=2;next.S.stats.echo=2;
+  next.S.stats.inkPending=1;
+  next.update(.01);
+  assert.equal(next.mode,'upgrade');
+  const position=next.S.choices.findIndex(u=>u.id==='seal_echo');
+  assert.ok(position>=0,'eligible Vermilion card is guaranteed a slot after mastery');
+  const card=next.S.choices[position];
+  assert.equal(card.max,1);
+  assert.equal(card.redSealOf,'echo');
+  next.pickAt(position);
+  next.deploy();
+  assert.equal(next.S.stats.levels.seal_echo,1);
+  next.S.stats.inkPending=1;
+  next.update(.01);
+  assert.equal(next.mode,'upgrade');
+  assert.ok(!next.S.choices.some(u=>u.id==='seal_echo'),
+    'red upgrades can be selected only once per mastered skill');
 });
 test('weapon marks live through the full 10-wave level, not just the current wave',()=>{
   const {G,paper}=harness();
