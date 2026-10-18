@@ -211,6 +211,8 @@ const G = (() => {
       }
     }
     if (S.stats.adren > 0) S.adrenT = CFG.adrenaline.dur(S.stats.adren);
+    if((S.stats.levels?.adren||0)>=3)
+      markWeapon('adren',e.x,e.y,{r:9,alpha:.88});
   }
 
   function nearestEnemy(x, y, maxD) {
@@ -233,7 +235,9 @@ const G = (() => {
       .some(k=>levels[k]>=(UPGRADES.find(u=>u.id===k)?.max||999));
     const caps={echo:2,fan:4,nova:3,trail:3,spirit:3,
       knot:3,ward:1,shock:1,eraser:3};
-    return (levels[weapon==='eraser'?'orbit':weapon]||0)>=(caps[weapon]||999);
+    const key=weapon==='eraser'?'orbit':weapon;
+    const limit=caps[weapon]||UPGRADES.find(u=>u.id===key)?.max||999;
+    return (levels[key]||0)>=limit;
   }
 
   function markWeapon(weapon, x, y, opts = {}) {
@@ -544,6 +548,8 @@ const G = (() => {
       return;
     }
     st.hp--;
+    if((st.levels?.plate||0)>=3)
+      markWeapon('plate',S.player.x,S.player.y,{r:12,alpha:.88});
     S.invulnT = CFG.player.invuln;
     if (!S.reduced) S.shake = 8;
     for (let i = 0; i < 3; i++) {
@@ -752,6 +758,16 @@ const G = (() => {
       }
     }else S.eraserT=0;
 
+    /* Fleeting Foot at mastery finally signs the paper: faint spaced
+       ruby steps, never continuous visual clutter or extra damage. */
+    if((st.levels?.over||0)>=4 && m>.22){
+      S.passiveFootT=(S.passiveFootT||0)-dt;
+      if(S.passiveFootT<=0){
+        S.passiveFootT=.64;
+        markWeapon('over',p.x,p.y,{r:5,alpha:.83});
+      }
+    }else S.passiveFootT=0;
+
     /* Phase 4A: cosmetics are independent of the combat velocity and
        collision radius. Exponential damping never overshoots or jitters. */
     const visualK = S.reduced ? 1 : 1 - Math.exp(-dt / 0.34);
@@ -799,7 +815,14 @@ const G = (() => {
         if (e.hp <= 0) { S.enemies.splice(k, 1); killEnemy(e); }
       }
     }
-    markWeapon('nova', S.player.x, S.player.y, { r: 23, alpha: .25 });
+    markWeapon('nova', S.player.x, S.player.y, { r: 23, alpha: .9 });
+    /* Broken wave-front ink signatures stretch right out to the actual
+       affected radius, not only 23px around the caster. */
+    for(let i=0;i<8;i++){
+      const a=i*TAU/8,edge=rad*(.88+(i%3)*.035);
+      markWeapon('nova',S.player.x+Math.cos(a)*edge,
+        S.player.y+Math.sin(a)*edge,{r:12,alpha:.82,angle:a});
+    }
     S.shake = Math.max(S.shake, 3);
     SFX.nova();
   }
@@ -894,9 +917,15 @@ const G = (() => {
     let d = dmg;
     if (critCh > 0 && Math.random() < critCh) {
       d *= 2;
+      if((st.levels?.crit||0)>=2)
+        markWeapon('crit',e.x,e.y,{r:8,alpha:.94,angle:ang});
       S.popups.push({ x: e.x, y: e.y - e.r - 6, txt: '×2', life: 0.55, max: 0.55, red: true });
     }
-    if (st.slow > 0) e.slowT = CFG.slow.dur;
+    if (st.slow > 0) {
+      e.slowT = CFG.slow.dur;
+      if((st.levels?.slow||0)>=2)
+        markWeapon('slow',e.x,e.y,{r:6,alpha:.86});
+    }
     e.hp -= d;
     e.hitFlash = 0.08;
     if (knock) {
