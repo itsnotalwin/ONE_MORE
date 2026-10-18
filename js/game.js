@@ -115,7 +115,7 @@ const G = (() => {
     }
   }
 
-  function burst(x, y, r, big, red = false) {
+  function burst(x, y, r, big) {
     const n = big ? 26 : Math.round(clamp(r, 6, 14)) + 4;
     for (let i = 0; i < n; i++) {
       const a = rand(0, Math.PI * 2);
@@ -126,7 +126,7 @@ const G = (() => {
         rot: rand(0, 6.28), vr: rand(-9, 9),
         size: rand(2, big ? 6 : 4.4),
         shape: ['tri', 'dot', 'line'][Math.floor(Math.random() * 3)],
-        red, life: rand(0.3, big ? 0.9 : 0.6), max: 1,
+        life: rand(0.3, big ? 0.9 : 0.6), max: 1,
       });
       const p = S.particles[S.particles.length - 1];
       p.max = p.life;
@@ -180,12 +180,12 @@ const G = (() => {
       txt: e.elite ? 'GUARDIAN +' + pts : '+' + pts,
       life: e.elite ? 1.4 : 0.7, max: e.elite ? 1.4 : 0.7, red: e.elite,
     });
-    /* The monster's living ink bleeds vermilion; its red stain remains. */
-    burst(e.x, e.y, e.r, e.type === 'titan' || e.elite, true);
+    /* Enemy blood remains black sumi-e ink on every scroll. */
+    burst(e.x, e.y, e.r, e.type === 'titan' || e.elite);
     S.stainQueue.push({
       x: e.x, y: e.y, r: e.r * (e.elite ? 2.2 : 1.45),
       alpha: e.elite ? 0.6 : 0.5,
-      red: true,
+      red: false,
     });
     /* The living heart of the stain can be reclaimed. The dried splat
        remains on the paper as a visual record of the battle. */
@@ -1399,7 +1399,7 @@ const G = (() => {
       p.rot += p.vr * dt;
       p.life -= dt;
       if (p.life <= 0) {
-        S.stainQueue.push({ x: p.x, y: p.y, r: p.size * 1.5, alpha: 0.28, red: !!p.red });
+        S.stainQueue.push({ x: p.x, y: p.y, r: p.size * 1.5, alpha: 0.28 });
         S.particles.splice(i, 1);
       }
     }
