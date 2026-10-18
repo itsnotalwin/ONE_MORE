@@ -86,7 +86,7 @@ const UI = (() => {
     fan: '<path d="M12 19.5L4.8 8.2c4.4-2.9 10-2.9 14.4 0L12 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 19.5L7.4 7.6M12 19.5l4.6-11.9M12 19.5V6.2" stroke="currentColor" stroke-width="1.2" opacity=".7"/>',
     trailW: '<path d="M4.5 16.5c2.4-.6 3.4-2.6 3-5 2.6.6 4.4-.6 5-3 2.4.8 4.4 0 5.4-2 1.6 2.6 2 5.6 1 8.6-1.2 3.6-4.4 5.9-8.2 5.7-2.6-.1-4.8-1.6-6.2-4.3z" fill="currentColor" opacity=".85"/><path d="M8 13.4l1.6 1.6M11.6 11l1.5 1.5" stroke="#ede7d9" stroke-width="1.1" stroke-linecap="round"/>',
     spirit: '<path d="M15.5 6.5c2.6 1.2 4 3.6 3.6 6.4-.4 3-2.6 5.3-5.8 5.4-2.8.1-5-1.8-5.2-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8.4 14.2c-.5-2.4.8-4.6 3-5.6 2.4-1 5-.2 6.3 1.8" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".55"/><circle cx="7" cy="17.4" r="2.2" fill="currentColor"/>',
-    hanko: '<rect x="5.5" y="5.5" width="13" height="13" fill="#b23a2b" transform="rotate(-5 12 12)"/><path d="M8.5 12.4l2.4 2.4 4.8-5.2" stroke="#ede7d9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    knot: '<path d="M4 7C7 3 13 4 14 8s-4 8-7 6 0-6 4-5 7 5 9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="7" cy="14" r="2" fill="#b23a2b"/><circle cx="19.6" cy="18" r="1.7" fill="#b23a2b"/>',
   };
   /* the upgrade is filed under 'trail'; the glyph under 'trailW' — same brush */
   GLYPHS.trail = GLYPHS.trailW;
