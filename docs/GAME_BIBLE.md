@@ -284,7 +284,7 @@ The owner approved using the live GitHub Pages URL for `development` testing. **
 
 A safe non-Pages third-party branch preview for personal evaluation uses the `story-preview` branch alias via raw.githack, which can render files straight from a GitHub branch but may show a safety confirmation screen and has no uptime guarantees. A workflow on the experimental branch can additionally package a downloadable offline preview artifact. Long-term isolated first-party staging requires a distinct Pages repository or Pages deployment architecture intentionally set up for previews.
 
-After acceptance, selectively merge the tested work into `main`. Restore production Pages source to `main` when the experiment is complete. Keep the draft PR for review until then.
+The cinematic milestone is now merged into `main` ([PR #7](https://github.com/itsnotalwin/ONE_MORE/pull/7)). Continue gameplay work on `development`; promote subsequent milestones only when approved. The obsolete combined draft PR #5 is closed. GitHub Pages may continue serving `development` for live testing.
 
 ## 10. Research and references
 
