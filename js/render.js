@@ -938,6 +938,33 @@ const R = (() => {
     c.closePath();
   }
 
+  /* A living version of the original blobPath's midpoint brush contour.
+     Fixed seeded lobes give the character an identity, while continuous
+     small deformations give it that breathing hand-drawn ink personality.
+     Neither world coordinates nor random frame seeds affect the outline. */
+  function livingBlobPath(c, r, seed, t, reduced) {
+    const n = 13, rnd = mulberry(seed), pts = [];
+    const breath = reduced ? 1 : 1 + Math.sin(t * 3.1 + seed * .001) * .028;
+    for (let i = 0; i < n; i++) {
+      const a = i * TAU / n;
+      const stable = (rnd() * 2 - 1) * .125;
+      const flow = reduced ? 0
+        : .045 * Math.sin(t * 4.6 + a * 2 + i * .41 + seed * .004)
+        + .018 * Math.sin(t * 2.3 - a * 3 + i * .73);
+      const rr = r * breath * (1 + stable + flow);
+      pts.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+    }
+    c.beginPath();
+    const first = pts[n-1], firstNext = pts[0];
+    c.moveTo((first[0]+firstNext[0])*.5,(first[1]+firstNext[1])*.5);
+    for(let i=0;i<n;i++){
+      const q=pts[(i+1)%n];
+      c.quadraticCurveTo(pts[i][0],pts[i][1],
+        (pts[i][0]+q[0])*.5,(pts[i][1]+q[1])*.5);
+    }
+    c.closePath();
+  }
+
   /* ---------------- player: the awakened brush spirit ---------------- */
   function drawPlayer(c, t) {
     const S = G.S, p = S.player, st = S.stats;
@@ -1003,24 +1030,17 @@ const R = (() => {
       c.restore();
     }
 
-    /* The body, its eye and bristles alone get the smoothed growth. This
-       is a stable ink nib, not a fresh random blob on every movement. */
+    /* Bring back the original ROUND, organic blob and its living contour.
+       The last nib-only outline flattened the character's personality.
+       Growth is still gently eased and the collision radius never changes. */
     c.save();
     c.scale(scale, scale);
     c.rotate(p.visualTilt || 0);
     const r = p.r, tier = form.tier;
-    const breath = S.reduced ? 0 : Math.sin(t * 2.6 + sd * .001) * .012;
-    c.scale(1 + breath, 1 - breath * .7);
-    c.globalAlpha = form.pigment;
+    c.globalAlpha = .99;
     c.fillStyle = INK;
-    c.beginPath();
-    c.moveTo(r * 1.03, -r * .07);
-    c.bezierCurveTo(r * .88, -r * .81, -r * .36, -r * 1.02, -r * .81, -r * .54);
-    c.quadraticCurveTo(-r * 1.12, -r * .22, -r * 1.10, r * .27);
-    c.bezierCurveTo(-r * .91, r * .81, -r * .13, r * 1.04,
-      r * .69, r * .57);
-    c.quadraticCurveTo(r * 1.12, r * .28, r * 1.03, -r * .07);
-    c.closePath(); c.fill();
+    livingBlobPath(c, r, sd, t, S.reduced);
+    c.fill();
 
     /* Rank adds workmanship rather than simple inflation: a dry edge,
        extra restrained bristles and eventually one cinnabar seal fleck. */
@@ -1029,7 +1049,7 @@ const R = (() => {
       c.globalAlpha = tier >= 2 ? .17 : .11;
       c.beginPath(); c.moveTo(-r * .65, -r * .62);
       c.quadraticCurveTo(-r * .83, -.5, -r * .62, r * .52); c.stroke();
-      c.globalAlpha = .63; c.strokeStyle = INK;
+      c.globalAlpha = .50; c.strokeStyle = INK;
       c.lineCap = 'round';
       for (let i = 0; i < form.bristles; i++) {
         const y = (i - (form.bristles - 1) * .5) * 2.1;
