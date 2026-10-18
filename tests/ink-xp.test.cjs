@@ -167,6 +167,29 @@ test('ink seeds remain irregular procedural nibs without perfect orb shapes',()=
   assert.ok(!drawing.includes('c.arc('),'perfect-circle loot orbs should not return');
   assert.ok(!drawing.includes('createRadialGradient('));
 });
+test('original animated round blob is restored without movement-based re-seeding',()=>{
+  const r=src('js/render.js');
+  const player=r.slice(r.indexOf('  /* ---------------- player:'),
+    r.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */'));
+  assert.ok(player.includes('function livingBlobPath('),'animated blob painter is present');
+  assert.ok(player.includes('livingBlobPath(c, r, sd, t, S.reduced)'),'the rounded living contour is used as the body');
+  assert.ok(player.includes('c.quadraticCurveTo('),'outline uses the original curved ink technique');
+  assert.ok(player.includes('Math.sin(t * 4.6'),'outline gently changes over time');
+  assert.ok(!player.includes('p.x * 31 + p.y * 17'),'walking cannot randomly redraw the character');
+  assert.ok(!player.includes('c.bezierCurveTo(r * .88'),'the flattened nib shape was removed');
+  assert.ok(r.includes('if (playing) drawPlayer(ctx, t);'),'no giant whole-character scaling');
+});
+test('XP meter is left mounted, vertical, fills bottom to top and keeps real ARIA progress',()=>{
+  const css=src('css/ink-xp.css');
+  const ui=src('js/ui.js');
+  const html=src('index.html');
+  assert.match(css,/\.ink-meter\s*\{[^}]*left:/);
+  assert.match(css,/\.ink-meter-track\s*\{[^}]*flex-direction:column;justify-content:flex-end;/);
+  assert.match(css,/\.ink-meter-fill\s*\{[^}]*height:0%/);
+  assert.ok(ui.includes("el.inkFill.style.height=pct.toFixed(1)+'%'"));
+  assert.ok(!ui.includes("el.inkFill.style.width=pct.toFixed(1)+'%'"));
+  assert.ok(html.includes('aria-orientation="vertical"'));
+});
 test('mobile HUD and the original sumi-e renderer use the new XP independently',()=>{
   const html=src('index.html'),render=src('js/render.js'),css=src('css/ink-xp.css');
   assert.ok(html.includes('id="inkMeter"'));
