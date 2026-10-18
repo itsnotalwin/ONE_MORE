@@ -24,13 +24,13 @@
 - Movement: WASD, arrow keys or touch joystick. Player auto-targets and shoots. Pause with P/Escape, mute with M. Absorb living ink from defeated enemies to rank up and choose from three cards during combat; deploy with 1/2/3 and Enter/click.
 - World architecture: **3 worlds × 10 separate levels × 10 waves each = 30 levels / 300 authored wave slots**. Wave 10 has a Guardian, with a stronger world boss at level 10.
 - Defeated enemies now release collectible living ink. The brush magnetically absorbs nearby kernels, and every filled XP meter grants an upgrade choice. Wave transitions recall stray ink and flow forward automatically. The meter persists within a 10-wave run but resets for the next independent level.
-- A run loses temporary weapon upgrades on death or when completing a level. The campaign saves the number of completed levels in each world to \`om_campaign_v1\` on the player's device; legacy best score and run counter remain separate.
+- A run loses temporary weapon upgrades on death or when completing a level. The campaign saves the number of completed levels in each world to `om_campaign_v1` on the player's device; legacy best score and run counter remain separate.
 - Endless Scroll remains selectable from the title and increases difficulty across cycling paper environments.
 - Difficulty increases with wave and level and differs by world via multipliers. Splitting, ambush, and charger encounter mixes distinguish the present worlds.
 
 ### What Story Experiment 01 adds
 
-- An optional **seven-shot, 61-second animated short film**, drawn continuously in \`js/film.js\` and directed by \`js/intro.js\`. It plays automatically with timed shots and subtitles, a moving camera and animated characters; Escape/Skip ends it immediately.
+- An optional **seven-shot, 61-second animated short film**, drawn continuously in `js/film.js` and directed by `js/intro.js`. It plays automatically with timed shots and subtitles, a moving camera and animated characters; Escape/Skip ends it immediately.
 - The film **autoplays on every page launch** without a start cover or session-based suppression. It remains skippable and replayable from the title; audio is opt-in.
 - Optional synthesized tonal cues, **off by default** and activated only by player gesture.
 - The Chronicle, a readable five-part story archive, with later chapters gated by existing campaign completion: 0, 10, 20, 30 levels.
@@ -108,7 +108,7 @@ There is no final boss called the Painter. The act of removing the premature sea
 
 ### Game loop
 
-\`\`\`
+```
 Title → Journey → Scroll picker → Level (new 10-wave run)
         ↓
        Move / auto-fire → defeat ink beasts → leave dried stains + living ink
@@ -122,21 +122,21 @@ Title → Journey → Scroll picker → Level (new 10-wave run)
        Wave 10 Guardian → victory → unlock next level
                                ↳ Level 10 unlocks next scroll
        Death → retry only current level
-\`\`\`
+```
 
-- \`js/main.js\`: bootstrap, keyboard/touch controls, animation frame and UI input.
-- \`js/config.js\`: CFG balance, enemy definitions, areas, wave formulas, upgrade definitions.
-- \`js/game.js\`: current run state and update systems, collision, spawning, enemy AI, wave completion and special weapons.
-- \`js/render.js\`: **canonical renderer** for all combat visuals.
-- \`js/ui.js\`: screen registry, upgrade choices, brush-rank XP HUD and selection screens.
-- \`js/ink-xp.js\`: ink XP economy, living splat drops, magnet/recall motion, rank thresholds and growth factor (no DOM, art assets or external packages).
-- \`css/ink-xp.css\`: scoped responsive brush-rank meter, including high-contrast Night Scroll variant.
-- \`js/campaign.js\`: unlock validation and local persistence.
-- \`js/audio.js\`: original WebAudio synthesis.
-- \`js/film.js\`: the procedural animated-film renderer: 7 independently choreographed shots, world creation, moving creatures, water wash, spirit, scroll unroll and title. \`js/intro.js\`: 61-second timeline, camera movement, subtitling, sound opt-in, skip/replay and Chronicle.
-- \`css/style.css\`: original global style and compact responsive upgrade cards.
-- \`css/intro.css\`: styles scoped to the film and Chronicle screens.
-- \`tests/film-browser.cjs\`: CI-only Playwright browser smoke test with stills, no browser library required by the game itself.
+- `js/main.js`: bootstrap, keyboard/touch controls, animation frame and UI input.
+- `js/config.js`: CFG balance, enemy definitions, areas, wave formulas, upgrade definitions.
+- `js/game.js`: current run state and update systems, collision, spawning, enemy AI, wave completion and special weapons.
+- `js/render.js`: **canonical renderer** for all combat visuals.
+- `js/ui.js`: screen registry, upgrade choices, brush-rank XP HUD and selection screens.
+- `js/ink-xp.js`: ink XP economy, living splat drops, magnet/recall motion, rank thresholds and growth factor (no DOM, art assets or external packages).
+- `css/ink-xp.css`: scoped responsive brush-rank meter, including high-contrast Night Scroll variant.
+- `js/campaign.js`: unlock validation and local persistence.
+- `js/audio.js`: original WebAudio synthesis.
+- `js/film.js`: the procedural animated-film renderer: 7 independently choreographed shots, world creation, moving creatures, water wash, spirit, scroll unroll and title. `js/intro.js`: 61-second timeline, camera movement, subtitling, sound opt-in, skip/replay and Chronicle.
+- `css/style.css`: original global style and compact responsive upgrade cards.
+- `css/intro.css`: styles scoped to the film and Chronicle screens.
+- `tests/film-browser.cjs`: CI-only Playwright browser smoke test with stills, no browser library required by the game itself.
 
 ### All fourteen ink-born enemy types
 
@@ -188,34 +188,34 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 
 | Asset family | Source | Technique | Status |
 |---|---|---|---|
-| Paper backgrounds | \`js/render.js\` \`buildTile\` | Seeded 480px tiled fibers, washes, speckles | Done |
-| Three environments | \`THEMES\`, \`AREAS\` | Pale/dark/red paper and inverted ink | Done |
-| Player | \`drawPlayer\` | Brush-tip/soul silhouette, recoil and movement marks | Done |
-| 14 enemies | \`drawEnemy\` and shape helpers | Irregular paths, line-boil animation, eyes/weapon tells | Done |
-| Projectiles | \`drawBullet\`, \`drawEBullet\` | Droplets, paper blades, needle arcs | Done |
-| Ink trails and stains | \`drawPuddle\`, \`stampStains\` | Transient puddles and world-space cached ink stains | Done |
-| Shock/ring effects | \`drawRing\`, particle functions | Circular ink washes, directional dust and bursts | Done |
+| Paper backgrounds | `js/render.js` `buildTile` | Seeded 480px tiled fibers, washes, speckles | Done |
+| Three environments | `THEMES`, `AREAS` | Pale/dark/red paper and inverted ink | Done |
+| Player | `drawPlayer` | Brush-tip/soul silhouette, recoil and movement marks | Done |
+| 14 enemies | `drawEnemy` and shape helpers | Irregular paths, line-boil animation, eyes/weapon tells | Done |
+| Projectiles | `drawBullet`, `drawEBullet` | Droplets, paper blades, needle arcs | Done |
+| Ink trails and stains | `drawPuddle`, `stampStains` | Transient puddles and world-space cached ink stains | Done |
+| Shock/ring effects | `drawRing`, particle functions | Circular ink washes, directional dust and bursts | Done |
 | Guardian cues | HUD + render marker | Red off-screen arrow and elite telegraph | Done |
-| Upgrade glyphs | \`js/ui.js\` \`GLYPHS\` | Inline 24×24 SVG strokes, not sprite sheets | Done |
-| Animated short film | \`js/film.js\`, \`js/intro.js\` | Live-drawn brush stroke, mountains, beasts, erasure, character motion, composited shot fades and camera push | Development |
-| Chronicle | \`js/intro.js\` \`ARCHIVE\` | Readable prose, unlock-gated | Experiment |
-| Editorial illustrations | \`docs/images/*.svg\` | Original authored SVG, **not gameplay screenshots** | Experiment |
+| Upgrade glyphs | `js/ui.js` `GLYPHS` | Inline 24×24 SVG strokes, not sprite sheets | Done |
+| Animated short film | `js/film.js`, `js/intro.js` | Live-drawn brush stroke, mountains, beasts, erasure, character motion, composited shot fades and camera push | Development |
+| Chronicle | `js/intro.js` `ARCHIVE` | Readable prose, unlock-gated | Experiment |
+| Editorial illustrations | `docs/images/*.svg` | Original authored SVG, **not gameplay screenshots** | Experiment |
 
 ### Animation rules
 
-- **Line boil** is the characteristic slight jitter in creature silhouettes. Preserve the original \`CFG.ink.boilRate\`.
+- **Line boil** is the characteristic slight jitter in creature silhouettes. Preserve the original `CFG.ink.boilRate`.
 - Enemy telegraph motion must always remain legible against each paper's ink polarity.
 - Paper texture follows the camera over an unbounded world; player never hits artificial screen walls.
 - Stains are world-space marks, capped/faded for performance, and reset between independent runs.
-- Main render rate uses \`requestAnimationFrame\`; frame delta is capped in \`js/main.js\`.
+- Main render rate uses `requestAnimationFrame`; frame delta is capped in `js/main.js`.
 - The film uses live Canvas2D drawings every shot, a moving camera, and cached still frames only for cross-dissolves. Reduced-motion preference disables decorative dolly/transition movement while dialogue timing continues and scenes remain skippable.
 - No video dependencies, no remote image downloads, and no high-resolution bitmap backgrounds.
-- \`docs/images/\` SVGs represent **illustrated design reference art** only. A true screenshot pass on iPhone and desktop remains to be performed.
+- `docs/images/` SVGs represent **illustrated design reference art** only. A true screenshot pass on iPhone and desktop remains to be performed.
 
 ## 6. Performance, accessibility and privacy
 
 - Responsive one-canvas game; touch pointer joystick; prevent scroll while playing.
-- \`prefers-reduced-motion\` is respected in old and new UI.
+- `prefers-reduced-motion` is respected in old and new UI.
 - The film caps rendering at 1.5× device pixel ratio and animates moving painter, monsters and protagonist, brush reveals, moving water and scroll unfurling. It composites previous shots on an offscreen Canvas for transitions. Hidden gameplay rendering pauses while the film plays.
 - Script-only voice and sound; cinematic sound begins only after the user opts in. Original game sound preferences remain separate.
 - No user accounts, backend services or analytics. Campaign persists locally.
@@ -237,12 +237,12 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 
 **Status: implemented on development only, not yet merged to main.** The original wave roller is kept for Endless. The director is intentionally independent of the renderer and works with the same existing ink-born enemy shapes.
 
-\`js/wave-director.js\` holds **30 named level identities** and **10 structured wave beats per level**. Each Journey wave is planned from its world, level number and wave number. Its seed determines which **legal** enemy types are emphasized and how their spawn groups are organized. Actual off-screen positions still have slight randomness so repeated runs are not identical paintings.
+`js/wave-director.js` holds **30 named level identities** and **10 structured wave beats per level**. Each Journey wave is planned from its world, level number and wave number. Its seed determines which **legal** enemy types are emphasized and how their spawn groups are organized. Actual off-screen positions still have slight randomness so repeated runs are not identical paintings.
 
 The director chooses:
 
 - **Composition:** a stage-specific lead and support enemy (with early-wave unlock restrictions), backed by a weighted roster. Existing SPLIT BLOOM, PHANTOM AMBUSH and CRIMSON RUSH signature encounters remain.
-- **Choreography:** eight spawn layouts: \`drift\`, \`lane\`, \`pincer\`, \`cross\`, \`spiral\`, \`feint\`, \`surround\`, \`siege\`. They steer the four off-screen arrival directions rather than spawning damage inside the player.
+- **Choreography:** eight spawn layouts: `drift`, `lane`, `pincer`, `cross`, `spiral`, `feint`, `surround`, `siege`. They steer the four off-screen arrival directions rather than spawning damage inside the player.
 - **Pacing:** per-wave group intervals and sizes vary within conservative bounds. Larger wave-7+ warnings last 0.78 seconds, earlier warnings 0.70 seconds; Guardian warning stays 1.7 seconds. Normal queue, concurrent cap, and six visible pending markers are preserved.
 - **Communication:** concise wave-arrival cues appear in the existing wave banner. The campaign picker exposes the next stage title, with hover and accessibility labels on the numbered levels. No combat sprites, CSS layout, or canvas art changed.
 - **Preservation:** 10 waves per stage, Wave 10 Guardian, stronger Level 10 world boss, normal upgrade flow, run resets, campaign unlock rules and Endless mode are all preserved. More expressive Guardian attacks are **Phase 3**, not part of this phase.
@@ -277,11 +277,11 @@ The director chooses:
 | 9 | The highest ordinary pressure; existing world signatures recur |
 | 10 | Original Guardian and a more deliberate siege rhythm |
 
-**Verification:** \`tests/wave-director.test.cjs\` checks the full 30-level, 300-wave planning matrix, names, legal enemies, signature injections, budget bounds, safe spawn sides, off-screen markers, initial plan resets and untouched Endless selection. Existing progression and combat regression tests still run. CI passing does not replace actual iPhone play-testing or prove every encounter is fun.
+**Verification:** `tests/wave-director.test.cjs` checks the full 30-level, 300-wave planning matrix, names, legal enemies, signature injections, budget bounds, safe spawn sides, off-screen markers, initial plan resets and untouched Endless selection. Existing progression and combat regression tests still run. CI passing does not replace actual iPhone play-testing or prove every encounter is fun.
 
 ## Guardian encounters — Phase 3 (development)
 
-**Implemented directly on \`development\`**, following Phase 1 combat reliability and Phase 2 encounter choreography. **Not merged to \`main\`**. World bosses are still the three original Guardian silhouettes, now with authored phase behavior.
+**Implemented directly on `development`**, following Phase 1 combat reliability and Phase 2 encounter choreography. **Not merged to `main`**. World bosses are still the three original Guardian silhouettes, now with authored phase behavior.
 
 | World | Guardian shape | 2-phase Level 1–9 encounter | 3-phase Level 10 world boss |
 |---|---|---|---|
@@ -291,7 +291,7 @@ The director chooses:
 
 **Rules and accessibility:** Every special attack uses a harmless **1.15-second warning for stage Guardians** or **1.25-second warning for world bosses**, followed by a brief 0.26–0.32-second impact and a multi-second recovery. Positions commit at warning time and **do not track the player**, so timely lateral movement is rewarded. The existing health, Ward protection and 1.1-second post-hit invulnerability govern damage. Boss HP is signaled with a thin world-space ink bar divided into two or three phases. Phase transitions announce themselves through the existing popup/ring system.
 
-**Technical architecture:** \`js/guardians.js\` is pure pattern/geometry logic. \`js/game.js\` schedules cast cooldowns, transitions and hazard damage and cleans up all outstanding attacks on Guardian defeat, run reset, wave transition or abandonment. The renderer gained **only** \`drawGuardianHazard\`, the small phase HP indicator, and one call-site, all in the existing ink/washi palette. Original sprites and animation code remain byte-for-byte identical after the additions are excluded. \`tests/guardians.test.cjs\` covers phase thresholds, windup geometry, player damage, attack cleanup, Endless compatibility, and the original renderer hash.
+**Technical architecture:** `js/guardians.js` is pure pattern/geometry logic. `js/game.js` schedules cast cooldowns, transitions and hazard damage and cleans up all outstanding attacks on Guardian defeat, run reset, wave transition or abandonment. The renderer gained **only** `drawGuardianHazard`, the small phase HP indicator, and one call-site, all in the existing ink/washi palette. Original sprites and animation code remain byte-for-byte identical after the additions are excluded. `tests/guardians.test.cjs` covers phase thresholds, windup geometry, player damage, attack cleanup, Endless compatibility, and the original renderer hash.
 
 **Balance restrictions:** New boss attacks do not increase player damage or directly multiply monster HP. The existing elite and world-boss HP multipliers remain. No giant unexplained area wipes, unavoidable radial damage, screen flashes or third-party assets. More elaborate 2D character transformations remain a possible future art exploration, not part of this phase.
 
@@ -325,7 +325,7 @@ These are sequential implementation phases, not five changes to deploy at once.
 
 ### DONE / VERIFIED BY CODE AND AUTOMATED TESTS
 
-- [x] Zero-build browser game and GitHub Pages deployment on \`main\`.
+- [x] Zero-build browser game and GitHub Pages deployment on `main`.
 - [x] Existing sumi-e renderer, paper themes, ink effects, audio and controls.
 - [x] Fourteen procedural enemy types and readably telegraphed attacks.
 - [x] Three scrolls and 30 independent ten-wave runs, persistent unlock system.
@@ -352,7 +352,16 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [ ] Play-test Wave Director 2.0 on iPhone: wave lengths, fair telegraphs, difficulty spikes, and whether each level feels distinct.
 - [x] Capture **actual browser screenshots** of the new film as GitHub Actions artifacts (not fabricated SVGs).
 - [ ] Compare captured film stills against pinned original gameplay art and review compositions on physical devices.
-- [ ] Owner decides whether to merge story experiment into \`main\`.
+- [ ] Owner decides whether to merge story experiment into `main`.
+
+### NEXT SPEC / PHASE 4A — BRUSH AND INK VISUAL POLISH
+
+- [x] **Specification written:** [Phase 4A / Living Ink Visual Refinement](PHASE-4A-PROGRESSION-VISUAL-POLISH.md). This is a **visual refinement plan only**, not a claim that the brush has been changed yet.
+- [ ] Remove the position-derived player silhouette seed and stabilize hand-drawn line boil.
+- [ ] Replace the large instant scale step with a deliberately tapered, tiered, gently eased brush evolution; keep the real hitbox unchanged.
+- [ ] Replace circular XP orbs with living ink seeds and tapered reabsorption motion; preserve all XP rewards and the no-loss rule.
+- [ ] Confirm real desktop / phone-sized browser renders, regression tests and physical iPhone Safari review.
+- [ ] Merge nothing to `main` without explicit approval.
 
 ### CURRENT SPRINT / DEVELOPMENT ONLY
 
@@ -396,7 +405,7 @@ These are sequential implementation phases, not five changes to deploy at once.
 
 ### Design gates before merging
 
-- [ ] No change to frozen \`main\` gameplay rendering or source assets outside clearly documented story additions.
+- [ ] No change to frozen `main` gameplay rendering or source assets outside clearly documented story additions.
 - [ ] No unskippable intro; Escape/Skip immediately reach the playable title.
 - [ ] All seven captions understandable without audio.
 - [ ] No reliance on third-party servers for the cinematic.
