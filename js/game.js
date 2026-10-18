@@ -33,6 +33,9 @@ const G = (() => {
 
     bullets: [], ebullets: [], enemies: [], markers: [], particles: [], popups: [], rings: [], idle: [],
     puddles: [], spirits: [], knots: [], guardianMarks: [],
+    crescents: [], shroudEchoes: [], lanternFlash: 0,
+    trailFrom: null, trailSeq: 0, mirrorT: 0, lanternT: 0,
+    crescentT: 0, shroudT: 0, shroudMotion: 0,
     stainQueue: [], inkDrops: [], inkRecall: false,
     queue: [], waveInitial: 0, waveActive: false, spawnTimer: 0, clearedT: 0,
     wavePlan: null,
@@ -52,6 +55,7 @@ const G = (() => {
       adren: 0, shock: false, levels: {},
       echo: 0, orb: 0, nova: 0, slow: 0, crit: 0, ward: false, wardCd: 0,
       fan: 0, trailW: 0, spirit: 0, knot: 0,
+      lantern: 0, crescent: 0, mirror: 0, shroud: 0,
       score: 0, kills: 0, time: 0, wave: 0,
       inkRank: 1, inkXp: 0, inkPending: 0, inkCollected: 0,
     };
@@ -382,6 +386,9 @@ const G = (() => {
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
     S.inkDrops = []; S.inkRecall = false;
     S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
+    S.crescents=[];S.shroudEchoes=[];S.lanternFlash=0;
+    S.trailFrom=null;S.trailSeq=0;S.mirrorT=0;
+    S.lanternT=0;S.crescentT=0;S.shroudT=0;S.shroudMotion=0;
     S.queue = []; S.wavePlan = null; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
     S.fanT = 2.2; S.spiritT = 1.6; S.knotT = 3.6; S.trailT = 0;
@@ -612,18 +619,25 @@ const G = (() => {
     SFX.fan();
   }
 
-  /* Suiteki Leak replaces automatic footprints. Water meets the
-     inkstone and a single slow spill blooms BEHIND the traveling soul. */
-  function dropTrail(){
-    const st=S.stats,p=S.player,lv=st.trailW;
-    if(S.puddles.length>=CFG.trail.maxPools(lv))return;
-    const facing=p.visualFacing||0,seed=(Math.random()*1e9)|0;
+  /* Suiteki Leak: one connected wet ribbon follows the ink-soul.
+     Small linked strokes produce a continuous snail trail, never
+     separate circular puddles or giant stamped blobs. */
+  function finishTrail(pd){
+    if((pd.sequence%2)===0){
+      const dx=pd.x-pd.x0,dy=pd.y-pd.y0;
+      markWeapon('trail',(pd.x+pd.x0)*.5,(pd.y+pd.y0)*.5,{
+        r:pd.r*1.45,angle:Math.atan2(dy,dx),alpha:.88});
+    }
+  }
+  function dropTrail(x0,y0,x1,y1,lv){
+    const seed=(S.trailSeq*7919+Math.floor(x1*31)+Math.floor(y1*17))|0;
     S.puddles.push({
-      x:p.x-Math.cos(facing)*29,y:p.y-Math.sin(facing)*29,
-      r:CFG.trail.radius(lv),life:CFG.trail.life(lv),
-      max:CFG.trail.life(lv),tickT:0,seed,variant:Math.abs(seed)%4,
-      vesselT:.18,level:lv,isSuiteki:true,
+      x0,y0,x:x1,y:y1,r:CFG.trail.radius(lv),
+      life:CFG.trail.life(lv),max:CFG.trail.life(lv),
+      sequence:S.trailSeq++,seed,isSuiteki:true,
     });
+    while(S.puddles.length>CFG.trail.maxPools(lv))
+      finishTrail(S.puddles.shift());
   }
 
   function fireSpirits() {
@@ -762,17 +776,22 @@ const G = (() => {
       if (S.fanT <= 0) { S.fanT = CFG.fan.period(st.fan); if (nearestEnemy()) fireFan(); }
     }
 
-    /* Suiteki Leak: occasional controlled spills only near real threats,
-       not a continuous chain of footsteps across blank paper. */
-    if(st.trailW>0){
-      S.trailT-=dt;
-      const threat=nearestEnemy();
-      const near=threat&&Math.hypot(threat.x-p.x,threat.y-p.y)<340;
-      if(S.trailT<=0&&m>.25&&near&&
-         S.puddles.length<CFG.trail.maxPools(st.trailW)){
-        dropTrail();S.trailT=CFG.trail.gap(st.trailW);
+    /* The vessel leaks continuously as we move; a world-space distance
+       accumulator keeps the ribbon connected across 30/60fps frames. */
+    if(st.trailW>0 && m>.18){
+      const gap=CFG.trail.gap(st.trailW);
+      const endX=p.x-vx*12,endY=p.y-vy*12;
+      if(!S.trailFrom)S.trailFrom={x:endX,y:endY};
+      let dx=endX-S.trailFrom.x,dy=endY-S.trailFrom.y;
+      let dist=Math.hypot(dx,dy),guard=0;
+      while(dist>=gap && guard++<25){
+        const x0=S.trailFrom.x,y0=S.trailFrom.y;
+        const x1=x0+dx/dist*gap,y1=y0+dy/dist*gap;
+        dropTrail(x0,y0,x1,y1,st.trailW);
+        S.trailFrom.x=x1;S.trailFrom.y=y1;
+        dx=endX-x1;dy=endY-y1;dist=Math.hypot(dx,dy);
       }
-    }
+    }else S.trailFrom=null;
 
     /* spirit scribes: lesser brushes that hunt alone */
     if (st.spirit > 0) {
@@ -1047,30 +1066,22 @@ const G = (() => {
 
   function updatePuddles(dt){
     for(let i=S.puddles.length-1;i>=0;i--){
-      const pd=S.puddles[i];
-      pd.life-=dt;pd.vesselT=Math.max(0,(pd.vesselT||0)-dt);
+      const pd=S.puddles[i];pd.life-=dt;
       if(pd.life<=0){
-        /* Only a maxed spill leaves a permanent stage memory. The
-           selected red seal changes pigment, never damage. */
-        markWeapon('trail',pd.x,pd.y,{r:pd.r*.56,alpha:.94,
-          angle:(pd.variant||0)*Math.PI/2});
-        S.puddles.splice(i,1);continue;
+        finishTrail(pd);S.puddles.splice(i,1);continue;
       }
-      const grow=Math.min(1,(pd.max-pd.life)/.68);
-      const wetR=pd.r*grow;
-      let hit=false;
+      const abx=pd.x-pd.x0,aby=pd.y-pd.y0,len=abx*abx+aby*aby;
       for(let j=S.enemies.length-1;j>=0;j--){
-        const e=S.enemies[j],dx=e.x-pd.x,dy=e.y-pd.y;
-        if(dx*dx+dy*dy>(e.r+wetR*.82)**2)continue;
+        const e=S.enemies[j],cx=e.x-pd.x0,cy=e.y-pd.y0;
+        const u=len?Math.max(0,Math.min(1,(cx*abx+cy*aby)/len)):0;
+        const dx=cx-u*abx,dy=cy-u*aby;
+        if(dx*dx+dy*dy>(e.r+pd.r*.86)**2)continue;
         e.suitekiT=Math.max(e.suitekiT||0,.55);
-        /* Global per-enemy cooldown shared across overlapping pools.
-           Never multiply damage by the number of active leaks. */
         if(S.clockT<(e.suitekiNextT||0))continue;
         e.suitekiNextT=S.clockT+CFG.trail.tick;
-        e.hp-=CFG.trail.dmg;e.hitFlash=.07;hit=true;
+        e.hp-=CFG.trail.dmg;e.hitFlash=.07;
         if(e.hp<=0){S.enemies.splice(j,1);killEnemy(e);}
       }
-      if(hit&&Math.random()<.27)SFX.hit();
     }
   }
 
