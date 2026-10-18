@@ -315,11 +315,11 @@ The director chooses:
 
 **Preserve the current enemy roster and every creature's existing procedurally animated shape.** Only the death-paint operation branches by enemy type: there are **14 named enemy hands, each with five seeded variants**. BLOT pools, BLIP dots, SPEAR velocity slashes, SPIT spray, DRIP forks, BRUTE weighted blots, SHADE disconnected ghost washes, WISP mist, MOTH paired wing fans, TITAN flood washes, KAGE slashes, STILT needle marks, ONI cracks and CRANE feather strokes. Normal blood is current-scroll `INK`, **never red**.
 
-**Mastery:** a weapon that reaches its configured upgrade cap uses a **deep, vivid lacquer crimson `#ac1538`** for *its own* stage-long marks, while unmastered weapons and enemy blood remain black/pale themed ink. This includes Eraser rank 3, Fan rank 4, Spirit Scribes rank 3, Ink Knots rank 3, Black Tide rank 3, Trail rank 3 and Echo rank 2. Maxed shot modifiers, Paper Ward, Ink Burst and triggered passives may leave restrained red signatures without changing mechanics. Do not recolor the enemy silhouettes, paper, character, or all weapons at once.
+**Mastery:** an acquired weapon that reaches its configured upgrade cap uses a **deep, vivid lacquer crimson `#ac1538`** for *its own* stage-long marks, while unmastered weapons and enemy blood remain black/pale themed ink. This includes Eraser rank 3, Fan rank 4, Spirit Scribes rank 3, Ink Knots rank 3, Black Tide rank 3, Trail rank 3 and Echo rank 2. Maxed shot modifiers, Paper Ward, Ink Burst and triggered passives may leave restrained red signatures without changing mechanics. Do not recolor the enemy silhouettes, paper, character, or all weapons at once.
 
 **The Eraser:** replaces rotating Ink Orbit visuals and damage with a continuous circular negative-space zone centered on the character. Rank radius **135 / 170 / 205 world pixels**, one damage per enemy at most every **0.82 s** (per-enemy cooldown, no burst stacking), very gentle knockback, erasure every **0.25 s**. The zone deletes both previously stamped and still-queued stage-terrain paint, without altering decorative world paper or erased creature AI. At mastery it leaves a thin deep-red boundary. Retain the internal `orbit` upgrade ID and `stats.orb` for backwards compatibility; the player-facing upgrade is **The Eraser**.
 
-**More meaningful terrain:** moving ink shots, mirrored Echo shots and Fan blades stamp at regular 38px intervals, Spirits leave wisps during movement, Knots print along the bound fibers and Black Tide paints its actual outer wavefront. Dense weapon marks use the existing stage-long cached Canvas2D terrain system rather than screen-space emitters, preserving each 10-wave stage's physical painted history except where the Eraser passes.
+**More meaningful terrain:** normal auto-fire ink shots do **not** mark the map in flight, on impact or on expiry, even if basic-shot upgrades are mastered. Acquired Echo shots and Fan blades stamp at regular 38px intervals, Spirits leave wisps during movement, Knots print along the bound fibers and Black Tide paints its actual outer wavefront. Dense weapon marks use the existing stage-long cached Canvas2D terrain system rather than screen-space emitters, preserving each 10-wave stage's physical painted history except where the Eraser passes.
 
 **Protagonist:** no longer a brush tool or a generic rounded enemy clone. A recognizable asymmetrical flowing ink-soul has a soft floating hood, two lower folds and one curved expressive paper eye. It preserves original collision/targeting, visual-scale limits, motion restraint, world palette, and reduced-motion support.
 
@@ -331,7 +331,7 @@ The director chooses:
 
 | Weapon or effect | Permanent terrain impression |
 |---|---|
-| Ink Shot | Small splash and directional brush fleck |
+| Base Ink Shot | No terrain effect, including at mastery |
 | Echo Stroke | Mirrored answer/crossing stroke |
 | Folded Fan | Long dry-brush slash |
 | The Eraser | Clears enemy blood and weapon marks from a wide damage field; mastered boundary paints lacquer crimson |
