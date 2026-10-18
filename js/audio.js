@@ -163,11 +163,11 @@ const SFX = (() => {
       tone({ f: 880, f2: 1320, type: 'sine', dur: 0.12, vol: 0.045 });
       tone({ f: 1174, type: 'triangle', dur: 0.08, vol: 0.03, delay: 0.07 });
     },
-    /* the crimson hanko falls — a stamp, a knock, a thud */
-    hanko() {
-      tone({ f: 96, f2: 36, type: 'sine', dur: 0.28, vol: 0.3 });
-      noise({ dur: 0.09, vol: 0.14, lp: 700, q: 1.1 });
-      tone({ f: 1650, type: 'square', dur: 0.03, vol: 0.05, delay: 0.015 });
+    /* ink knots tighten like a quiet plucked thread */
+    knot() {
+      tone({ f: 440, f2: 520, type: 'sine', dur: 0.16, vol: 0.045 });
+      tone({ f: 660, f2: 610, type: 'triangle', dur: 0.18, vol: 0.025, delay: 0.07 });
+      noise({ dur: 0.045, vol: 0.025, hp: 1200, lp: 4200 });
     },
     /* the sniper fires its needle */
     needle() {

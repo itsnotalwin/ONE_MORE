@@ -28,12 +28,12 @@ const G = (() => {
     worldIndex: 0, level: 1, lastVictory: false, nextStage: null,
 
     bullets: [], ebullets: [], enemies: [], markers: [], particles: [], popups: [], rings: [], idle: [],
-    puddles: [], spirits: [], stamps: [],
+    puddles: [], spirits: [], knots: [],
     stainQueue: [],
     queue: [], waveInitial: 0, waveActive: false, spawnTimer: 0, clearedT: 0,
 
     invulnT: 0, adrenT: 0, shake: 0, dyingT: 0, novaT: 0, clockT: 0,
-    fanT: 2.2, spiritT: 1.6, hankoT: 4.0, trailT: 0,
+    fanT: 2.2, spiritT: 1.6, knotT: 3.6, trailT: 0,
     choices: [], selected: null,
 
     joy: null,
@@ -46,7 +46,7 @@ const G = (() => {
       maxHp: CFG.player.hp, hp: CFG.player.hp, bulletSpeedMult: 1,
       adren: 0, shock: false, levels: {},
       echo: 0, orb: 0, nova: 0, slow: 0, crit: 0, ward: false, wardCd: 0,
-      fan: 0, trailW: 0, spirit: 0, hanko: 0,
+      fan: 0, trailW: 0, spirit: 0, knot: 0,
       score: 0, kills: 0, time: 0, wave: 0,
     };
   }
@@ -308,10 +308,10 @@ const G = (() => {
     S.stats = freshStats();
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
-    S.puddles = []; S.spirits = []; S.stamps = [];
+    S.puddles = []; S.spirits = []; S.knots = [];
     S.queue = []; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
-    S.fanT = 2.2; S.spiritT = 1.6; S.hankoT = 4.0; S.trailT = 0;
+    S.fanT = 2.2; S.spiritT = 1.6; S.knotT = 3.6; S.trailT = 0;
     S.choices = []; S.selected = null; S.idle = [];
     S.areaIdx = S.worldIndex;
 
@@ -364,7 +364,7 @@ const G = (() => {
     S.mode = 'title';
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = []; S.queue = [];
-    S.puddles = []; S.spirits = []; S.stamps = [];
+    S.puddles = []; S.spirits = []; S.knots = [];
     UI.hud(false);
     UI.show('title');
     UI.setBest(getBest());
@@ -525,28 +525,57 @@ const G = (() => {
     SFX.spirit();
   }
 
-  function fireHanko() {
-    const st = S.stats;
-    const tgt = nearestEnemy(S.player.x, S.player.y, 720);
-    if (!tgt) { S.hankoT = 0.8; return; }
-    const rad = CFG.hanko.radius(st.hanko);
-    const dmg = CFG.hanko.dmg(st.hanko);
-    S.stamps.push({ x: tgt.x, y: tgt.y, r: rad, life: 0.5, max: 0.5, seed: (Math.random() * 1e9) | 0 });
-    S.rings.push({ x: tgt.x, y: tgt.y, max: rad, life: 0.4, maxLife: 0.4, red: true });
-    S.stainQueue.push({ x: tgt.x, y: tgt.y, r: rad * 0.34, alpha: 0.34, red: true });
-    S.shake = Math.max(S.shake, 6);
-    for (let k = S.enemies.length - 1; k >= 0; k--) {
-      const e = S.enemies[k];
-      const dx = e.x - tgt.x, dy = e.y - tgt.y;
-      if (dx * dx + dy * dy <= rad * rad) {
-        e.hp -= dmg;
-        e.hitFlash = 0.09;
-        e.stun = Math.max(e.stun, CFG.hanko.stun);
-        e.slowT = Math.max(e.slowT, 0.8);
-        if (e.hp <= 0) { S.enemies.splice(k, 1); killEnemy(e); }
+  /* Bind a small nearby cluster, not the entire horde. */
+  function castKnot() {
+    const anchor = nearestEnemy(S.player.x, S.player.y, CFG.knot.range);
+    if (!anchor) { S.knotT = 0.6; return; }
+    const span2 = CFG.knot.span * CFG.knot.span;
+    const members = [anchor];
+    const nearby = S.enemies.filter(e => {
+      if (e === anchor) return false;
+      const dx = e.x - anchor.x, dy = e.y - anchor.y;
+      return dx * dx + dy * dy <= span2;
+    }).sort((a, b) =>
+      ((a.x - anchor.x) ** 2 + (a.y - anchor.y) ** 2) -
+      ((b.x - anchor.x) ** 2 + (b.y - anchor.y) ** 2));
+    members.push(...nearby.slice(0, CFG.knot.count(S.stats.knot) - 1));
+    S.knots.push({
+      members, life: CFG.knot.life(S.stats.knot),
+      max: CFG.knot.life(S.stats.knot), pulseT: CFG.knot.pulseAt,
+      pulsed: false, seed: (Math.random() * 1e9) | 0,
+    });
+    S.knotT = CFG.knot.period(S.stats.knot);
+    SFX.knot();
+  }
+
+  /* A brief slow plus one delayed point per chosen target.
+     Level upgrades add targets, never large-area instant damage. */
+  function updateKnots(dt) {
+    for (let i = S.knots.length - 1; i >= 0; i--) {
+      const knot = S.knots[i];
+      knot.life -= dt;
+      knot.pulseT -= dt;
+      knot.members = knot.members.filter(e => S.enemies.includes(e));
+      if (knot.life <= 0 || !knot.members.length) {
+        S.knots.splice(i, 1);
+        continue;
+      }
+      for (const e of knot.members) e.slowT = Math.max(e.slowT, 0.20);
+      if (!knot.pulsed && knot.pulseT <= 0) {
+        knot.pulsed = true;
+        for (const e of knot.members) {
+          const idx = S.enemies.indexOf(e);
+          if (idx === -1) continue;
+          e.hp -= CFG.knot.dmg;
+          e.hitFlash = Math.max(e.hitFlash, 0.08);
+          if (e.hp <= 0) {
+            S.enemies.splice(idx, 1);
+            killEnemy(e);
+          }
+        }
+        SFX.hit();
       }
     }
-    SFX.hanko();
   }
 
   /* ---------------- updates ---------------- */
@@ -595,10 +624,10 @@ const G = (() => {
       if (S.spiritT <= 0) { S.spiritT = CFG.spirit.period(st.spirit); if (nearestEnemy()) fireSpirits(); }
     }
 
-    /* crimson hanko: the great seal falls */
-    if (st.hanko > 0) {
-      S.hankoT -= dt;
-      if (S.hankoT <= 0) fireHanko();
+    /* ink knots: selective control of the nearest cluster */
+    if (st.knot > 0) {
+      S.knotT -= dt;
+      if (S.knotT <= 0) castKnot();
     }
 
     /* ink orbit: droplets grind what they graze */
@@ -1185,11 +1214,6 @@ const G = (() => {
       r.life -= dt;
       if (r.life <= 0) S.rings.splice(i, 1);
     }
-    for (let i = S.stamps.length - 1; i >= 0; i--) {
-      const st = S.stamps[i];
-      st.life -= dt;
-      if (st.life <= 0) S.stamps.splice(i, 1);
-    }
     if (S.shake > 0) S.shake *= Math.exp(-6.5 * dt);
   }
 
@@ -1205,6 +1229,7 @@ const G = (() => {
     updateBullets(dt);
     updateEbullets(dt);
     updateEnemies(dt);
+    updateKnots(dt);
     updatePuddles(dt);
     updateSpirits(dt);
     updateMarkers(dt);
