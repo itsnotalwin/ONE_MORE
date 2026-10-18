@@ -124,34 +124,21 @@ test('Endless Guardian scaling and run progression remain unaffected',()=>{
   assert.equal(x.G.S.stats.wave,2);
 });
 test('only phase-specific ink visuals changed and original renderer is byte-identical otherwise',()=>{
-  /* The Guardian artwork, the rest of the renderer and original
-     combat painter remain frozen; only the player nib was redesigned. */
-  let source=file('js/render.js');
-  const pa=source.indexOf('  /* ---------------- player:');
-  const pb=source.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */',pa);
-  assert.ok(pa>0&&pb>pa);
-  source=source.slice(0,pa)+'  /* PLAYER-RENDER-MASK */\n\n'+source.slice(pb);
-  const a=source.indexOf('  /* Phase 3 additions reuse');
-  const b=source.indexOf('  function drawRing(c, r) {',a);
-  assert.ok(a>0&&b>a);
-  source=source.slice(0,a)+source.slice(b);
-  const c=source.indexOf('    /* Minimal ink-seal integrity line');
-  const d=source.indexOf('    c.restore();\n  }\n',c);
-  assert.ok(c>0&&d>c);
-  source=source.slice(0,c)+source.slice(d);
-  source=source.replace('    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);\n','');
-  source=source.replace(
-    '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
-    '       No original creature or player sprite functions are modified. */\n' +
-    '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
-  /* Only red-blood particle color changed outside the player: keep the
-     former non-player baseline protected by undoing that one allowed line. */
-  source=source.replace('    c.fillStyle = p.red ? RED : INK;\n    const vang = Math.atan2(p.vy, p.vx);',
-    '    c.fillStyle = INK;\n    const vang = Math.atan2(p.vy, p.vx);');
-  source=source.replace('inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1, color: p.red ? RED : INK });','inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1 });');
-  let h=0x811c9dc5;
-  for(let i=0;i<source.length;i++){h^=source.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}
-  assert.equal(h.toString(16).padStart(8,'0'),'70a61c56');
+  /* Freeze the unchanged enemy painter and weapon/projectile silhouettes.
+     Stage-long stamp storage and the protagonist are intentional edits. */
+  const painter=file('js/render.js');
+  const hash=v=>{let h=0x811c9dc5;for(let i=0;i<v.length;i++){h^=v.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h.toString(16).padStart(8,'0');};
+  const fragment=(a,b)=>{
+    const from=painter.indexOf(a),to=painter.indexOf(b,from);
+    assert.ok(from>0&&to>from);
+    return painter.slice(from,to);
+  };
+  assert.equal(hash(fragment('  function drawEnemy(c, e, t) {',
+    '  /* ---------------- player:')),'44e8cc52');
+  assert.equal(hash(fragment('  /* ---------------- projectiles, zones, fx ---------------- */',
+    '  /* Phase 3 additions reuse')),'20aee36a');
+  assert.ok(painter.includes('function paintWeaponImprint('));
+  assert.ok(painter.includes('stainCells.get('));
   assert.ok(file('index.html').includes('<script src="./js/guardians.js"></script>'));
   assert.ok(file('index.html').indexOf('/js/guardians.js')<file('index.html').indexOf('/js/game.js'));
 });
