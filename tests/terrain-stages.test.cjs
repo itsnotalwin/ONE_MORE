@@ -16,7 +16,7 @@ function harness(){
 }
 test('every authored offensive or defensive weapon has its own terrain impression',()=>{
   const source=file('js/game.js');
-  for(const weapon of ['shot','echo','fan','eraser','nova','trail','spirit','knot','ward','shock']){
+  for(const weapon of ['echo','fan','eraser','nova','trail','spirit','knot','ward','shock']){
     assert.ok(source.includes("'"+weapon+"'"),'missing '+weapon+' mark vocabulary');
   }
   assert.ok(source.includes("kind:'weapon',weapon"));
@@ -62,6 +62,8 @@ test('black weapon flights and maxed red techniques paint the paper without alte
   const game=file('js/game.js'),render=file('js/render.js');
   assert.ok(game.includes('function paintFlight('));
   assert.ok(game.includes('if(travel>0)paintFlight('));
+  assert.ok(game.includes("return b.kind==='blade'?'fan':b.kind==='echo'?'echo':null"),
+    'only acquired Fan and Echo projectiles may paint a flight path');
   assert.ok(game.includes("markWeapon('spirit',sp.x,sp.y"));
   assert.ok(game.includes('Math.max(.78,opts.alpha??.9)'));
   assert.ok(game.includes('function awakenedWeapon('));
@@ -69,23 +71,58 @@ test('black weapon flights and maxed red techniques paint the paper without alte
   assert.ok(render.includes('function eraseTerrain('));
   assert.ok(render.includes('if(removed.size)stains=stains.filter('));
 });
-test('maxed stroke skills make pigment-red map signatures while ordinary effects stay black',()=>{
+test('default weapon never paints terrain while moving, on hit, at expiry or after mastery',()=>{
   const {G}=harness();
   G.startLevel(0,1);
   G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
   G.S.stats.levels.heavy=4;
-  G.S.bullets.push({x:0,y:0,vx:560,vy:0,ang:0,dmg:1,hits:1,
-    age:0,life:.9,kind:'drop'});
+  G.S.stats.levels.rapid=5;
+  G.S.stats.levels.pierce=3;
+  G.S.stats.levels.split=3;
+  G.S.stats.levels.velo=3;
+  const baseBullet=(fields={})=>({
+    x:-120,y:0,vx:560,vy:0,ang:0,dmg:1,hits:1,
+    age:0,life:.9,kind:'drop',...fields
+  });
+  // A high-rank normal shot crossing empty paper has no terrain effect.
+  G.S.bullets.push(baseBullet());
   G.update(.05);G.update(.05);
-  assert.ok(G.S.stainQueue.some(m=>m.weapon==='shot'&&m.red),
-    'mastered Bitter Ink turns the very same ordinary projectile terrain strokes crimson');
+  assert.ok(!G.S.stainQueue.some(m=>m.kind==='weapon'&&m.weapon==='shot'));
+  // An expiring base projectile still cannot stamp an end-of-life blot.
+  G.S.bullets.push(baseBullet({life:.015}));
+  G.update(.05);
+  assert.ok(!G.S.stainQueue.some(m=>m.kind==='weapon'&&m.weapon==='shot'));
+  // Damage can still generate enemy blood, but not a separate shot imprint.
+  G.S.enemies.push({x:0,y:0,r:12,hp:15,maxHp:15,
+    speed:0,type:'pulse',seed:.1,hitFlash:0,kbx:0,kby:0,
+    state:'cruise',stateT:20,slowT:0,orbCd:0,spawnT:0,
+    ang:0,dirT:0,elite:false});
+  G.S.bullets.push(baseBullet({x:-28,vx:560}));
+  G.update(.05);
+  assert.ok(!G.S.stainQueue.some(m=>m.kind==='weapon'&&m.weapon==='shot'),
+    'the starter auto-fire never inks the world directly');
+});
+test('acquired Echo and Fan shots still leave ordinary black and awakened red marks',()=>{
+  const {G}=harness();
   G.startLevel(0,1);
   G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
-  G.S.bullets.push({x:0,y:0,vx:560,vy:0,ang:0,dmg:1,hits:1,
-    age:0,life:.9,kind:'drop'});
+  G.S.bullets.push({x:-120,y:0,vx:560,vy:0,ang:0,dmg:1,hits:1,
+    age:0,life:.9,kind:'echo'});
   G.update(.05);G.update(.05);
-  assert.ok(G.S.stainQueue.some(m=>m.weapon==='shot'&&!m.red),
-    'unmastered weapons remain traditional black ink');
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='echo'&&!m.red),
+    'the distinct Echo skill continues painting black');
+  G.S.stats.levels.echo=2;
+  G.S.bullets.push({x:-120,y:30,vx:560,vy:0,ang:0,dmg:1,hits:1,
+    age:0,life:.9,kind:'echo'});
+  G.update(.05);G.update(.05);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='echo'&&m.red),
+    'mastered Echo becomes lacquer-crimson');
+  G.S.stats.levels.fan=4;
+  G.S.bullets.push({x:-120,y:60,vx:560,vy:0,ang:0,dmg:1,hits:1,
+    age:0,life:.9,kind:'blade',spin:0});
+  G.update(.05);G.update(.05);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='fan'&&m.red),
+    'mastered Folded Fan still paints the paper');
 });
 test('mastered movement contributes a sparse red terrain seal without changing speed or hitbox',()=>{
   const {G}=harness();
