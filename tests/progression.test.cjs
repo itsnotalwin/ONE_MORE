@@ -21,7 +21,7 @@ function harness(deniedStorage = false) {
   });
   const SFX = new Proxy({}, { get() { return () => {}; } });
   const context = vm.createContext({ localStorage: storage, UI, SFX });
-  for (const p of ['js/config.js', 'js/campaign.js', 'js/wave-director.js', 'js/guardians.js', 'js/game.js']) {
+  for (const p of ['js/config.js', 'js/campaign.js', 'js/wave-director.js', 'js/guardians.js', 'js/ink-xp.js', 'js/game.js']) {
     vm.runInContext(file(p), context, { filename: p });
   }
   const { G, CAMPAIGN } = vm.runInContext('({ G, CAMPAIGN })', context);
