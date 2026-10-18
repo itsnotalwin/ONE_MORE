@@ -79,7 +79,7 @@ test('the experimental cinematic has seven authored, captioned and skippable sce
   assert.equal(G.mode,'intro');
   assert.equal(nodes.get('introFrames').children.length,7);
   assert.equal(nodes.get('introTitle').textContent,'BEFORE THE FIRST MARK');
-  nodes.get('introStartBtn').click();
+  // Film should already be running without clicking an opening cover.
   // Render a real timeline step through a mocked Canvas 2D surface.
   const paint = renderFrames.shift();
   assert.doesNotThrow(()=>paint(1000));
@@ -89,17 +89,17 @@ test('the experimental cinematic has seven authored, captioned and skippable sce
   assert.equal(nodes.get('introTitle').textContent,'EVERY MARK CAST A SHADOW');
   assert.equal(INTRO.handleKey('Escape'),true);
   assert.equal(G.mode,'title');
-  assert.equal(INTRO.play(),false,'do not force repeat in same session');
-  assert.ok(INTRO.play(true),'replay button allows replay at will');
-  nodes.get('introCoverSkip').click();
-  assert.equal(G.mode,'title','cover skip works immediately');
+  assert.ok(INTRO.play(),'prologue plays again after every launch, without a watch-once gate');
+  nodes.get('introSkip').click();
+  assert.equal(G.mode,'title','skip works immediately');
+  assert.ok(INTRO.play(),'replay remains available even after skipping');
 });
 
 test('ending all seven frames returns to title without changing campaign state',()=>{
   const x=storyHarness(), {INTRO,G}=x;
   x.savedProgress=10;
   INTRO.play();
-  x.nodes.get('introStartBtn').click();
+  assert.equal(G.mode,'intro','autoplay starts without an extra tap');
   for(let i=0;i<7;i++)INTRO.next();
   assert.equal(G.mode,'title');
   assert.equal(x.lastScreen,'title');
@@ -130,10 +130,12 @@ test('experimental additions do not modify existing combat code or require movie
   assert.ok(html.includes('<script src="./js/intro.js"></script>'));
   assert.ok(html.includes('id="screenIntro"'));
   assert.ok(html.includes('id="screenChronicle"'));
-  assert.ok(html.includes('id="introCoverSkip"'));
+  assert.ok(!html.includes('id="introStartBtn"'),'no click-to-play cover');
+  assert.ok(js.includes("running=true;elapsed=0"),'movie playback starts immediately');
+  assert.ok(!js.includes('sessionStorage'),'opening never skips because of prior visits');
+  assert.ok(js.includes('animateInk('),'live-ink animation is rendered during playback');
   assert.ok(css.includes('prefers-reduced-motion:reduce'));
   assert.ok(js.includes('getBoundingClientRect'));
-  assert.ok(js.includes('sessionStorage'));
   assert.ok(!/<video\b|\.mp4|\.webm/i.test(html+js),'no remote video or encoded movie requirement');
   assert.ok(original.includes('function drawEnemy('));
   assert.ok(file('docs/GAME_BIBLE.md').includes('Sprite sheet inventory: **NONE**'));
