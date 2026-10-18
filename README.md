@@ -170,10 +170,12 @@ one-more/
 ├── .github/
 │   └── workflows/
 │       ├── test.yml            # progression + style-source checks on PRs
-│       └── story-preview.yml   # experimental tests + downloadable preview bundle
+│       ├── story-preview.yml   # experimental tests + downloadable preview bundle
+│       └── film-visual-qa.yml  # browser smoke test and real cinematic stills
 ├── tests/
 │   ├── progression.test.cjs    # existing campaign regression tests
-│   └── story.test.cjs          # optional prologue and archive regression tests
+│   ├── story.test.cjs          # seven-shot film and archive regression tests
+│   └── film-browser.cjs        # CI-only real Chromium animation QA
 ├── docs/
 │   ├── GAME_BIBLE.md           # canon lore, technical atlas, roadmap checklist
 │   ├── RESEARCH.md             # art, accessibility, hosting choices
@@ -203,7 +205,7 @@ only, and the game is 100% client-side by design.
 
 ## Test
 
-Run `node --test tests/*.test.cjs` (Node.js 18+). The suite checks
+Run `node --test tests/*.test.cjs` (Node.js 18+). The [Film visual QA workflow](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml) additionally uses real desktop/phone-sized Chromium to render the short film and produces **10 real browser screenshots** as a downloadable artifact. Playwright is CI-only; the playable game still has zero third-party runtime dependencies. The suite checks
 all 30 stage clears, 300 wave transitions, sequential unlocks, world-specific
 enemy patterns, final bosses, storage fallback, Endless, and frozen original
 renderer/audio/CSS contents. It is a headless logic test; actual browser visual
