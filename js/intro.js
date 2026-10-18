@@ -76,12 +76,20 @@ const INTRO = (() => {
   const soundButton=$('introSound'), progress=$('introProgress');
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const LENGTH=SCENES.reduce((n,s)=>n+s.seconds,0);
-  let index=0,elapsed=0,prior=null,dissolve=1,visible=false,lastTime=0;
+  let index=0,elapsed=0,priorFrame=null,dissolve=1,visible=false,lastTime=0;
   let raf=0,audio=null,soundOn=false,sceneW=1,sceneH=1;
 
   function selectScene(n){
     const prev=index;
-    if(visible&&n!==prev)prior={index:prev,time:SCENES[prev].seconds,duration:SCENES[prev].seconds};
+    if(visible&&n!==prev&&sceneW>1){
+      const plate=document.createElement('canvas');
+      plate.width=canvas.width;plate.height=canvas.height;
+      const painter=plate.getContext('2d');
+      painter.setTransform(canvas.width/sceneW,0,0,canvas.height/sceneH,0,0);
+      FILM.scene(painter,sceneW,sceneH,prev,SCENES[prev].seconds,
+        SCENES[prev].seconds,reduced);
+      priorFrame=plate;
+    }
     index=Math.max(0,Math.min(SCENES.length-1,n));elapsed=0;dissolve=0;
     const s=SCENES[index];
     title.textContent=s.title;line.textContent=s.line;second.textContent=s.second;
@@ -90,11 +98,13 @@ const INTRO = (() => {
     stage.classList.toggle('is-finale',index===SCENES.length-1);
     overlay.classList.remove('intro-text-in','intro-text-main','intro-text-end');
     /* For screen readers, the scene narration is one self-contained beat. */
+    if(soundOn&&audio)cue(index);
   }
   function sizeCanvas(){
     const rect=canvas.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
     if(w===sceneW&&h===sceneH)return;
     sceneW=w;sceneH=h;
+    priorFrame=null; /* a resize invalidates the old frame buffer */
     const dpr=Math.min(1.5,window.devicePixelRatio||1);
     canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
   }
@@ -117,13 +127,22 @@ const INTRO = (() => {
     sizeCanvas();
     ctx.save();
     ctx.setTransform(canvas.width/sceneW,0,0,canvas.height/sceneH,0,0);
+    const u=elapsed/SCENES[index].seconds;
+    const zoom=reduced?1:index===6?1.12-FILM.ease(.1,.95,u)*.105:1.032+u*.035;
+    const drift=reduced?0:Math.sin(elapsed*.21+index)*Math.min(4,sceneW*.005);
+    const tremor=(!reduced&&index===3)?Math.sin(elapsed*28)*Math.max(0,2.5*(1-u)):0;
+    ctx.translate(sceneW/2,sceneH/2);
+    ctx.scale(zoom,zoom);
+    ctx.translate(-sceneW/2+drift+tremor,-sceneH/2);
     FILM.scene(ctx,sceneW,sceneH,index,elapsed,SCENES[index].seconds,reduced);
-    if(prior&&dissolve<1&&!reduced){
-      ctx.globalAlpha=Math.pow(1-dissolve,1.5);
-      FILM.scene(ctx,sceneW,sceneH,prior.index,prior.time,prior.duration,reduced);
-      ctx.globalAlpha=1;
-    }
     ctx.restore();
+    if(priorFrame&&dissolve<1&&!reduced){
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.globalAlpha=Math.pow(1-dissolve,1.4);
+      ctx.drawImage(priorFrame,0,0,canvas.width,canvas.height);
+      ctx.restore();
+    }
     /* Let the film lead. Captions arrive after the picture begins moving. */
     overlay.classList.toggle('intro-text-in',elapsed>=1.1&&elapsed<SCENES[index].seconds-.65);
     overlay.classList.toggle('intro-text-main',elapsed>=2.25);
@@ -172,7 +191,7 @@ const INTRO = (() => {
   }
   function play(){
     if(visible)return true;
-    visible=true;prior=null;
+    visible=true;priorFrame=null;
     G.mode='intro';UI.show('intro');
     selectScene(0);
     lastTime=performance.now();
