@@ -659,27 +659,6 @@ const R = (() => {
     c.lineJoin = 'round';
     c.lineCap = 'round';
 
-    /* On the reverse sheet, spectral enemies must NEVER disappear
-       against their own night paper. Add a fine broken ivory
-       registration contour *behind* the existing creature art.
-       Nothing about their silhouettes or AI animations is changed. */
-    if(themeKey==='dark' && !S.idle?.includes(e)){
-      const spectral=['shade','wraith','kage','stilt','moth'].includes(e.type);
-      c.save();c.globalAlpha=spectral?.78:.32;
-      c.strokeStyle='#f9edce';c.lineCap='round';
-      c.lineWidth=spectral?1.6:1.15;
-      c.beginPath();
-      c.arc(0,0,r*(spectral?1.48:1.35),-.95,.46);
-      c.moveTo(Math.cos(2.25)*r*1.48,Math.sin(2.25)*r*1.48);
-      c.arc(0,0,r*(spectral?1.48:1.35),2.25,3.42);
-      c.stroke();
-      if(spectral){
-        c.fillStyle='#f9edce';c.globalAlpha=.85;
-        c.beginPath();c.arc(-r*1.34,-r*.12,1.25,0,TAU);c.fill();
-      }
-      c.restore();
-    }
-
     let silhouette = null; /* path fn for hit-flash overlay */
 
     switch (e.type) {
@@ -829,7 +808,7 @@ const R = (() => {
         let stretch = 1;
         if (st === 'dissolve') {
           const pr = Math.min(1, e.stateT / 0.55);
-          alpha = themeKey==='dark' ? 0.45 + 0.25 * (1-pr) : 0.72 * (1 - pr * 0.92);
+          alpha = 0.72 * (1 - pr * 0.92);
           stretch = 1 + pr * 0.3;
         } else if (st === 'pounce') {
           alpha = 1; stretch = 1.35;
@@ -1156,6 +1135,28 @@ const R = (() => {
         c.fillRect(-width / 2 + width * k / (e.guardian.boss ? 3 : 2) - .6, top, 1.2, 3);
       }
       c.restore();
+    }
+    c.restore();
+  }
+
+  /* An additive registration mark behind Night Scroll's spectral
+     monsters. The original fourteen enemy painters, their eye shapes
+     and their dissolve animations stay byte-identical. The broken
+     handmade outline makes even an almost-transparent Shade trackable. */
+  function drawNightSighting(c,e){
+    if(themeKey!=='dark')return;
+    const r=e.r;
+    const spectral=['shade','wraith','kage','stilt','moth'].includes(e.type);
+    c.save();c.translate(e.x,e.y);
+    c.strokeStyle='#ffefd1';c.lineCap='round';
+    c.globalAlpha=spectral?.8:.33;c.lineWidth=spectral?1.5:1.05;
+    const halo=r*(spectral?1.47:1.34);
+    c.beginPath();c.arc(0,0,halo,-.95,.46);
+    c.moveTo(Math.cos(2.2)*halo,Math.sin(2.2)*halo);
+    c.arc(0,0,halo,2.2,3.43);c.stroke();
+    if(spectral){
+      c.fillStyle='#ffefd1';c.globalAlpha=.9;
+      c.beginPath();c.arc(-halo*.92,-halo*.11,1.1,0,TAU);c.fill();
     }
     c.restore();
   }
@@ -1741,7 +1742,10 @@ const R = (() => {
     for (const r of S.rings) drawRing(ctx, r);
     for (const b of S.bullets) drawBullet(ctx, b);
     for (const b of S.ebullets) drawEBullet(ctx, b);
-    for (const e of S.enemies) drawEnemy(ctx, e, t);
+    for (const e of S.enemies) {
+      if(themeKey==='dark')drawNightSighting(ctx,e);
+      drawEnemy(ctx,e,t);
+    }
     for (const d of S.idle) drawEnemy(ctx, d, t);
     /* Living splat cores are drawn above dried ink, below the brush.
        No original creature or player sprite functions are modified. */
