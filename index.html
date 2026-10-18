@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Zen+Antique&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./css/style.css" />
+<link rel="stylesheet" href="./css/intro.css" />
 </head>
 <body>
 <!-- hand-wobble filter: gives every ink border a brushed edge -->
@@ -74,6 +75,59 @@
     </div>
   </div>
 
+  <!-- ============ EXPERIMENTAL INK FILM / PROLOGUE ============ -->
+  <section id="screenIntro" class="screen screen-intro hidden" aria-label="The Last Stroke animated prologue" aria-hidden="true">
+    <canvas id="introCanvas" aria-hidden="true"></canvas>
+    <div class="intro-shade" aria-hidden="true"></div>
+    <div class="intro-filmhead">
+      <span>墨物語 <i> / </i> AN INK-BORN FILM</span>
+      <span class="intro-count" id="introCount">01 / 07</span>
+      <button id="introSkip" type="button" class="intro-minor" aria-label="Skip prologue and open the game">SKIP INTRO ↗</button>
+    </div>
+    <div class="intro-content" id="introContent" aria-live="polite">
+      <span class="intro-chapter" id="introChapter">PROLOGUE / THE SILENCE</span>
+      <span class="intro-code" id="introCode" aria-hidden="true">序</span>
+      <h2 id="introTitle">BEFORE THE FIRST MARK</h2>
+      <p class="intro-line" id="introLine"></p>
+      <p class="intro-second" id="introSecond"></p>
+    </div>
+    <div class="intro-filmbottom">
+      <div class="intro-frame-controls">
+        <div class="intro-frames" id="introFrames" aria-label="Choose a scene"></div>
+        <button id="introSound" class="intro-minor" type="button" aria-pressed="false">SOUND OFF</button>
+      </div>
+      <div class="intro-timeline"><div id="introProgress" class="intro-progress"></div></div>
+      <div class="intro-bottomrow">
+        <span>THE INK REMEMBERS EVERY STROKE</span>
+        <button id="introNext" type="button" class="intro-next">NEXT FRAME</button>
+      </div>
+    </div>
+    <div id="introStart" class="intro-start">
+      <div class="intro-start-inner">
+        <span class="intro-start-kanji" aria-hidden="true">一</span>
+        <span class="intro-start-kicker">A PROLOGUE IN SEVEN FRAMES</span>
+        <h2>THE LAST<br/><em>STROKE.</em></h2>
+        <p>Before the brush can fight, it must remember why.</p>
+        <button id="introStartBtn" type="button" class="intro-start-btn">UNROLL THE STORY <span aria-hidden="true">→</span></button>
+        <span class="intro-start-note">ABOUT ONE MINUTE · SKIPPABLE · NO VIDEO DOWNLOAD</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHRONICLE / SPOILER-GATED STORY ============ -->
+  <section id="screenChronicle" class="screen screen-chronicle hidden">
+    <div class="archive-panel">
+      <header class="archive-head">
+        <span class="archive-eyebrow">物語 / THE INK REMEMBERS</span>
+        <button type="button" id="archiveBack" class="intro-minor">← RETURN TO TITLE</button>
+      </header>
+      <h2>THE CHRONICLE.</h2>
+      <p class="archive-sub">A record of what the paper remembers. New chapters unseal as the journey advances.</p>
+      <div id="archiveChapters" class="archive-chapters"></div>
+      <footer class="archive-foot">墨 / THE ENDLESS PAGE HAS NO LAST WORD</footer>
+    </div>
+  </section>
+
   <!-- ============ TITLE SCREEN ============ -->
   <section id="screenTitle" class="screen screen-title">
     <!-- the great brush circle, drawn once per visit -->
@@ -111,6 +165,11 @@
         </button>
       </div>
       <p class="mode-note">TEN WAVES A LEVEL · TEN LEVELS A SCROLL · ONE MORE RUN</p>
+      <div class="story-title-actions">
+        <button id="replayIntroBtn" type="button" class="story-title-action">↻ WATCH THE PROLOGUE</button>
+        <span aria-hidden="true" class="story-title-divider">/</span>
+        <button id="chronicleBtn" type="button" class="story-title-action">THE CHRONICLE ↗</button>
+      </div>
       <p class="best-line hidden" id="bestLine"></p>
     </div>
 
@@ -217,6 +276,7 @@
 <script src="./js/ui.js"></script>
 <script src="./js/game.js"></script>
 <script src="./js/render.js"></script>
+<script src="./js/intro.js"></script>
 <script src="./js/main.js"></script>
 </body>
 </html>
