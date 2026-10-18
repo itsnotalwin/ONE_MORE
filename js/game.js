@@ -184,8 +184,10 @@ const G = (() => {
     burst(e.x, e.y, e.r, e.type === 'titan' || e.elite);
     S.stainQueue.push({
       x: e.x, y: e.y, r: e.r * (e.elite ? 2.2 : 1.45),
-      alpha: e.elite ? 0.6 : 0.5,
-      red: false,
+      alpha:e.elite?.97:.92,red:false,
+      kind:'blood',enemyType:e.type,
+      variant:(S.stats.kills*3+Math.floor(e.seed*17))%5,
+      angle:e.ang,
     });
     /* The living heart of the stain can be reclaimed. The dried splat
        remains on the paper as a visual record of the battle. */
@@ -223,11 +225,23 @@ const G = (() => {
 
   /* Persistent brush impressions join the enemy blood on the washi.
      Stamped weapon marks survive wave changes, but not a stage reset. */
+  /* Mastered techniques sign the landscape in deep vermilion. A
+     base-volley modifier can awaken ordinary shots as well. */
+  function awakenedWeapon(weapon){
+    const levels=S.stats?.levels||{};
+    if(weapon==='shot')return ['rapid','heavy','split','pierce','velo']
+      .some(k=>levels[k]>=(UPGRADES.find(u=>u.id===k)?.max||999));
+    const caps={echo:2,fan:4,nova:3,trail:3,spirit:3,
+      knot:3,ward:1,shock:1,eraser:3};
+    return (levels[weapon==='eraser'?'orbit':weapon]||0)>=(caps[weapon]||999);
+  }
+
   function markWeapon(weapon, x, y, opts = {}) {
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    if (!Number.isFinite(x)||!Number.isFinite(y))return;
     S.stainQueue.push({
-      x, y, r: opts.r ?? 5, alpha: opts.alpha ?? 0.28,
-      kind: 'weapon', weapon, angle: opts.angle ?? 0, red: false,
+      x,y,r:opts.r??5,alpha:Math.max(.78,opts.alpha??.9),
+      kind:'weapon',weapon,angle:opts.angle??0,
+      red:awakenedWeapon(weapon),
     });
   }
 
@@ -357,6 +371,7 @@ const G = (() => {
     S.queue = []; S.wavePlan = null; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
     S.fanT = 2.2; S.spiritT = 1.6; S.knotT = 3.6; S.trailT = 0;
+    S.eraserT=0;
     S.choices = []; S.selected = null; S.idle = [];
     /* Each run begins with neutral controls, even after a lost pointer event. */
     S.joy = null;
@@ -707,32 +722,32 @@ const G = (() => {
       if (S.knotT <= 0) castKnot();
     }
 
-    /* ink orbit: droplets grind what they graze */
-    if (st.orb > 0) {
-      const orbR = CFG.orbit.radius(st.orb);
-      const base = G_time();
-      for (let i = 0; i < st.orb; i++) {
-        const a = base * CFG.orbit.speed + (i / st.orb) * TAU;
-        const ox = p.x + Math.cos(a) * orbR, oy = p.y + Math.sin(a) * orbR;
-        for (let kk = S.enemies.length - 1; kk >= 0; kk--) {
-          const e = S.enemies[kk];
-          if (e.orbCd > 0) continue;
-          const dx = e.x - ox, dy = e.y - oy;
-          const rr = e.r + 5.5;
-          if (dx * dx + dy * dy <= rr * rr) {
-            e.hp -= 1;
-            e.orbCd = CFG.orbit.dmgCd;
-            e.hitFlash = 0.08;
-            const d = Math.hypot(dx, dy) || 1;
-            e.kbx += (dx / d) * 170; e.kby += (dy / d) * 170;
-            markWeapon('orbit', ox, oy, { r: 5, alpha: .32, angle: a });
-            SFX.hit();
-            if (e.hp <= 0) { S.enemies.splice(kk, 1); killEnemy(e); }
-            break;
-          }
+    /* THE ERASER: a distant wash of negative space. It ticks for
+       one damage per enemy every .82 seconds and gently pushes outward,
+       while removing existing paint from the stage's washi paper. */
+    if(st.orb>0){
+      const r=CFG.eraser.radius(st.orb),cx=p.x,cy=p.y;
+      for(let k=S.enemies.length-1;k>=0;k--){
+        const e=S.enemies[k],dx=e.x-cx,dy=e.y-cy;
+        if(dx*dx+dy*dy>(r+e.r*.25)**2 || e.orbCd>0)continue;
+        e.orbCd=CFG.eraser.dmgCd;e.hp-=1;e.hitFlash=.07;
+        e.kbx+=dx/(Math.hypot(dx,dy)||1)*24;
+        e.kby+=dy/(Math.hypot(dx,dy)||1)*24;
+        if(e.hp<=0){S.enemies.splice(k,1);killEnemy(e);}
+      }
+      S.eraserT=(S.eraserT||0)-dt;
+      if(S.eraserT<=0){
+        S.eraserT=CFG.eraser.erasePeriod;
+        S.stainQueue=S.stainQueue.filter(q=>
+          (q.x-cx)**2+(q.y-cy)**2>r*r);
+        if(typeof R!=='undefined'&&R.eraseTerrain)R.eraseTerrain(cx,cy,r);
+        if((st.levels?.orbit||0)>=3){
+          const theta=S.clockT*.55;
+          markWeapon('eraser',cx+Math.cos(theta)*(r+9),
+            cy+Math.sin(theta)*(r+9),{r:11,alpha:.94,angle:theta});
         }
       }
-    }
+    }else S.eraserT=0;
 
     /* Phase 4A: cosmetics are independent of the combat velocity and
        collision radius. Exponential damping never overshoots or jitters. */
