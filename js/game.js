@@ -478,7 +478,7 @@ const G = (() => {
     if (victory) SFX.victory();
     UI.showOver({
       run: getRuns(), waves: cleared, kills: st.kills,
-      time: st.time, score: st.score, rank, newBest: nb,
+      time: st.time, score: st.score, rank, inkRank: st.inkRank, newBest: nb,
       mode: S.runMode, victory: !!victory,
       worldIndex: S.worldIndex, level: S.level, nextStage: S.nextStage,
       finalCampaign: S.runMode === 'journey' && !S.nextStage,
