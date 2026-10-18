@@ -174,10 +174,31 @@ test('original animated round blob is restored without movement-based re-seeding
   assert.ok(player.includes('function livingBlobPath('),'animated blob painter is present');
   assert.ok(player.includes('livingBlobPath(c, r, sd, t, S.reduced)'),'the rounded living contour is used as the body');
   assert.ok(player.includes('c.quadraticCurveTo('),'outline uses the original curved ink technique');
-  assert.ok(player.includes('Math.sin(t * 4.6'),'outline gently changes over time');
+  assert.ok(player.includes('t / CFG.ink.boilRate'),'player uses enemy line-boil animation cadence');
+  assert.ok(player.includes('Math.imul(tick, 7919)'),'player uses tick-seeded enemy-style contour motion');
+  assert.ok(player.includes('blend'),'shape changes interpolate smoothly between ink animation frames');
+  assert.ok(player.includes('c.fillStyle = INK;'),'player and enemies use the same living ink body color');
+  assert.ok(!player.includes('c.fillStyle = RED;'),'red is reserved for enemy bleed and progression');
   assert.ok(!player.includes('p.x * 31 + p.y * 17'),'walking cannot randomly redraw the character');
   assert.ok(!player.includes('c.bezierCurveTo(r * .88'),'the flattened nib shape was removed');
   assert.ok(r.includes('if (playing) drawPlayer(ctx, t);'),'no giant whole-character scaling');
+});
+test('bleeding enemies, recovered ink and the XP channel share vermilion',()=>{
+  const game=src('js/game.js'),render=src('js/render.js'),drops=src('js/ink-xp.js');
+  const css=src('css/ink-xp.css'),palette=src('css/style.css');
+  assert.ok(game.includes('burst(e.x, e.y, e.r, e.type === \'titan\' || e.elite, true)'));
+  assert.ok(game.includes('red: true,'),'every enemy death creates a red permanent ink stain');
+  assert.ok(game.includes('red: !!p.red'),'enemy blood droplets stay red as they land');
+  assert.ok(render.includes('c.fillStyle = p.red ? RED : INK;'),
+    'enemy blood particles use cinnabar while ordinary particles stay themed ink');
+  assert.ok(drops.includes('c.fillStyle=red;'),
+    'living XP seeds are made from the same enemy blood');
+  assert.ok(css.includes('background:linear-gradient(90deg,var(--red-deep)'),
+    'vertical XP fill has a layered wet vermilion wash');
+  assert.ok(css.includes('.ink-meter-fill::before'),
+    'level meter has an irregular liquid ink surface');
+  assert.ok(palette.includes('--red: #b23a2b;'),
+    'blood, XP and UI share the original art palette');
 });
 test('XP meter is left mounted, vertical, fills bottom to top and keeps real ARIA progress',()=>{
   const css=src('css/ink-xp.css');
