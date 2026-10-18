@@ -6,7 +6,7 @@
 
 The original game is a living sumi-e painting on endless washi paper. This is the definitive reference for all future work, not an invitation to redesign.
 
-- **Do not replace the renderer, creatures, sprites, ink splatter, camera, brush motion, audio, or existing animations.** In particular, `js/render.js` and `js/audio.js` retain their frozen source exactly.
+- **Do not replace the renderer, creatures, sprites, ink splatter, camera, brush motion, audio identity, or existing animations.** Only the removed Crimson Hanko's own paint/sound code was replaced with Ink Knots; all unrelated renderer and audio sections remain byte-identical to the original campaign baseline (checked by regression tests).
 - **Palette:** washi `#ede7d9`, ink `#1a1714`, vermilion seal `#b23a2b`, night paper `#17130f`, night ink `#e9e2d2`, cinnabar paper `#eadbc4`.
 - **Typography:** Zen Antique for large editorial/Japanese display, IBM Plex Mono for compact HUD and control labels.
 - **Ink language:** procedural brush strokes, imperfect edges, paper fibers, line boil, stain persistence within a run, large kanji, restrained vermilion.
@@ -38,6 +38,12 @@ The original game is a living sumi-e painting on endless washi paper. This is th
 - Existing world-specific encounters use existing enemies and renderer: FIRST WASH has SPLIT BLOOM on waves 6/9; NIGHT SCROLL has PHANTOM AMBUSH on waves 3/6/9; CINNABAR FIELD has CRIMSON RUSH on waves 5/9. Each world retains its original paper, roster and guardian.
 - **Endless mode is separate**: it retains the old cycling sheets and compounding scaling, and starts with a fresh run.
 - There is no permanent player stat shop added to this change.
+
+## Ink Knots balance rule
+
+Crimson Hanko was removed from the upgrade pool and is **not** a legacy selectable weapon. Its replacement **Ink Knots** uses the same sumi-e brush language, drawing procedural tapered threads rather than large screen-wiping seals. It binds **2 / 3 / 4 nearby enemies** at ranks 1 / 2 / 3, slows them for **1.8 / 2.0 / 2.2 seconds**, and delivers **one delayed damage point per target per cast** at about **0.72 seconds**, not instant damage. The cooldown is **7.2 / 6.85 / 6.5 seconds**. It is a tactical control/support weapon, not a horde eraser.
+
+The enemy count, delayed damage and no-repeat-hit behavior are enforced in `tests/progression.test.cjs`. Avoid increasing both affected targets and damage without deliberate balance review. Existing renderer/audio segments outside the replaced Hanko methods and draw call are still protected by baseline hashes.
 
 ## Architecture and extension points
 
