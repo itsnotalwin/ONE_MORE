@@ -156,3 +156,25 @@ const UPGRADES = [
   { id: 'spirit', name: 'Spirit Scribes',desc: 'Lesser brushes wake and hunt on their own, seeking the nearest blot.', max: 3, weapon: true, apply: s => { s.spirit += 1; } },
   { id: 'knot',   name: 'Ink Knots',     desc: 'Bind a few nearby beasts with living ink. Slow them, then deal 1 delayed damage.', max: 3, weapon: true, apply: s => { s.knot += 1; } },
 ];
+
+/* Terrain painting is a reward for mastering a technique, not something
+   every newly acquired weapon does. Red ink is a separate post-mastery
+   choice, offered in the normal three-card rank-up interface. The starter
+   ink shot is deliberately absent and never marks the paper. */
+const TERRAIN_SKILL_KEYS = Object.freeze({
+  echo:'echo', fan:'fan', trail:'trail', spirit:'spirit', knot:'knot',
+  eraser:'orbit', nova:'nova', ward:'ward', shock:'shock',
+  over:'over', plate:'plate', adren:'adren', crit:'crit', slow:'slow',
+});
+const RED_SEALS = Object.entries(TERRAIN_SKILL_KEYS).map(([mark, skill]) => {
+  const original = UPGRADES.find(u => u.id === skill);
+  return {
+    id:'seal_'+skill, name:original.name+' · Vermilion',
+    desc:'A final red seal. Your mastered '+original.name+
+      ' now stains the paper with deep lacquer-crimson ink.',
+    max:1, seal:true, weapon:!!original.weapon,
+    redSealOf:skill, terrainKind:mark, requires:skill,
+    apply:() => {}, /* chosen flag is stored in stats.levels by deploy() */
+  };
+});
+
