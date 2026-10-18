@@ -47,20 +47,42 @@ async function inspect(browser,name,viewport){
   await page.click('#introSkip');
   await page.waitForFunction(()=>G.mode==='title');
   assert.equal(await page.locator('#screenTitle').isVisible(),true);
+  await page.waitForTimeout(950); // film-to-home ink dissolve
+  const homeButton=await page.locator('#playBtn').boundingBox();
+  assert.ok(homeButton && homeButton.x>=0 && homeButton.x+homeButton.width<=viewport.width+2,
+    name+' primary action is within screen width');
+  assert.ok(homeButton.height>=58,name+' primary CTA has a touch-friendly hit area');
+  const homeTitle=await page.locator('#screenTitle h1').boundingBox();
+  assert.ok(homeTitle && homeTitle.x>=-1 && homeTitle.x+homeTitle.width<=viewport.width+1,
+    name+' main title does not overflow horizontally');
+  await page.screenshot({path:path.join(out,name+'-08-clean-home.png')});
+  await page.click('#howToPlayBtn');
+  assert.equal(await page.locator('#howToPlayDialog').evaluate(d=>d.open),true);
+  await page.screenshot({path:path.join(out,name+'-09-onboarding-sheet.png')});
+  await page.click('#helpClose');
+  assert.equal(await page.locator('#howToPlayDialog').evaluate(d=>d.open),false);
+  await page.click('#playBtn');
+  await page.waitForFunction(()=>G.mode==='select');
+  await page.click('#selectBackBtn');
+  await page.waitForFunction(()=>G.mode==='title');
   await page.click('#replayIntroBtn');
   await page.waitForFunction(()=>G.mode==='intro');
   await page.click('#introSkip');
   await page.waitForFunction(()=>G.mode==='title');
+  /* A new player can go from helpful onboarding straight to scroll selection. */
+  await page.click('#howToPlayBtn');
+  await page.click('#helpDone');
+  await page.waitForFunction(()=>G.mode==='select');
   /* Phase 2: exercise the REAL DOM campaign picker and canvas runtime,
      not merely the director's headless plan builder. */
-  await page.click('#playBtn');
-  await page.waitForFunction(()=>G.mode==='select');
   assert.ok((await page.locator('#campaignStatus').textContent()).includes('THE FIRST MARK'));
   assert.equal(await page.locator('#campaignLevels button[data-level="1"]').isEnabled(),true);
   assert.equal(await page.locator('#campaignLevels button[data-level="2"]').isEnabled(),false);
   await page.screenshot({path:path.join(out,name+'-08-wave-director-levels.png')});
   await page.click('#campaignLevels button[data-level="1"]');
   await page.waitForFunction(()=>G.mode==='playing');
+  assert.equal(await page.locator('#firstRunHint').isVisible(),true,
+    'first play teaches movement without blocking game input');
   const plan=await page.evaluate(()=>({
     stage:G.S.wavePlan?.stage,pattern:G.S.wavePlan?.pattern,
     count:G.S.queue.length,wave:G.S.stats.wave,
@@ -100,7 +122,7 @@ async function inspect(browser,name,viewport){
   await page.screenshot({path:path.join(out,name+'-11-guardian-final-phase.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:9,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
+  return {name,shots:11,homeVerified:true,onboardingVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
