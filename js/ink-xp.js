@@ -134,8 +134,10 @@ const INK_XP = (() => {
       c.save();
       c.translate(d.x,d.y);
       c.rotate(dir+sway);
-      c.globalAlpha=.68+.16*bloom;
-      c.fillStyle=ink;
+      /* Recovered enemy blood is cinnabar like the level-up channel.
+         It uses the same handmade ink nib paths, not floating gems. */
+      c.globalAlpha=.76+.17*bloom;
+      c.fillStyle=red;
       /* A five-variant silhouette family, stable for the entire lifetime
          of each kernel; only the ink's direction and length are animated. */
       c.beginPath();
@@ -162,19 +164,19 @@ const INK_XP = (() => {
           c.closePath();
           c.fill();
           if(trailLen>13){
-            c.globalAlpha=.22;c.lineWidth=.55;c.strokeStyle=ink;
+            c.globalAlpha=.22;c.lineWidth=.55;c.strokeStyle=red;
             c.beginPath();c.moveTo(-body*.85,body*.2);
             c.quadraticCurveTo(-body-trailLen*.55,body*.62,
               -body-trailLen*.88,body*.42);c.stroke();
           }
         }else if(!S.reduced&&bloom>.4){
-          c.globalAlpha=.30;c.lineWidth=.65;c.strokeStyle=ink;
+          c.globalAlpha=.30;c.lineWidth=.65;c.strokeStyle=red;
           c.beginPath();c.moveTo(-body*.64,-body*.12);
           c.lineTo(-body*(1.48+variant*.065),-body*.37);c.stroke();
         }
-        /* Cinnabar is a rare registration fleck, not an orb's red center. */
+        /* A pale dry-brush nick, never a glowy coin center. */
         if(variant===0 && d.value>=6){
-          c.fillStyle=red;c.globalAlpha=.65;
+          c.fillStyle=paper;c.globalAlpha=.29;
           c.fillRect(body*.15,-body*.12,.8,.8);
         }
       }
