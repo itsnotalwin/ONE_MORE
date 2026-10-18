@@ -92,8 +92,8 @@ test('new runs clear loot and rank; growth is visual only, not a larger hitbox',
   const {G,INK_XP}=setup();G.startLevel(0,1);
   const radius=G.S.player.r;
   G.S.stats.inkRank=12;G.S.stats.maxHp=7;
-  assert.ok(INK_XP.visualScale(G.S.stats)>1.4);
-  assert.ok(INK_XP.visualScale(G.S.stats)<=1.55);
+  assert.ok(INK_XP.visualScale(G.S.stats)>1.1);
+  assert.ok(INK_XP.visualScale(G.S.stats)<=1.18);
   assert.equal(G.S.player.r,radius,'the actual collision hitbox is unchanged');
   addDrop(G,99);
   G.startLevel(0,1);
@@ -121,6 +121,52 @@ test('elite loot cap safely merges value instead of discarding XP',()=>{
   assert.ok(drops.length<=INK_XP.CFG_XP.maxDrops);
   assert.equal(drops.reduce((s,d)=>s+d.value,0),500*8);
 });
+test('brush form tiers stay restrained, and drawing shape is independent of world motion',()=>{
+  const {INK_XP,G}=setup();
+  for(const [rank,tier] of [[1,0],[3,0],[4,1],[8,1],[9,2],[14,2],[15,3],[50,3]]) {
+    const stats={inkRank:rank,maxHp:9},form=INK_XP.visualForm(stats);
+    assert.equal(form.tier,tier);
+    assert.ok(form.scale>=1&&form.scale<=1.18);
+    assert.ok(form.bristles>=1&&form.bristles<=3);
+  }
+  assert.equal(INK_XP.visualScale({inkRank:1,maxHp:3}),1);
+  assert.equal(INK_XP.visualScale({inkRank:3,maxHp:3}),1);
+  assert.ok(INK_XP.visualScale({inkRank:20,maxHp:20})<=1.18);
+  G.startLevel(0,1);
+  const seed=G.S.player.visualSeed,hitbox=G.S.player.r;
+  G.S.player.x=534;G.S.player.y=-247;
+  assert.equal(G.S.player.visualSeed,seed);
+  assert.equal(G.S.player.r,hitbox);
+});
+test('cosmetic growth eases toward its target without overshooting or altering movement speed',()=>{
+  const {G,INK_XP}=setup();
+  G.startLevel(0,1);
+  G.S.player.fireT=999999;
+  G.S.queue=['pulse'];G.S.spawnTimer=999999;
+  const st=G.S.stats,p=G.S.player,baseRadius=p.r;
+  st.inkRank=25;st.maxHp=10;
+  const target=INK_XP.visualScale(st);
+  assert.ok(target>1.14 && target<=1.18);
+  let last=p.displayScale;
+  for(let i=0;i<100;i++){
+    G.update(.05);
+    assert.ok(p.displayScale>=last-1e-10 && p.displayScale<=target+1e-10);
+    last=p.displayScale;
+  }
+  assert.ok(Math.abs(p.displayScale-target)<.005);
+  assert.equal(p.r,baseRadius);
+  G.startLevel(0,1);
+  assert.equal(G.S.player.displayScale,1);
+});
+test('ink seeds remain irregular procedural nibs without perfect orb shapes',()=>{
+  const code=src('js/ink-xp.js');
+  const drawing=code.slice(code.indexOf('  /* Each living seed'));
+  assert.ok(drawing.includes('c.bezierCurveTo('));
+  assert.ok(drawing.includes('trailLen'));
+  assert.ok(drawing.includes('variant='));
+  assert.ok(!drawing.includes('c.arc('),'perfect-circle loot orbs should not return');
+  assert.ok(!drawing.includes('createRadialGradient('));
+});
 test('mobile HUD and the original sumi-e renderer use the new XP independently',()=>{
   const html=src('index.html'),render=src('js/render.js'),css=src('css/ink-xp.css');
   assert.ok(html.includes('id="inkMeter"'));
@@ -128,7 +174,10 @@ test('mobile HUD and the original sumi-e renderer use the new XP independently',
   assert.ok(html.includes('<script src="./js/ink-xp.js"></script>'));
   assert.ok(html.indexOf('/js/ink-xp.js')<html.indexOf('/js/game.js'));
   assert.ok(render.includes('INK_XP.draw(ctx, S, t, INK, PAPER, RED)'));
-  assert.ok(render.includes('INK_XP.visualScale(S.stats)'));
+  assert.ok(render.includes('INK_XP.visualForm(st)'));
+  assert.ok(render.includes('p.displayScale || 1'));
+  assert.ok(!render.includes('ctx.scale(scale,scale)'));
+  assert.ok(!render.includes('p.x * 31 + p.y * 17'));
   assert.ok(css.includes('env(safe-area-inset-bottom)'));
   assert.ok(src('js/render.js').includes('function drawEnemy('));
 });
