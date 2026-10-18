@@ -214,6 +214,52 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 7. Death/victory results with retry or next stage.
 8. Chronicle (experimental prose archive; progression gated).
 
+## Wave Director 2.0 — authored encounter design (Phase 2)
+
+**Status: implemented on development only, not yet merged to main.** The original wave roller is kept for Endless. The director is intentionally independent of the renderer and works with the same existing ink-born enemy shapes.
+
+\`js/wave-director.js\` holds **30 named level identities** and **10 structured wave beats per level**. Each Journey wave is planned from its world, level number and wave number. Its seed determines which **legal** enemy types are emphasized and how their spawn groups are organized. Actual off-screen positions still have slight randomness so repeated runs are not identical paintings.
+
+The director chooses:
+
+- **Composition:** a stage-specific lead and support enemy (with early-wave unlock restrictions), backed by a weighted roster. Existing SPLIT BLOOM, PHANTOM AMBUSH and CRIMSON RUSH signature encounters remain.
+- **Choreography:** eight spawn layouts: \`drift\`, \`lane\`, \`pincer\`, \`cross\`, \`spiral\`, \`feint\`, \`surround\`, \`siege\`. They steer the four off-screen arrival directions rather than spawning damage inside the player.
+- **Pacing:** per-wave group intervals and sizes vary within conservative bounds. Larger wave-7+ warnings last 0.78 seconds, earlier warnings 0.70 seconds; Guardian warning stays 1.7 seconds. Normal queue, concurrent cap, and six visible pending markers are preserved.
+- **Communication:** concise wave-arrival cues appear in the existing wave banner. The campaign picker exposes the next stage title, with hover and accessibility labels on the numbered levels. No combat sprites, CSS layout, or canvas art changed.
+- **Preservation:** 10 waves per stage, Wave 10 Guardian, stronger Level 10 world boss, normal upgrade flow, run resets, campaign unlock rules and Endless mode are all preserved. More expressive Guardian attacks are **Phase 3**, not part of this phase.
+
+### Authored level catalog
+
+| Level | FIRST WASH | NIGHT SCROLL | CINNABAR FIELD |
+|---|---|---|---|
+| 01 | The First Mark | The Reverse Side | The Red Margin |
+| 02 | The Paper Edge | Whispering Paper | Folded Wings |
+| 03 | Crossing Strokes | False Footsteps | Cinnabar Rush |
+| 04 | The Ink Well | Pale Needles | The Split Seal |
+| 05 | The Restless Brush | The Hidden Gathering | The Red Procession |
+| 06 | Divided Droplets | Dark Crossing | Beneath the Signature |
+| 07 | The Unfinished Line | The Vanishing Hand | The Ink Does Not Yield |
+| 08 | The Weight of Ink | Drawn from Behind | Circle of Cranes |
+| 09 | A Thousand Marks | The Unwritten Crowd | The Last Red Line |
+| 10 | First Seal | Night Seal | The Unfinished Seal |
+
+### Wave pacing within each level
+
+| Wave | Choreographic role |
+|---|---|
+| 1 | Soft first-arrival introduction |
+| 2 | A guided line of approaching enemies |
+| 3 | Stage-specific signature formation |
+| 4 | Cross-flank test |
+| 5 | Existing SURGE, with surrounding pressure |
+| 6 | Signature formation and existing world-specific specials |
+| 7 | Deceptive direction changes; slightly longer warning |
+| 8 | Stage signature returns with larger but bounded groups |
+| 9 | The highest ordinary pressure; existing world signatures recur |
+| 10 | Original Guardian and a more deliberate siege rhythm |
+
+**Verification:** \`tests/wave-director.test.cjs\` checks the full 30-level, 300-wave planning matrix, names, legal enemies, signature injections, budget bounds, safe spawn sides, off-screen markers, initial plan resets and untouched Endless selection. Existing progression and combat regression tests still run. CI passing does not replace actual iPhone play-testing or prove every encounter is fun.
+
 ## 8. Roadmap board
 
 A source-controlled checklist, not a claim of a live GitHub Projects integration. Mark a box complete **only after verified**. Keep product delivery, technical debt, visual art and narrative tasks separate.
@@ -254,6 +300,7 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [ ] Prologue's **every-visit autoplay**, replay, skip, and return-to-title navigation tested manually.
 - [ ] Chronicle unlock gating verified with genuine gameplay progression and a cleared campaign.
 - [ ] Benchmark animated-film FPS, frame time, memory and battery usage on iPhone Safari.
+- [ ] Play-test Wave Director 2.0 on iPhone: wave lengths, fair telegraphs, difficulty spikes, and whether each level feels distinct.
 - [x] Capture **actual browser screenshots** of the new film as GitHub Actions artifacts (not fabricated SVGs).
 - [ ] Compare captured film stills against pinned original gameplay art and review compositions on physical devices.
 - [ ] Owner decides whether to merge story experiment into \`main\`.
@@ -261,16 +308,17 @@ These are sequential implementation phases, not five changes to deploy at once.
 ### CURRENT SPRINT / DEVELOPMENT ONLY
 
 - [x] **Phase 1 — Combat Foundations:** Correct swept collision detection for droplets, blades, needles, ink globs and Spirit Scribes; piercing hit order and one-hit-per-enemy protection; reset keyboard and touch input on focus changes, retries and wave screens.
+- [x] **Phase 2 — Wave Director:** Authored 30 level compositions, 8 wave-arrival patterns, bounded tempo changes, named wave cues, maintained all 3 world signatures. Tests cover all 300 wave plans.
 - [x] Automated regression coverage: 11 targeted tests in `tests/combat.test.cjs`, plus the existing campaign/cinematic suite. GitHub Actions passed for this development milestone.
 - [ ] Test Phase 1 manually on iPhone Safari and desktop during real ten-wave runs.
-- [ ] **Phase 2 — Wave Director 2.0:** Design encounter patterns and distinctive level pacing. Not implemented yet.
+- [x] **Phase 2 — Wave Director 2.0:** 30 unique authored stage identities, eight spawn patterns, 300 legal encounter plans, wave choreography and UI cues. Dedicated regression tests passed. Manual feel-testing pending.
 - [ ] **Phase 3 — Guardians:** Unique multi-phase world boss behavior. Not implemented yet.
 - [ ] **Phase 4 — Upgrade synergies:** Build variety and restrained evolutions. Not implemented yet.
 - [ ] **Phase 5 — Story integration:** Gameplay narrative milestones. Not implemented yet.
 
 ### NEXT / GAMEPLAY & STORY
 
-- [ ] World- and level-specific encounter pacing beyond simple scaling.
+- [x] World- and level-specific encounter pacing beyond simple scaling: Wave Director 2.0 on development. Further hand-tuning after play-testing remains.
 - [ ] More distinctive Guardian mechanics, avoiding unfair instant kills and unavoidable telegraphs.
 - [ ] Gameplay hooks for Act revelations at strategic world milestones.
 - [ ] Truly distinctive victory epilogue after World III, Level 10.
