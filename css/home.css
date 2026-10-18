@@ -167,7 +167,7 @@
 @keyframes hintArrival{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
 
 /* Film to home: a gentle ink-film dissolve rather than a screen cut. */
-.screen-intro{transition:opacity .8s cubic-bezier(.23,.71,.29,1),transform .8s cubic-bezier(.23,.71,.29,1);will-change:opacity}
+.screen-intro{z-index:24;transition:opacity .8s cubic-bezier(.23,.71,.29,1),transform .8s cubic-bezier(.23,.71,.29,1);will-change:opacity}
 .screen-intro.is-exiting{opacity:0;transform:scale(1.027);pointer-events:none}
 .screen-intro .intro-filmhead{transition:background .75s ease,color .7s ease}
 .screen-intro .intro-content{transition:opacity .55s ease,filter .55s ease,color .7s ease}
