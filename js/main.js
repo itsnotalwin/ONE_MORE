@@ -23,6 +23,28 @@
   resize();
   G.S.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------------- opt-in first-stroke guidance ---------------- */
+  const helpDialog=document.getElementById('howToPlayDialog');
+  const firstHint=document.getElementById('firstRunHint');
+  let hintTimer=0, hintFadeTimer=0, hintedInSession=false;
+  function dismissHint(){
+    clearTimeout(hintTimer);clearTimeout(hintFadeTimer);
+    firstHint.classList.add('hidden');
+    firstHint.classList.remove('is-leaving');
+  }
+  function welcomeFirstRun(){
+    if(hintedInSession)return;
+    try { if(localStorage.getItem('om_first_brush_hint_v1')==='1')return; } catch(_){}
+    hintedInSession=true;
+    try { localStorage.setItem('om_first_brush_hint_v1','1'); } catch(_){}
+    dismissHint();
+    firstHint.classList.remove('hidden');
+    hintTimer=setTimeout(()=>{
+      firstHint.classList.add('is-leaving');
+      hintFadeTimer=setTimeout(dismissHint,420);
+    },4600);
+  }
+
   /* ---------------- input ---------------- */
   const keys = Object.create(null);
 
@@ -77,9 +99,12 @@
     R.resetStains(); /* a fresh sheet, never the previous level's stains */
     if (mode === 'journey') G.startLevel(worldIndex, level);
     else G.startRun('endless');
+    if(G.mode==='playing')welcomeFirstRun();
   }
 
   function goMenu() {
+    dismissHint();
+    if(helpDialog.open)helpDialog.close();
     clearInput();
     SFX.ensure();
     R.resetStains();
@@ -93,6 +118,7 @@
 
   window.addEventListener('keydown', e => {
     const k = e.code;
+    if(helpDialog.open)return; /* keep modal button/keyboard behavior native */
     if (INTRO.handleKey(k)) { e.preventDefault(); return; }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(k)) e.preventDefault();
     SFX.ensure();
@@ -165,6 +191,17 @@
   /* ---------------- buttons ---------------- */
   document.getElementById('playBtn').addEventListener('click', () => start('journey'));
   document.getElementById('endlessBtn').addEventListener('click', () => start('endless'));
+  document.getElementById('howToPlayBtn').addEventListener('click', () => {
+    if(G.mode==='title'&&!helpDialog.open)helpDialog.showModal();
+  });
+  document.getElementById('helpClose').addEventListener('click', () => helpDialog.close());
+  document.getElementById('helpDone').addEventListener('click', () => {
+    helpDialog.close();
+    start('journey');
+  });
+  helpDialog.addEventListener('click', e => {
+    if(e.target===helpDialog)helpDialog.close();
+  });
   document.getElementById('continueBtn').addEventListener('click', () => {
     SFX.ensure();
     /* A new Endless run begins on a new sheet. */
@@ -205,7 +242,7 @@
   G.initAttract();
   UI.show('title');
   G.mode = 'title';
-  INTRO.play(); /* one cinematic viewing per session; replay on title */
+  INTRO.play(); /* cinematic always plays on startup; replay on title */
 
   /* ---------------- main loop ---------------- */
   let last = performance.now();
