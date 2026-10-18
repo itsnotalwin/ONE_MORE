@@ -159,7 +159,7 @@ Title → Journey → Scroll picker → Level (new 10-wave run)
 
 ### Weapons and upgrade pool
 
-There are **19 upgrade entries**, four currently flagged as weapons. Existing stroke upgrades: Quick Hand (fire cadence), Bitter Ink (droplet damage), Twin Stroke (additional droplet), Through Mist (pierce), Flick (projectile speed), Fleeting Foot (movement), Thick Ink (integrity), Red Seal (short speed bonus after kills), Ink Burst (hit knockback), Echo Stroke (rear volley), Ink Orbit, Black Tide, Wet Paper (slow), Crimson Tip (critical hit), Paper Ward (one absorbed hit). Weapon upgrades: **Folded Fan** (blade fan), **Ink Trail** (hazardous movement trace), **Spirit Scribes** (homing brush spirits), **Ink Knots** (2–4 linked enemies, temporary slow and a single delayed hit).
+There are **23 normal upgrade entries** (19 original plus four new Night Scroll arts), with one-time optional post-max Vermilion seals. Existing stroke upgrades: Quick Hand (fire cadence), Bitter Ink (droplet damage), Twin Stroke (additional droplet), Through Mist (pierce), Flick (projectile speed), Fleeting Foot (movement), Thick Ink (integrity), Red Seal (short speed bonus after kills), Ink Burst (hit knockback), Echo Stroke (rear volley), Ink Orbit, Black Tide, Wet Paper (slow), Crimson Tip (critical hit), Paper Ward (one absorbed hit). Weapon upgrades: **Folded Fan** (blade fan), **Ink Trail** (hazardous movement trace), **Spirit Scribes** (homing brush spirits), **Ink Knots** (2–4 linked enemies, temporary slow and a single delayed hit).
 
 **Important balancing note:** Crimson Hanko has been removed and should not be reintroduced. Ink Knots was deliberately tuned away from massive instantaneous AOE damage.
 
@@ -285,7 +285,7 @@ The director chooses:
 
 | World | Guardian shape | 2-phase Level 1–9 encounter | 3-phase Level 10 world boss |
 |---|---|---|---|
-| **First Wash** | BRUTE / slate-like slab | The Broken Line: a long ink seam crosses the sheet, then the page splits with paired seams | The First Seal: three parallel fissures and a stronger final-phase tempo |
+| **First Wash** | BRUTE / slate-like slab | The Hand Above: long tapered Heavenly Downstroke, then the Crossing | The First Seal: three-phase crossed strokes and Heavenly Hook, faster late tempo |
 | **Night Scroll** | SHADE / shadow ink cloud | The False Reflection: a narrow beam locks the player's position, progressing to twin shadows | The Night Seal: three angled ink rays at the last phase |
 | **Cinnabar Field** | ONI / horned charger | The Red Imprint: delayed seals appear under a previous player location, then a second seal | The Cinnabar Crown: three delayed red seals with exits on either side |
 
@@ -293,7 +293,7 @@ The director chooses:
 
 **Technical architecture:** `js/guardians.js` is pure pattern/geometry logic. `js/game.js` schedules cast cooldowns, transitions and hazard damage and cleans up all outstanding attacks on Guardian defeat, run reset, wave transition or abandonment. The renderer gained **only** `drawGuardianHazard`, the small phase HP indicator, and one call-site, all in the existing ink/washi palette. Original sprites and animation code remain byte-for-byte identical after the additions are excluded. `tests/guardians.test.cjs` covers phase thresholds, windup geometry, player damage, attack cleanup, Endless compatibility, and the original renderer hash.
 
-**Balance restrictions:** New boss attacks do not increase player damage or directly multiply monster HP. The existing elite and world-boss HP multipliers remain. No giant unexplained area wipes, unavoidable radial damage, screen flashes or third-party assets. More elaborate 2D character transformations remain a possible future art exploration, not part of this phase.
+**Original Phase 3 balance restrictions, now superseded for the First Wash level-10 finale only:** Phase 7 intentionally increases that one boss's HP and cast pressure while preserving all other bosses and the player's damage. No giant unexplained area wipes, unavoidable radial damage, screen flashes or third-party assets. More elaborate 2D character transformations remain a possible future art exploration, not part of this phase.
 
 **Testing backlog:** Real iPhone Safari play-testing of attack readability, telegraph contrast on all three paper themes, Guardian time-to-kill, and device frame pacing is still required. Desktop and phone-sized headless Chromium smoke runs confirm the mechanics and Canvas rendering but do not substitute for physical device feel.
 
@@ -309,9 +309,15 @@ The director chooses:
 
 **Verification:** `tests/story.test.cjs` covers the film/replay while the full Node test suite protects combat and progression. Real Chromium at desktop and mobile dimensions screenshots the new home, onboarding, campaign and in-game sequences. Physical iPhone Safari review of touch spacing and transitions remains an acceptance step.
 
+## Phase 7 / quiet character motion, connected Suiteki, four Night Scroll arts and stronger First Seal
+
+**Implemented on `development`.** The canonical new specification is [PHASE 7 / Quiet Ink Motion, Suiteki Trail, Night Arts & The First Seal](PHASE-7-NIGHT-ARTS-AND-FIRST-SEAL.md). It supersedes the Phase 6 ink-soul's exaggerated running/fold cycling with a restrained moving contour, and transforms Suiteki from disconnected pools into a continuous thin wet snail-like trail. The same black-at-mastery and separately selected crimson-at-Vermilion progression remains. Four true upgrade paths unlock on Paper II and later: **Ink Lantern** (2), **Crescent Return** (3), **Mirror Fold** (3), and **Shroud Step** (2). Ink Lantern reveals spectral threats and interrupts one ambush; Crescent strikes outbound and inbound; Mirror catches ordinary projectile attacks; Shroud displaces the hero briefly and draws nearby basic enemies toward a false echo. All art is original procedural ink on paper, with guarded timers, no fresh base-shot map marks, and new regression coverage.
+
+**The First Wash level-10 world boss is rebalanced:** 2.75× elite HP scalar rather than 1.8×, earlier phase breaks at 74% and 40%, shorter time between divine calligraphy casts, and up to two existing BLIP adds on each phase transition. The player's invulnerability, fair handwritten telegraphs, other world bosses and normal level-1–9 Guardian mechanics are unchanged. Desktop and phone-sized headless browser QA plus Node regressions are the automated acceptance gates. Manual real-iPhone Safari movement feel remains for user review.
+
 ## Phase 6 / Living Ink and Suiteki overhaul (implemented on development)
 
-The agreed next-pass blueprint is [**Living Ink, Untouched Paper, Divine Brushstroke & Suiteki Leak**](PHASE-6-LIVING-INK-DESIGN-SPEC.md). It specifies the ink-soul's RUN/start/stop/turn/hit/pickup animation state machine; flat almost-unmarked Paper I ivory washi; Paper I Guardian's authored Heaven Stroke/Crossing/Hook hazard geometry and matched collision/telegraph; and replacing the current Ink Trail with an inkstone/suiteki spill while preserving `trail`, `trailW`, `seal_trail` and two-step terrain-color progression. It also documents the deferred Paper II Ink Lantern concept and strict art/performance/regression acceptance tests. **Implemented on `development`:** four-part visual/gameplay overhaul, with deterministic RUN animation and reactions, sparse warm Paper-I washi, the Guardian's shared-geometry Heaven Stroke/Crossing/Hook, and Suiteki Leak replacing the old trail. New Paper II abilities and the First Guardian HP/damage rebalance are intentionally deferred. Browser QA and physical iPhone Safari remain separate acceptance gates.
+The agreed next-pass blueprint is [**Living Ink, Untouched Paper, Divine Brushstroke & Suiteki Leak**](PHASE-6-LIVING-INK-DESIGN-SPEC.md). It specifies the ink-soul's RUN/start/stop/turn/hit/pickup animation state machine; flat almost-unmarked Paper I ivory washi; Paper I Guardian's authored Heaven Stroke/Crossing/Hook hazard geometry and matched collision/telegraph; and replacing the current Ink Trail with an inkstone/suiteki spill while preserving `trail`, `trailW`, `seal_trail` and two-step terrain-color progression. It also documents the deferred Paper II Ink Lantern concept and strict art/performance/regression acceptance tests. **Implemented on `development`:** four-part visual/gameplay overhaul, with deterministic RUN animation and reactions, sparse warm Paper-I washi, the Guardian's shared-geometry Heaven Stroke/Crossing/Hook, and Suiteki Leak replacing the old trail. Paper II arsenal and First Wash Guardian HP/timing are implemented by Phase 7, which supersedes those deferred Phase 6 details. Browser QA and physical iPhone Safari remain separate acceptance gates.
 
 ## First Wash pacing and Night Scroll clarity (development)
 
@@ -321,9 +327,9 @@ The agreed next-pass blueprint is [**Living Ink, Untouched Paper, Divine Brushst
 
 **Night Scroll (Paper II) now feels deliberately different and tougher.** Its world multipliers are HP 1.65×, speed 1.09× and enemy budget 1.48× relative to First Wash, with no new enemy types yet. Its paper is indigo blue-charcoal (`#242b39`), a textured dye-wash with paper fibers and faint tide lines against warm ivory ink (`#fff1da`). The whole HUD, health shapes, wave progress and wave calligraphy change to contrasting ivory over the night sheet. Small broken ivory registration arcs under elusive monsters allow the player to track Shades and Wisps even through their intentionally transparent animations. Enemy sprites, AI, attack patterns and their existing silhouette painter are unchanged. Visual direction is informed by Awagami's indigo-dyed Awa Washi (https://www.awagami.or.jp/indigo/en/about/).
 
-**Paper I Guardian encounter was not retuned.** Its separate difficulty/phase redesign is intentionally deferred.
+**Phase 7 has since rebalanced Paper I's level-10 Guardian only.** Normal wave-10 enemies remain on the earlier tuning.
 
-### Paper II new powers: concepts only, NOT implemented
+### Paper II arts: now implemented in Phase 7
 
 New Paper II abilities must unlock as choices only on this paper or later. All preserve the existing upgrade rule: function first, black lasting terrain only at maximum ordinary rank, optional post-max red Vermilion choice afterward. Candidate roster awaiting approval:
 
@@ -332,7 +338,7 @@ New Paper II abilities must unlock as choices only on this paper or later. All p
 - **Mirror Fold** (weapon, 3 ranks): a folded-paper blade briefly captures the direction of an incoming enemy shot and returns a weaker single slash in that direction. It cannot reflect Guardian attacks and has a strict cooldown. At mastery the returned slash leaves a geometric folded crease on the paper.
 - **Shroud Step** (mobility/power, 2 ranks): an occasional short displacement after sustained movement, leaving a false ink-soul afterimage behind, with no permanent invulnerability and a visible cooldown. At mastery, thin moving footprints are stamped along the displacement; Vermilion changes only those marks.
 
-These are proposals for the owner's approval. **No new Paper II weapon/power behavior or unlock logic has been committed.**
+All four are **implemented and gated to Night Scroll or later** in Phase 7. The above card descriptions preserve the original proposed design vocabulary; precise implemented timings and behavior are in the Phase 7 specification.
 
 ## Phase 5B / the living paper, Eraser and mastered crimson
 
@@ -342,7 +348,7 @@ These are proposals for the owner's approval. **No new Paper II weapon/power beh
 
 **Mastery is a two-step ink progression.** Below its configured maximum rank, a special technique has **no permanent terrain imprints**, but retains its normal combat function. On reaching the max rank (e.g. Eraser 3, Fan 4, Spirit Scribes 3, Ink Knots 3, Black Tide 3, Trail 3 or Echo 2), it starts painting **permanent black/pale sumi ink**. This immediately unlocks an optional, one-time **Vermilion Seal** upgrade for that specific skill in the usual three-card XP-choice menu; an eligible seal receives a guaranteed card slot on future choices until chosen. **Only after explicitly selecting that second upgrade** does the skill's map imprint turn deep, vibrant lacquer-crimson `#ac1538`. Red upgrades do not add damage or alter cooldowns. Supporting passive-map signatures follow the same gating; maxed basic-shot modifiers still never cause ordinary auto-fire to mark terrain. Enemy blood remains black. Never recolor enemies, player or all weapons together.
 
-**The Eraser:** replaces rotating Ink Orbit visuals and damage with a continuous circular negative-space zone centered on the character. Rank radius **135 / 170 / 205 world pixels**, one damage per enemy at most every **0.82 s** (per-enemy cooldown, no burst stacking), very gentle knockback, erasure every **0.25 s**. The zone deletes both previously stamped and still-queued stage-terrain paint, without altering decorative world paper or erased creature AI. At max rank it first leaves a black boundary; after the separate `seal_orbit` Vermilion choice, that boundary becomes deep red. Retain the internal `orbit` upgrade ID and `stats.orb` for backwards compatibility; the player-facing upgrade is **The Eraser**.
+**The Eraser:** replaces rotating Ink Orbit visuals and damage with a continuous circular negative-space zone centered on the character. Rank radius **65 / 100 / 135 world pixels**, one damage per enemy at most every **0.82 s** (per-enemy cooldown, no burst stacking), very gentle knockback, erasure every **0.25 s**. The zone deletes both previously stamped and still-queued stage-terrain paint, without altering decorative world paper or erased creature AI. At max rank it first leaves a black boundary; after the separate `seal_orbit` Vermilion choice, that boundary becomes deep red. Retain the internal `orbit` upgrade ID and `stats.orb` for backwards compatibility; the player-facing upgrade is **The Eraser**.
 
 **More meaningful terrain:** normal auto-fire ink shots do **not** mark the map in flight, on impact or on expiry, even if basic-shot upgrades are mastered. Only **maxed** acquired skills place lasting map marks: Echo shots and Fan blades stamp at regular 38px intervals, Spirits leave wisps during movement, Knots print bound fibers and Black Tide paints its actual wavefront. Dense weapon marks use the existing stage-long cached Canvas2D terrain system rather than screen-space emitters, preserving each 10-wave stage's physical painted history except where the Eraser passes.
 
@@ -361,7 +367,7 @@ These are proposals for the owner's approval. **No new Paper II weapon/power beh
 | Folded Fan | Long dry-brush slash |
 | The Eraser | Clears enemy blood and weapon marks from a wide damage field; max rank begins black boundary; separate Vermilion upgrade makes it lacquer crimson |
 | Black Tide (nova) | Fractured wash ring |
-| Suiteki Leak | Pooling inkstone spills that dry into lasting stains at rank 3 |
+| Suiteki Leak | Continuous narrow snail-like ink ribbon; sparse dry strokes at rank 3 |
 | Spirit Scribes | Thin wispy brush traces |
 | Ink Knots | Several crossed tied fibers |
 | Paper Ward | Rectangular stamped border |
