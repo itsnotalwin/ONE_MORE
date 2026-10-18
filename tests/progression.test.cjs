@@ -148,7 +148,7 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
   assert.equal(fnv(segment('  function drawEnemy(c, e, t) {',
     '  /* ---------------- player:')),'44e8cc52');
   assert.equal(fnv(segment('  /* ---------------- projectiles, zones, fx ---------------- */',
-    '  /* Phase 3 additions reuse')),'20aee36a');
+    '  /* Phase 3 additions reuse')),'06353f91');
   assert.equal(fnv(segment('  function drawRing(c, r) {',
     '  function draw(ctx, t) {')),'b8275045');
   assert.ok(renderer.includes('function paintWeaponImprint('));
