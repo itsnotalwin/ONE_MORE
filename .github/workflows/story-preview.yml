@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - experiment/the-last-stroke
+      - development
   pull_request:
     paths:
       - 'js/intro.js'
