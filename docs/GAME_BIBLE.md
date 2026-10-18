@@ -170,7 +170,7 @@ The new run progression is **experience-based**. Every enemy's dried splat remai
 - **Rewards:** Living ink is issued when an enemy actually dies, not when a wave is simply cleared. Costlier enemies and Guardians are worth more; world/stage/wave modifiers prevent late-game stagnation. The cost of the next rank rises smoothly; XP overflow and simultaneous rank thresholds queue separate upgrade choices.
 - **Collection:** Ink kernels bounce slightly from the original dried splat, then curve toward the brush once within a generous magnet radius. At wave end, strays fly home across the sheet for approximately a second before the next wave. A bounded pickup pool combines older kernel values rather than losing rewards.
 - **Upgrade flow:** Reaching a brush rank opens the *same* three-choice paper upgrade interface midwave. Choosing a card resumes the **same current wave**; multiple rank rewards queue up. Clearing a wave no longer guarantees a free upgrade. Waves continue automatically after collection and any pending choices.
-- **Brush growth:** The original spirit silhouette enlarges smoothly in proportion to ink rank and maximum HP, capped at 1.55× visual size. **The physical collision radius never increases**, so becoming stronger does not cause unfair hits. Growth resets when a fresh independent level run begins, preserving campaign architecture.
+- **Brush growth:** The original rounded blob spirit now breathes through a stable, smoothly morphing ink contour and grows subtly with earned rank, capped at 1.18× visual size. **The physical collision radius never increases**. Growth resets when each independent level run begins.
 - **Art integration:** `js/ink-xp.js` paints ink kernels directly with Canvas2D, using the active scroll's ink/paper palette and a small vermilion core. New graphics and one isolated scaling wrapper are additive; no existing sprite or combat drawing routine was reauthored.
 - **Balance:** Targets approximately one to two meaningful rank choices per wave depending on kills/collection, including later waves. Actual pacing must be measured from physical runs before release. The 19 existing upgrade choices and campaign progress remain intact.
 
@@ -357,9 +357,10 @@ These are sequential implementation phases, not five changes to deploy at once.
 ### COMPLETED IMPLEMENTATION / PHASE 4A — BRUSH AND INK VISUAL POLISH
 
 - [x] **Phase 4A implemented:** [Living Ink Visual Refinement](PHASE-4A-PROGRESSION-VISUAL-POLISH.md) directly on `development`, including stable brush appearance, tiered subtle growth and new ink-seed pickups.
-- [x] Remove position-derived player silhouette seed; the nib and taper keep their identity across movement.
-- [x] Replace the instant whole-player scale with nib-only rank tiers (maximum 1.18×) and exponential easing; orbit/ward and collision radius unchanged.
+- [x] Restore the original rounded living blob, now animated by smoothly evolving seeded contour points independent of character position; its tail and aim stay eased.
+- [x] Replace instant whole-player growth with 1.18×-capped, eased blob-body growth; orbit/ward and collision radius unchanged.
 - [x] Replace circular XP orbs with five seeded living ink-nib silhouettes and tapered magnetic return ribbons; XP reward logic and no-loss rule unchanged.
+- [x] Reposition XP to a compact, left-side vertical cinnabar ink gauge that fills upward, with accessible vertical progress and mobile safe-area spacing.
 - [x] Automated gameplay regression tests passed; desktop/phone-sized Chromium screenshot suite runs for this code.
 - [ ] Owner's physical iPhone Safari review of long fights, Night Scroll contrast, pickup density and movement jitter.
 - [ ] Merge nothing to `main` without explicit approval.
