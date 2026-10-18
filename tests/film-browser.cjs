@@ -71,9 +71,36 @@ async function inspect(browser,name,viewport){
   assert.ok(plan.count>0);
   await page.waitForTimeout(1200);
   await page.screenshot({path:path.join(out,name+'-09-wave-director-game.png')});
+  /* Exercise an actual 3-phase Guardian using the live game loop,
+     retaining the same Canvas render path and mobile-sized viewport. */
+  await page.evaluate(()=>{
+    G.S.queue=[];
+    G.S.enemies=[];
+    G.S.markers=[{type:'slab',x:220,y:0,t:.01,elite:true,boss:true}];
+    G.S.stats.wave=10;
+    G.S.player.fireT=9999;
+    G.S.waveActive=true;
+    G.S.spawnTimer=9999;
+    G.S.invulnT=30; // the browser smoke test must remain alive
+  });
+  await page.waitForFunction(()=>G.S.enemies.some(e=>e.guardian),null,{timeout:5000});
+  await page.waitForFunction(()=>G.S.guardianMarks.length>0,null,{timeout:10000});
+  const guardian=await page.evaluate(()=>({
+    name:G.S.enemies.find(e=>e.guardian)?.type,
+    phase:G.S.enemies.find(e=>e.guardian)?.guardian.phase,
+    danger:G.S.guardianMarks[0]?.kind,
+  }));
+  assert.deepEqual(guardian,{name:'slab',phase:1,danger:'line'});
+  await page.screenshot({path:path.join(out,name+'-10-guardian-ink-seam.png')});
+  await page.evaluate(()=>{
+    const boss=G.S.enemies.find(e=>e.guardian);
+    boss.hp=Math.round(boss.maxHp*.2);
+  });
+  await page.waitForFunction(()=>G.S.enemies.some(e=>e.guardian?.phase===3),null,{timeout:4000});
+  await page.screenshot({path:path.join(out,name+'-11-guardian-final-phase.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:7,directorVerified:true,noBrowserErrors:true};
+  return {name,shots:9,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
