@@ -731,7 +731,7 @@ const G = (() => {
     const aK=S.reduced?1:1-Math.exp(-dt*13);
     p.visualSpeed+=((active?Math.min(1,Math.hypot(vx,vy)):0)-p.visualSpeed)*aK;
     p.visualFacing+=turn*(S.reduced?1:1-Math.exp(-dt*14));
-    if(active&&!S.reduced)p.flowPhase+=dt*2*Math.PI*(5.6+1.2*p.visualSpeed);
+    if(active&&!S.reduced)p.flowPhase+=dt*2*Math.PI*(1.85+.2*p.visualSpeed);
     for(const prop of ['hitPulse','absorbPulse','rankPulse'])
       p[prop]=Math.max(0,p[prop]-dt);
     const sp = CFG.player.speed * st.moveMult * (S.adrenT > 0 ? CFG.adrenaline.mult : 1);
