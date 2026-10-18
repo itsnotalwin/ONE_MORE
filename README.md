@@ -27,7 +27,7 @@ Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and 
 
 ## Phase 4A: the awakened brush and living ink seeds (development)
 
-The original **rounded, living ink blob has been restored**, now with gently morphing brush-painted edges instead of the flattened nib silhouette. Its outline is seeded once per run, so moving doesn't randomly redraw it. Aim and tail movement remain smoothly eased, and rank growth is capped at **1.18× apparent scale**. **Combat speed, collision radius, weapon orbits and the original enemy artwork remain unchanged.**
+The original **rounded, living ink blob has been restored** and now uses the same ten-point midpoint outline, 0.17 contour wobble and line-boil timing as the living BLOT enemies. Neighboring animation states blend smoothly so moving doesn't randomly redraw it. The player body is filled with exactly the enemy's active ink color on each scroll, without a red character mark. Aim and tail movement remain smoothly eased, and rank growth is capped at **1.18× apparent scale**. **Combat speed, collision radius, weapon orbits and the original enemy artwork remain unchanged.**
 
 XP pickups are now **five variations of living ink seeds**, not regular circular orbs. They emerge from the original enemy splats and stretch into tapered ink ribbons when being recalled. No change was made to the XP reward values, level curve, acquisition magnet physics, or automatic wave-end banking.
 
