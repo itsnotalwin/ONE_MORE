@@ -938,119 +938,167 @@ const R = (() => {
     c.closePath();
   }
 
-  /* ---------------- player: the brush spirit ---------------- */
+  /* ---------------- player: the awakened brush spirit ---------------- */
   function drawPlayer(c, t) {
-    const S = G.S;
-    const p = S.player;
-    const blink = S.invulnT > 0 && Math.floor(t * 18) % 2 === 0;
-    const tick = Math.floor(t / CFG.ink.boilRate);
-    const sd = ((p.x * 31 + p.y * 17) | 0) ^ (tick * 7919);
-    const iv = S.inputVec;
-    const mv = Math.min(1, Math.hypot(iv.x, iv.y));
+    const S = G.S, p = S.player, st = S.stats;
+    const guarded = S.invulnT > 0;
+    /* The nib identity is fixed at the beginning of the run. World motion
+       NEVER re-seeds the outline: movement only translates this drawing. */
+    const sd = p.visualSeed || 0x51a7;
+    const form = INK_XP.visualForm(st);
+    const scale = p.displayScale || 1;
+    const vx = p.visualMoveX || 0, vy = p.visualMoveY || 0;
+    const motion = Math.min(1, Math.hypot(vx, vy));
+    const aim = p.visualAim == null ? p.aim : p.visualAim;
 
-    /* ink trail: the brush never leaves the paper clean */
-    if (S.mode === 'playing' && mv > 0.15 && t - lastTrailT > CFG.ink.trailGap && !S.reduced) {
+    /* Original wisps of paper history remain, but the player does not
+       drag an oversized oscillating comet across the whole sheet. */
+    if (S.mode === 'playing' && motion > 0.15 &&
+        t - lastTrailT > CFG.ink.trailGap && !S.reduced) {
       lastTrailT = t;
-      S.stainQueue.push({ x: p.x + (Math.random() - 0.5) * 6, y: p.y + (Math.random() - 0.5) * 6, r: 2.2, alpha: 0.15 });
+      S.stainQueue.push({
+        x: p.x + (Math.random() - 0.5) * 4,
+        y: p.y + (Math.random() - 0.5) * 4,
+        r: 2.2, alpha: 0.12,
+      });
     }
 
-    /* comet tail, streaming behind the motion */
-    if (mv > 0.12) {
-      const a = Math.atan2(-iv.y, -iv.x);
-      const len = 9 + 10 * mv;
-      const sway = Math.sin(t * 9) * 2.2;
-      const x0 = p.x + Math.cos(a) * p.r * 0.5, y0 = p.y + Math.sin(a) * p.r * 0.5;
+    /* An anchored dry-brush tail. Direction changes are damped by the
+       visual velocity so rapid thumb movement never snaps the ink shape. */
+    if (motion > 0.08) {
+      const a = Math.atan2(-vy, -vx);
+      const len = 9 + 7 * motion + form.tier * 1.8;
+      const sway = S.reduced ? 0 : Math.sin(t * 1.9 + sd * .001) * .65;
+      const root = p.r * .55;
+      const x0 = p.x + Math.cos(a) * root;
+      const y0 = p.y + Math.sin(a) * root;
       inkStroke(c, [
         { x: x0, y: y0 },
-        { x: x0 + Math.cos(a) * len * 0.55 - Math.sin(a) * sway, y: y0 + Math.sin(a) * len * 0.55 + Math.cos(a) * sway },
+        { x: x0 + Math.cos(a) * len * .53 - Math.sin(a) * sway,
+          y: y0 + Math.sin(a) * len * .53 + Math.cos(a) * sway },
         { x: x0 + Math.cos(a) * len, y: y0 + Math.sin(a) * len },
-      ], 7, { alpha: blink ? 0.2 : 0.85, taper: 1.1, seed: sd });
+      ], 5.5 + form.tier * .7, {
+        alpha: .75, taper: 1.22, seed: sd, jit: .08,
+        dry: form.tier > 0, dryColor: PAPER,
+      });
     }
 
     c.save();
-    c.globalAlpha = blink ? 0.25 : 1;
-    const back = p.recoil > 0 ? p.recoil * 2.4 : 0;
-    c.translate(p.x - Math.cos(p.aim) * back, p.y - Math.sin(p.aim) * back);
+    /* Recoil is a small nib response; shots, collision and camera remain
+       at their unmodified positions. No scaling is applied to orbit/ward. */
+    const recoil = Math.min(.9, Math.max(0, p.recoil) * .55);
+    c.translate(p.x - Math.cos(aim) * recoil,
+      p.y - Math.sin(aim) * recoil);
 
-    /* adrenaline speed ticks */
-    if (S.adrenT > 0 && !blink) {
-      const ma = Math.atan2(-iv.y || p.aim, -iv.x || p.aim);
-      c.save();
-      c.globalAlpha = 0.4;
-      for (const off of [-0.5, 0.5]) {
+    if (S.adrenT > 0) {
+      const ma = Math.atan2(-vy || Math.sin(aim), -vx || Math.cos(aim));
+      c.save(); c.globalAlpha = .26;
+      for (const off of [-.5, .5]) {
         const a = ma + off;
         inkStroke(c, [
           { x: Math.cos(a) * 13, y: Math.sin(a) * 13 },
-          { x: Math.cos(a) * 21, y: Math.sin(a) * 21 },
-        ], 2.2, { alpha: 0.5 });
+          { x: Math.cos(a) * 18, y: Math.sin(a) * 18 },
+        ], 1.4, { alpha: .42, seed: sd });
       }
       c.restore();
     }
 
+    /* The body, its eye and bristles alone get the smoothed growth. This
+       is a stable ink nib, not a fresh random blob on every movement. */
+    c.save();
+    c.scale(scale, scale);
+    c.rotate(p.visualTilt || 0);
+    const r = p.r, tier = form.tier;
+    const breath = S.reduced ? 0 : Math.sin(t * 2.6 + sd * .001) * .012;
+    c.scale(1 + breath, 1 - breath * .7);
+    c.globalAlpha = form.pigment;
     c.fillStyle = INK;
-    blobPath(c, 0, 0, p.r, sd, 0.14, 10);
-    c.fill();
-    if (S.invulnT > 0) {
-      c.globalAlpha = (blink ? 0.25 : 1) * 0.5;
-      c.strokeStyle = INK;
-      c.lineWidth = 1.2;
-      c.beginPath(); c.arc(0, 0, p.r + 4.5, 0, TAU); c.stroke();
-      c.globalAlpha = blink ? 0.25 : 1;
+    c.beginPath();
+    c.moveTo(r * 1.03, -r * .07);
+    c.bezierCurveTo(r * .88, -r * .81, -r * .36, -r * 1.02, -r * .81, -r * .54);
+    c.quadraticCurveTo(-r * 1.12, -r * .22, -r * 1.10, r * .27);
+    c.bezierCurveTo(-r * .91, r * .81, -r * .13, r * 1.04,
+      r * .69, r * .57);
+    c.quadraticCurveTo(r * 1.12, r * .28, r * 1.03, -r * .07);
+    c.closePath(); c.fill();
+
+    /* Rank adds workmanship rather than simple inflation: a dry edge,
+       extra restrained bristles and eventually one cinnabar seal fleck. */
+    if (tier > 0) {
+      c.strokeStyle = PAPER; c.lineWidth = .65;
+      c.globalAlpha = tier >= 2 ? .17 : .11;
+      c.beginPath(); c.moveTo(-r * .65, -r * .62);
+      c.quadraticCurveTo(-r * .83, -.5, -r * .62, r * .52); c.stroke();
+      c.globalAlpha = .63; c.strokeStyle = INK;
+      c.lineCap = 'round';
+      for (let i = 0; i < form.bristles; i++) {
+        const y = (i - (form.bristles - 1) * .5) * 2.1;
+        c.lineWidth = .95 - i * .08;
+        c.beginPath(); c.moveTo(-r * .75, y);
+        c.quadraticCurveTo(-r * 1.10, y + .45, -r * (1.26 + tier * .085), y + .30);
+        c.stroke();
+      }
+    }
+    if (tier === 3) {
+      c.globalAlpha = .52; c.fillStyle = RED;
+      c.fillRect(-r * .45, r * .42, 1.15, 1.15);
     }
 
-    const st = S.stats;
+    /* One quiet paper eye faces the smoothed target aim. */
+    c.globalAlpha = 1;
+    const ex = Math.cos(aim) * r * .42, ey = Math.sin(aim) * r * .42;
+    const el = 4.35;
+    c.strokeStyle = PAPER; c.lineWidth = 1.8; c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(ex - Math.cos(aim) * el / 2, ey - Math.sin(aim) * el / 2);
+    c.lineTo(ex + Math.cos(aim) * el / 2, ey + Math.sin(aim) * el / 2);
+    c.stroke();
+    c.restore();
 
-    /* ink orbit: droplets circling the brush */
+    /* Invulnerability glows through a restrained ink-outline breath instead
+       of strobing the entire character at 18 Hz. Immunity is unchanged. */
+    if (guarded) {
+      c.save();
+      c.globalAlpha = S.reduced ? .42 : .38 + Math.sin(t * 3.1) * .08;
+      c.strokeStyle = INK; c.lineWidth = 1.2;
+      c.beginPath(); c.arc(0, 0, p.r * scale + 4.5, 0, TAU); c.stroke();
+      c.restore();
+    }
+
+    /* Existing defensive orbit stays in actual world units. */
     if (st && st.orb > 0) {
       const orbR = CFG.orbit.radius(st.orb);
       const base = S.clockT || t;
-      c.save();
-      c.globalAlpha = (blink ? 0.2 : 1) * 0.1;
-      c.strokeStyle = INK;
-      c.lineWidth = 1;
+      c.save(); c.globalAlpha = .10;
+      c.strokeStyle = INK; c.lineWidth = 1;
       c.beginPath(); c.arc(0, 0, orbR, 0, TAU); c.stroke();
       c.restore();
       for (let i = 0; i < st.orb; i++) {
         const a = base * CFG.orbit.speed + (i / st.orb) * TAU;
         const ox = Math.cos(a) * orbR, oy = Math.sin(a) * orbR;
-        c.save();
-        c.translate(ox, oy);
-        c.rotate(a + Math.PI / 2);
-        c.globalAlpha = (blink ? 0.3 : 1) * 0.95;
-        c.fillStyle = INK;
-        teardrop(c, 3.6);
-        c.fill();
-        c.globalAlpha = (blink ? 0.15 : 1) * 0.3;
-        inkStroke(c, [{ x: -6, y: 0 }, { x: -13, y: 0.4 }], 1.8, { alpha: 1 });
+        c.save(); c.translate(ox, oy); c.rotate(a + Math.PI / 2);
+        c.globalAlpha = .93; c.fillStyle = INK;
+        teardrop(c, 3.6); c.fill();
+        c.globalAlpha = .28;
+        inkStroke(c, [{ x: -6, y: 0 }, { x: -13, y: .4 }],
+          1.8, { alpha: 1, seed: sd });
         c.restore();
       }
     }
 
-    /* paper ward: a talisman that hangs at the brush's back */
+    /* Paper Ward stays the same size regardless of brush rank. */
     if (st && st.ward) {
       const ready = st.wardCd <= 0;
-      const wa = p.aim + Math.PI;
+      const wa = aim + Math.PI;
       c.save();
       c.translate(Math.cos(wa) * (p.r + 12), Math.sin(wa) * (p.r + 12) - 2);
-      c.rotate(Math.sin(t * 1.7) * 0.14 - 0.35);
-      c.globalAlpha = (blink ? 0.3 : 1) * (ready ? 0.9 : 0.2);
-      c.strokeStyle = INK;
-      c.lineWidth = 1.4;
+      c.rotate((S.reduced ? 0 : Math.sin(t * 1.7) * .07) - .35);
+      c.globalAlpha = ready ? .9 : .2;
+      c.strokeStyle = INK; c.lineWidth = 1.4;
       c.strokeRect(-4, -6.5, 8, 13);
       if (ready) { c.fillStyle = RED; c.fillRect(-1.6, -1.6, 3.2, 3.2); }
       c.restore();
     }
-
-    /* the eye — a single paper slit toward the aim */
-    const ex = Math.cos(p.aim) * p.r * 0.45, ey = Math.sin(p.aim) * p.r * 0.45;
-    const el = (p.recoil > 0.4 ? 2.6 : 4.4);
-    c.strokeStyle = PAPER;
-    c.lineWidth = 1.9;
-    c.lineCap = 'round';
-    c.beginPath();
-    c.moveTo(ex - Math.cos(p.aim) * el / 2, ey - Math.sin(p.aim) * el / 2);
-    c.lineTo(ex + Math.cos(p.aim) * el / 2, ey + Math.sin(p.aim) * el / 2);
-    c.stroke();
     c.restore();
   }
 
@@ -1496,16 +1544,7 @@ const R = (() => {
        No original creature or player sprite functions are modified. */
     if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);
     for (const sp of S.spirits) drawSpirit(ctx, sp);
-    if (playing) {
-      /* Growth is visual ONLY: player.r stays the original collision size. */
-      const scale=INK_XP.visualScale(S.stats);
-      ctx.save();
-      ctx.translate(S.player.x,S.player.y);
-      ctx.scale(scale,scale);
-      ctx.translate(-S.player.x,-S.player.y);
-      drawPlayer(ctx,t);
-      ctx.restore();
-    }
+    if (playing) drawPlayer(ctx, t);
     for (const knot of S.knots) drawKnot(ctx, knot, t);
     for (const p of S.particles) drawParticle(ctx, p);
     for (const p of S.popups) drawPopup(ctx, p);
