@@ -31,6 +31,15 @@ const CFG = {
     surgeEvery: 5,                               // every Nth wave of an area is a SURGE
     surgeMult: 1.5,
     groupInterval: w => Math.max(0.4, 1.45 - w * 0.06),
+    /* Opening levels should last longer, not hit harder: space existing
+       waves into small calm groups, keeping budget, HP and damage intact.
+       Later First Wash levels and every subsequent paper use normal pace. */
+    openingPace: (world, level) =>
+      world !== 0 ? 1 : level === 1 ? 1.65 :
+      level === 2 ? 1.40 : level === 3 ? 1.20 : 1,
+    openingGroup: (world, level) =>
+      world !== 0 ? 1 : level === 1 ? .67 :
+      level === 2 ? .82 : 1,
     groupSize: (w, areaIdx) => 3 + Math.floor(w / 3) + areaIdx,
     concurrentCap: (w, areaIdx) => Math.min(64, 14 + w * 2 + areaIdx * 8),
     hpScale: (base, w, intro) => Math.max(1, Math.round(base * (1 + 0.085 * (w - intro)))),
