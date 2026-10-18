@@ -358,6 +358,7 @@ const INTRO = (() => {
     if(visible)return true;
     visible=true;running=true;elapsed=0;lastTime=performance.now();
     previousPlate=null;
+    if(soundOn&&audio)audio.ctx.resume().catch(()=>{});
     G.mode='intro';UI.show('intro');
     setScene(0);
     stage.setAttribute('aria-hidden','false');
