@@ -119,8 +119,37 @@ async function inspect(browser,name,viewport){
   assert.equal(grown.rank,2);
   assert.equal(grown.wave,1,'leveling does not skip any wave');
   assert.equal(grown.realRadius,10,'the character only grows visually');
-  assert.ok(grown.drawScale>1,'new rank looks visibly bigger');
-  await page.screenshot({path:path.join(out,name+'-12-grown-brush.png')});
+  assert.equal(grown.drawScale,1,'early ranks preserve the iconic silhouette size');
+  /* Verify the mid/high-rank stage is visibly evolved but never oversized. */
+  await page.evaluate(()=>{
+    G.S.stats.inkRank=16;
+    G.S.stats.maxHp=7;
+  });
+  await page.waitForTimeout(1300); // eased visual growth
+  const evolved=await page.evaluate(()=>({
+    scale:G.S.player.displayScale,target:INK_XP.visualScale(G.S.stats),
+    hitbox:G.S.player.r,tier:INK_XP.visualForm(G.S.stats).tier
+  }));
+  assert.ok(evolved.scale>1.13&&evolved.scale<1.18);
+  assert.ok(Math.abs(evolved.scale-evolved.target)<.005);
+  assert.equal(evolved.hitbox,10);
+  assert.equal(evolved.tier,3);
+  await page.screenshot({path:path.join(out,name+'-12-awakened-brush.png')});
+  await page.keyboard.down('d');
+  await page.waitForTimeout(480);
+  await page.screenshot({path:path.join(out,name+'-13-stable-brush-moving.png')});
+  await page.keyboard.up('d');
+  /* Palettes must still render living ink on the reverse/night scroll. */
+  await page.evaluate(()=>{
+    G.S.areaIdx=1;
+    G.S.inkDrops=[];
+    for(let n=0;n<18;n++)INK_XP.drop(G.S.inkDrops,
+      G.S.player.x+45+(n%6)*18,G.S.player.y-44+Math.floor(n/6)*18,
+      6,false,n*7);
+  });
+  await page.waitForTimeout(180);
+  await page.screenshot({path:path.join(out,name+'-14-night-ink-seeds.png')});
+  await page.evaluate(()=>{G.S.areaIdx=0;G.S.inkDrops=[];});
   /* Exercise an actual 3-phase Guardian using the live game loop,
      retaining the same Canvas render path and mobile-sized viewport. */
   await page.evaluate(()=>{
@@ -150,7 +179,7 @@ async function inspect(browser,name,viewport){
   await page.screenshot({path:path.join(out,name+'-11-guardian-final-phase.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:14,homeVerified:true,onboardingVerified:true,inkXPVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
+  return {name,shots:16,homeVerified:true,onboardingVerified:true,inkXPVerified:true,stableBrushVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
