@@ -127,18 +127,99 @@ test('all 30 levels, 300 waves, world mechanics, world bosses and Endless', () =
   assert.equal(G.S.stats.wave, 1);
 });
 
-test('original renderer, audio, and pre-existing CSS are frozen', () => {
-  function gitBlobHash(s) {
-    return crypto.createHash('sha1').update(Buffer.concat([
-      Buffer.from('blob ' + Buffer.byteLength(s) + '\0'), Buffer.from(s),
-    ])).digest('hex');
-  }
-  assert.equal(gitBlobHash(file('js/render.js')), 'af35ba9b8e7dbad5d5690749d7e3f960c8a1c74a');
-  assert.equal(gitBlobHash(file('js/audio.js')), '50c75c3f74d20ff5f51232731ad8260c8881b635');
+test('original artwork and sound outside the removed weapon stay unchanged', () => {
+  // Hash unchanged sections from the last Hanko-freeze reference, excluding
+  // *only* its weapon-specific painter/audio and the one draw call.
+  const fnv = s => {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h.toString(16).padStart(8, '0');
+  };
+  const renderer = file('js/render.js');
+  const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
+  const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
+  const call = '    for (const knot of S.knots) drawKnot(ctx, knot, t);';
+  const rc = renderer.indexOf(call, re);
+  assert.ok(rb > 0 && re > rb && rc > re);
+  assert.deepEqual([
+    fnv(renderer.slice(0, rb)),
+    fnv(renderer.slice(re, rc)),
+    fnv(renderer.slice(rc + call.length)),
+  ], ['f174f6ee', 'f3a0b841', '754cf65c']);
+
+  const audio = file('js/audio.js');
+  const ab = audio.indexOf('    /* ink knots tighten like a quiet plucked thread */');
+  const afterTag = '    /* the sniper fires its needle */';
+  const ae = audio.indexOf(afterTag, ab);
+  assert.ok(ab > 0 && ae > ab);
+  assert.deepEqual([
+    fnv(audio.slice(0, ab)),
+    fnv(audio.slice(ae + afterTag.length)),
+  ], ['624df8f1', '355365eb']);
+
   const css = file('css/style.css');
   assert.ok(css.includes('CAMPAIGN SELECTION'));
   const original = css.slice(0, css.indexOf('\n/* ============================================================\n   CAMPAIGN SELECTION'));
+  const gitBlobHash = text => crypto.createHash('sha1').update(Buffer.concat([
+    Buffer.from('blob ' + Buffer.byteLength(text) + '\0'), Buffer.from(text),
+  ])).digest('hex');
   assert.equal(gitBlobHash(original), '7438ce27c87e88b507e76abcfbc45fe420ffc1db');
+});
+
+test('Ink Knots delays damage, targets at most four, and never sweeps the horde', () => {
+  const { G } = harness();
+  function enemy(x, y) {
+    return {
+      type: 'pulse', x, y, r: 12, hp: 8, maxHp: 8, speed: 0,
+      elite: false, ang: 0, t: 0, hitFlash: 0, kbx: 0, kby: 0,
+      state: 'cruise', stateT: 1, seed: 0, stun: 0, slowT: 0,
+      orbCd: 0, dirT: 0, spawnT: 0, px: 0, py: 0,
+    };
+  }
+  for (let rank = 1; rank <= 3; rank++) {
+    assert.ok(G.startLevel(0, 1));
+    G.S.stats.knot = rank;
+    G.S.knotT = 0;
+    G.S.player.fireT = 1000; // Isolate the weapon from normal autofire.
+    G.S.queue = [];
+    G.S.markers = [];
+    G.S.waveActive = false;
+    G.S.clearedT = 0;
+    G.S.enemies = Array.from({ length: 12 }, (_, i) =>
+      enemy(140 + i % 4 * 32, (Math.floor(i / 4) - 1) * 35));
+    const hp = G.S.enemies.map(e => e.hp);
+
+    G.update(0.08);
+    assert.equal(G.S.knots.length, 1);
+    assert.equal(G.S.knots[0].members.length, rank + 1);
+    assert.equal(G.S.enemies.reduce((v, e, i) => v + hp[i] - e.hp, 0), 0, 'no instant attack');
+
+    G.update(0.66);
+    const first = G.S.enemies.reduce((v, e, i) => v + hp[i] - e.hp, 0);
+    assert.equal(first, rank + 1, 'exactly one damage for each bound target');
+
+    G.update(0.66);
+    const second = G.S.enemies.reduce((v, e, i) => v + hp[i] - e.hp, 0);
+    assert.equal(second, first, 'no repeated pulse / chain wipe');
+    assert.ok(G.S.enemies.some(e => e.hp === 8), 'some horde members remain untouched');
+    assert.ok(G.S.knots.some(k => k.members.some(e => e.slowT > 0)), 'knots slow bound enemies');
+  }
+  G.startLevel(0, 1);
+  assert.equal(G.S.knots.length, 0, 'temporary knots reset every run');
+
+  const cfg = file('js/config.js');
+  const game = file('js/game.js');
+  const ui = file('js/ui.js');
+  const audio = file('js/audio.js');
+  assert.ok(cfg.includes("name: 'Ink Knots'"));
+  assert.ok(ui.includes('knot:'));
+  assert.ok(audio.includes('knot()'));
+  for (const source of [cfg, game, ui, audio, file('js/render.js')]) {
+    assert.doesNotMatch(source, /hanko/i, 'no legacy Hanko weapon remains');
+  }
 });
 
 test('mobile upgrade screen retains all three choices in compact grid layout', () => {
