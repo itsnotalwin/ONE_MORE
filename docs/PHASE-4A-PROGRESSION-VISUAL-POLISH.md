@@ -1,6 +1,6 @@
 # ONE MORE — Phase 4A / Living Ink Visual Refinement
 
-**Status:** implementation specification, ready for a focused code pass. **Not implemented yet.**
+**Status:** Implemented on `development`; automated gameplay regression tests passed. Real Chromium mobile/desktop visual verification is running, and physical iPhone Safari acceptance remains pending.
 **Working branch:** `development` only. Never create another branch or merge into `main` as part of this pass.
 **Art direction:** the existing original sumi-e ink on washi with restrained cinnabar accent. Preserve existing procedural enemies, painterly paper, combat mechanics, and cinematic.
 
@@ -89,6 +89,14 @@ Treat extra **maximum HP** as nib fullness/pigment density (slightly darker, thi
 - Do not repeatedly add effects when a large pack dies. Prefer a few legible seeds and automatic visual-value aggregation.
 - Reduced-motion mode should use stable silhouettes, no boil blending/sway, no visual wobble, and simplified direct ink movement while preserving pickup behavior.
 
+## Implementation notes (18 October 2026)
+
+- **Stable character:** `js/game.js` initializes a fixed brush seed, smoothed cosmetic aim/tilt/movement and a display-scale value that approaches its target with an exponential time constant of 0.34 seconds. Hitbox radius and speed are unchanged.
+- **Scoped repaint:** `js/render.js` now draws a consistent calligraphic nib with one paper eye, tier-based dry-brush fibers and a restrained tail. The global player-scale wrapper is removed. Orbit and Ward geometry remain at their original world-space sizes. Fast invulnerability strobing has been replaced with a low-amplitude warning outline.
+- **Reclaimed ink:** `js/ink-xp.js` now draws five seeded asymmetrical nib variants with trailing tapered ribbons when magnetized, instead of circular XP orbs. XP awarding, proximity and wave-end recall calculations remain as before. Max cosmetic scale is **1.18×**.
+- **Tests:** `tests/ink-xp.test.cjs` includes tier bounds, no-hitbox-change, easing and non-circular drop assertions. `tests/progression.test.cjs` and `tests/guardians.test.cjs` retain a byte-for-byte checksum for **all non-player rendering**; the original non-player baseline is `70a61c56`.
+- **Real browser captures:** `tests/film-browser.cjs` now exercises the same flow with movement shots, an awakened rank-16 character, and Night Scroll ink seeds in desktop and 393×852 phone Chromium. Physical device results are still unverified.
+
 ## 6. Exact engineering map and work order
 
 **Commit 1: isolate and eliminate player jitter**
@@ -116,18 +124,18 @@ Treat extra **maximum HP** as nib fullness/pigment density (slightly darker, thi
 
 ## 7. Acceptance checklist (Definition of Done)
 
-- [ ] The brush remains a coherent, legible silhouette while moving continuously; **no outline noise driven by world position**.
-- [ ] Distinct player visual states look intentional across early, middle and high rank; never exceed ~1.18× apparent size.
-- [ ] Rank-up appearance transitions are eased, with no jumps; weapon orbits remain independent of growth.
-- [ ] Recoil, trail and invulnerability effects are calm and readable, not a rapid shake.
-- [ ] XP hearts look like irregular brush/ink seeds. No circular glossy orbs remain.
-- [ ] Collection visibly becomes a tapered stream of ink returning to the brush.
-- [ ] Original dried stains persist, XP cannot be lost, and a single seed cannot award XP twice.
-- [ ] No changes to hit radius, physics, damage, Guardian telegraphs, level unlocks or XP curves.
-- [ ] Automated combat, progression, Guardian, XP and cinematic tests pass.
+- [x] The brush remains a coherent, legible silhouette while moving continuously; **no outline noise driven by world position**.
+- [x] Distinct player visual states look intentional across early, middle and high rank; never exceed ~1.18× apparent size.
+- [x] Rank-up appearance transitions are eased, with no jumps; weapon orbits remain independent of growth.
+- [x] Recoil, trail and invulnerability effects are calm and readable, not a rapid shake.
+- [x] XP hearts look like irregular brush/ink seeds. No circular glossy orbs remain.
+- [x] Collection visibly becomes a tapered stream of ink returning to the brush.
+- [x] Original dried stains persist, XP cannot be lost, and a single seed cannot award XP twice.
+- [x] No changes to hit radius, physics, damage, Guardian telegraphs, level unlocks or XP curves.
+- [x] Automated combat, progression, Guardian, XP and cinematic tests pass.
 - [ ] Desktop and phone-sized real Chromium captures reviewed, especially Night Scroll contrast.
 - [ ] Physical iPhone Safari test performed or explicitly recorded as pending.
-- [ ] Only `development` changed; `main` untouched.
+- [x] Only `development` changed; `main` untouched.
 
 ### Taste checkpoint
 
