@@ -66,7 +66,7 @@ const CFG = {
 
   /* new weapons */
   fan:    { period: lv => 3.4 - 0.35 * (lv - 1), count: lv => 4 + lv, speed: 430, life: 0.62, spread: 1.15, dmg: 1 },
-  trail:  { gap: lv => 0.5 - 0.08 * (lv - 1), radius: lv => 26 + lv * 7, life: 2.7, tick: 0.42, dmg: 1 },
+  trail: { gap: lv => [3.6,3.1,2.7][Math.min(3,Math.max(1,lv))-1], radius: lv => [30,38,46][Math.min(3,Math.max(1,lv))-1], life: lv => [2.8,3,3.2][Math.min(3,Math.max(1,lv))-1], maxPools: lv => lv===1?1:2, tick: .55, dmg: 1, slow: .8 },
   spirit: { period: lv => 3.1 - 0.3 * (lv - 1), count: lv => 1 + lv, speed: 300, turn: 7.5, life: 3.2, dmg: 1 },
   /* Ink Knots trades area damage for brief control of a few ink beasts. */
   knot: { period: lv => 7.2 - 0.35 * (lv - 1), range: 440, span: 155,
@@ -161,7 +161,7 @@ const UPGRADES = [
   { id: 'ward',   name: 'Paper Ward',   desc: 'A dry talisman swallows one hit whole, then reforms.',       max: 1, apply: s => { s.ward = true; } },
   /* ---- new weapons ---- */
   { id: 'fan',    name: 'Folded Fan',   desc: 'Every few breaths the fan snaps open — a spray of paper blades.', max: 4, weapon: true, apply: s => { s.fan += 1; } },
-  { id: 'trail',  name: 'Ink Trail',    desc: 'Wherever you walk, the ink you leave still bites. Smears linger.', max: 3, weapon: true, apply: s => { s.trailW += 1; } },
+  { id: 'trail',  name: 'Suiteki Leak', desc: 'Tip water onto an inkstone: a slow ink spill spreads, slowing and hurting enemies.', max: 3, weapon: true, apply: s => { s.trailW += 1; } },
   { id: 'spirit', name: 'Spirit Scribes',desc: 'Lesser brushes wake and hunt on their own, seeking the nearest blot.', max: 3, weapon: true, apply: s => { s.spirit += 1; } },
   { id: 'knot',   name: 'Ink Knots',     desc: 'Bind a few nearby beasts with living ink. Slow them, then deal 1 delayed damage.', max: 3, weapon: true, apply: s => { s.knot += 1; } },
 ];
