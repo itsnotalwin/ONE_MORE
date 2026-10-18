@@ -69,6 +69,35 @@ test('black weapon flights and maxed red techniques paint the paper without alte
   assert.ok(render.includes('function eraseTerrain('));
   assert.ok(render.includes('if(removed.size)stains=stains.filter('));
 });
+test('maxed stroke skills make pigment-red map signatures while ordinary effects stay black',()=>{
+  const {G}=harness();
+  G.startLevel(0,1);
+  G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
+  G.S.stats.levels.heavy=4;
+  G.S.bullets.push({x:0,y:0,vx:560,vy:0,ang:0,dmg:1,hits:1,
+    age:0,life:.9,kind:'drop'});
+  G.update(.05);G.update(.05);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='shot'&&m.red),
+    'mastered Bitter Ink turns the very same ordinary projectile terrain strokes crimson');
+  G.startLevel(0,1);
+  G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
+  G.S.bullets.push({x:0,y:0,vx:560,vy:0,ang:0,dmg:1,hits:1,
+    age:0,life:.9,kind:'drop'});
+  G.update(.05);G.update(.05);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='shot'&&!m.red),
+    'unmastered weapons remain traditional black ink');
+});
+test('mastered movement contributes a sparse red terrain seal without changing speed or hitbox',()=>{
+  const {G}=harness();
+  G.startLevel(0,1);
+  G.S.queue=['pulse'];G.S.spawnTimer=99999;G.S.player.fireT=99999;
+  G.S.stats.levels.over=4;
+  const radius=G.S.player.r;
+  G.S.inputVec.x=1;
+  G.update(.05);
+  assert.equal(G.S.player.r,radius);
+  assert.ok(G.S.stainQueue.some(m=>m.weapon==='over'&&m.red));
+});
 test('weapon marks live through the full 10-wave level, not just the current wave',()=>{
   const {G,paper}=harness();
   assert.equal(G.startLevel(0,1),true);
