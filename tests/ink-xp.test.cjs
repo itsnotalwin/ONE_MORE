@@ -171,18 +171,18 @@ test('ink pickups render as small breathing rounded black blobs, never spearhead
   assert.ok(!drawing.includes('c.moveTo(body*1.35'),'old sharp nib is removed');
   assert.ok(!drawing.includes('createRadialGradient('),'no fantasy orb glow');
 });
-test('redesigned player stays one living organic ink spirit with its original hitbox',()=>{
+test('player is a distinct fluid ink soul, without the old weapon-shaped brush',()=>{
   const render=src('js/render.js');
-  const body=render.slice(render.indexOf('  function drawPlayer(c, t) {'),
+  const body=render.slice(render.indexOf('  function drawPlayer(c,t) {'),
     render.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */'));
-  assert.ok(body.includes('livingBlobPath(c,r*1.06,seed,t,reduced)'));
-  assert.ok(body.includes('c.fillStyle=INK'));
-  assert.ok(body.includes('c.strokeStyle=PAPER'));
-  assert.ok(body.includes('const len=6+motion*8'),'tail remains attached and restrained');
-  assert.ok(!body.includes('form.bristles'));
-  assert.ok(!body.includes('c.fillStyle=RED'));
-  assert.ok(render.includes('function livingBlobPath('));
-  assert.ok(!render.includes('p.x * 31 + p.y * 17'));
+  assert.ok(render.includes('function inkSoulPath('),'a shaped protagonist exists');
+  assert.ok(body.includes('inkSoulPath(c,p.r,t,seed,reduced,motion);'));
+  assert.ok(body.includes('c.fillStyle=INK')&&body.includes('c.strokeStyle=PAPER'));
+  assert.ok(body.includes('c.quadraticCurveTo('),'expressive paper eye is curved');
+  assert.ok(!body.includes('form.bristles'),'no stray brush bristles');
+  assert.ok(!body.includes('teardrop(c,3.6)'),'old orbit beads are gone');
+  assert.ok(render.includes('function drawEraserField('),'wide eraser visual is separate');
+  assert.ok(!render.includes('p.x * 31 + p.y * 17'),'player does not jitter based on world position');
   assert.ok(render.includes('if (playing) drawPlayer(ctx, t);'));
 });
 test('enemy blood and moving XP blobs stay black; only thick progression ink is red',()=>{
