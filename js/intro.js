@@ -76,7 +76,7 @@ const INTRO = (() => {
   const nextButton = $('introNext'), soundButton = $('introSound');
   const overlay = $('introContent'), progress = $('introProgress');
   let index = 0, elapsed = 0, lastTime = 0, running = false, visible = false;
-  let sceneCache = null, sceneW = 0, sceneH = 0, raf = 0, audio = null, soundOn = false;
+  let sceneCache = null, previousPlate = null, transitionT = 1.1, sceneW = 0, sceneH = 0, raf = 0, audio = null, soundOn = false;
   let reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function rng(seed) {
     let a = seed | 0;
@@ -219,6 +219,47 @@ const INTRO = (() => {
     }
     c.globalAlpha=1;
   }
+  /* A second animation layer gives the painted plates a living breath.
+     Everything stays in the paper/ink palette and uses existing Canvas2D. */
+  function animateInk(c,w,h,t){
+    if(!w||!h)return;
+    const dprX=canvas.width/w,dprY=canvas.height/h;
+    c.save();
+    c.setTransform(dprX,0,0,dprY,0,0);
+    const theme=SCENES[index].theme;
+    const ink=theme==='shadows'?'#e9e2d2':'#1a1714';
+    for(let i=0;i<23;i++){
+      const seed=i*23.13+index*11.7;
+      const x=((Math.sin(seed*.9)*.45+.5)*w+Math.sin(t*.23+seed)*18+w)%w;
+      const y=((Math.cos(seed*1.17)*.44+.5)*h-t*(3.3+i%4)+h*4)%h;
+      c.fillStyle=ink;c.globalAlpha=.06+(i%4)*.016;
+      c.beginPath();c.arc(x,y,.6+(i%3)*.6,0,Math.PI*2);c.fill();
+    }
+    if(theme==='birth'){
+      c.save();c.globalAlpha=.62;c.strokeStyle=ink;
+      c.lineWidth=Math.max(3,w*.009);c.lineCap='round';
+      c.setLineDash([w*1.3,w*1.3]);
+      c.lineDashOffset=w*1.18-Math.min(1,t/3.8)*w*1.5;
+      c.beginPath();c.moveTo(w*.09,h*.63);
+      c.bezierCurveTo(w*.32,h*.51,w*.42,h*.67,w*.83,h*.49);
+      c.stroke();c.restore();
+    }else if(theme==='shadows'){
+      c.save();c.globalAlpha=.11;c.strokeStyle=ink;c.lineWidth=1.5;
+      for(let i=0;i<5;i++){
+        const y=h*(.24+i*.1)+Math.sin(t*.52+i*2)*13;
+        c.beginPath();c.ellipse(w*(.15+i*.16),y,Math.min(w*.12,115),h*.04,t*.06,0,Math.PI*1.5);c.stroke();
+      }
+      c.restore();
+    }else if(theme==='erasure'){
+      c.save();c.globalAlpha=Math.min(.17,t/9*.23);c.fillStyle='#ede7d9';
+      c.fillRect(0,0,w,h);c.restore();
+    }else if(theme==='spirit'||theme==='last'){
+      const pulse=Math.sin(t*2.4)*.5+.5;
+      c.save();c.globalAlpha=.15+pulse*.18;c.strokeStyle='#b23a2b';c.lineWidth=1.2;
+      c.beginPath();c.arc(w*.56,h*.53,Math.min(w,h)*(.085+pulse*.02),0,Math.PI*2);c.stroke();c.restore();
+    }
+    c.restore();
+  }
   function resize() {
     if (!canvas) return;
     const bounds=canvas.getBoundingClientRect();
@@ -237,6 +278,7 @@ const INTRO = (() => {
     if(!visible) return;
     const dt=Math.min(.08,Math.max(0,(now-lastTime)/1000||0));
     lastTime=now;
+    if(!document.hidden) transitionT=Math.min(1.1,transitionT+dt);
     if(!document.hidden&&running) {
       elapsed+=dt;
       if(elapsed>=SCENES[index].seconds){ next(); }
@@ -249,17 +291,26 @@ const INTRO = (() => {
       const zoom=(!reduced&&running)?1.024+Math.min(.022,elapsed/SCENES[index].seconds*.022):1;
       const dw=canvas.width*zoom,dh=canvas.height*zoom;
       ctx.drawImage(sceneCache,(canvas.width-dw)/2+move,(canvas.height-dh)/2,dw,dh);
+      if(previousPlate && !reduced && transitionT<1.1){
+        ctx.globalAlpha=Math.pow(1-transitionT/1.1,1.6);
+        ctx.drawImage(previousPlate,0,0,canvas.width,canvas.height);
+        ctx.globalAlpha=1;
+      }
+      if(!reduced&&running) animateInk(ctx,sceneW,sceneH,elapsed);
     }
     progress.style.width=(running?(elapsed/SCENES[index].seconds)*100:0).toFixed(1)+'%';
     raf=requestAnimationFrame(render);
   }
   function setScene(n) {
+    previousPlate=sceneCache;
+    transitionT=0;
     index=Math.min(SCENES.length-1,Math.max(0,n));elapsed=0;
     const scene=SCENES[index];
     code.textContent=scene.code;chapter.textContent=scene.chapter;
     title.textContent=scene.title;line.textContent=scene.line;second.textContent=scene.second;
     counter.textContent=String(index+1).padStart(2,'0')+' / '+String(SCENES.length).padStart(2,'0');
-    nextButton.textContent=index===SCENES.length-1?'ENTER THE SCROLL':'NEXT FRAME';
+    nextButton.textContent=index===SCENES.length-1?'ENTER THE GAME':'NEXT FRAME';
+    stage.classList.toggle('is-night',scene.theme==='shadows');
     overlay.classList.remove('intro-reveal');
     void overlay.offsetWidth;
     overlay.classList.add('intro-reveal');
@@ -306,6 +357,7 @@ const INTRO = (() => {
   function play() {
     if(visible)return true;
     visible=true;running=true;elapsed=0;lastTime=performance.now();
+    previousPlate=null;
     G.mode='intro';UI.show('intro');
     setScene(0);
     stage.setAttribute('aria-hidden','false');
