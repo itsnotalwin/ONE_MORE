@@ -78,6 +78,7 @@
 
   window.addEventListener('keydown', e => {
     const k = e.code;
+    if (INTRO.handleKey(k)) { e.preventDefault(); return; }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(k)) e.preventDefault();
     SFX.ensure();
     if (e.repeat) { keys[k] = true; return; }
@@ -181,6 +182,7 @@
   G.initAttract();
   UI.show('title');
   G.mode = 'title';
+  INTRO.play(); /* one cinematic viewing per session; replay on title */
 
   /* ---------------- main loop ---------------- */
   let last = performance.now();
@@ -192,6 +194,8 @@
 
     vec();
     const m = G.mode;
+    /* Film has its own canvas: don't spend battery painting hidden gameplay. */
+    if (m === 'intro' || m === 'chronicle') return;
     if (m === 'playing') G.update(dt);
     else if (m === 'dying') G.updateDying(dt);
     else if (m === 'title' || m === 'select' || m === 'over') G.updateIdle(dt);

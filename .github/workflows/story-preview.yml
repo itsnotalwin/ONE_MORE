@@ -1,0 +1,45 @@
+name: Story experiment and preview bundle
+
+on:
+  push:
+    branches:
+      - experiment/the-last-stroke
+      - development
+  pull_request:
+    paths:
+      - 'js/intro.js'
+      - 'css/intro.css'
+      - 'index.html'
+      - 'tests/story.test.cjs'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  story-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout experimental branch
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate baseline and cinematic
+        run: node --test tests/*.test.cjs
+      - name: Bundle a static offline preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: one-more-the-last-stroke-preview
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            index.html
+            css/
+            js/
+            docs/
+            README.md
+            DESIGN.md
+            LICENSE

@@ -1,0 +1,331 @@
+/* =============================================================
+   THE LAST STROKE — isolated cinematic and chronicle skin.
+   The original title, canvas gameplay, upgrade, and campaign CSS
+   remain unchanged. Designed from the same sumi-e visual tokens.
+   ============================================================= */
+.screen-intro{
+  isolation:isolate;justify-content:space-between;
+  overflow:hidden;background:#ede7d9;color:#1a1714;
+  font-family:var(--mono);
+}
+#introCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none}
+.intro-shade{
+  position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:linear-gradient(to bottom,rgba(237,231,217,.4),transparent 22%,transparent 53%,rgba(237,231,217,.78) 87%,#ede7d9);
+}
+.intro-filmhead,.intro-filmbottom{position:relative;z-index:1}
+.intro-filmhead{
+  display:flex;justify-content:space-between;align-items:center;gap:15px;
+  padding:clamp(20px,4vh,42px) clamp(23px,5vw,75px);
+  font-size:9px;letter-spacing:.35em;font-weight:600;
+}
+.intro-filmhead i{font-style:normal;color:var(--red);padding:0 5px}
+.intro-minor{
+  background:none;border:0;color:inherit;cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.17em;
+  padding:9px 10px;transition:opacity .2s ease;
+}
+.intro-minor:hover,.story-title-action:hover{opacity:.55}
+.intro-count{color:var(--red)}
+.intro-content{
+  position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);
+  width:min(900px,90vw);text-align:center;z-index:1;
+  display:flex;align-items:center;flex-direction:column;gap:18px;
+  pointer-events:none;text-wrap:balance;text-shadow:0 1px 16px #ede7d9,0 1px 24px #ede7d9;
+}
+.intro-chapter{
+  display:block;color:var(--red);font-size:10px;
+  font-weight:600;letter-spacing:.35em;text-transform:uppercase;
+}
+.intro-code{
+  display:block;font:normal clamp(40px,8vw,104px) /1 var(--display);
+  color:var(--red);opacity:.72;transform:rotate(-6deg);
+}
+.intro-content h2{
+  font:normal clamp(37px,6vw,93px)/1.02 var(--display);
+  letter-spacing:-.015em;max-width:15ch;
+}
+.intro-line{
+  margin-top:8px;font:normal clamp(16px,2vw,24px)/1.5 var(--display);
+  max-width:40ch;
+}
+.intro-second{
+  font-size:clamp(10px,1.1vw,13px);letter-spacing:.08em;line-height:1.8;
+  max-width:67ch;color:#433b34;
+}
+.intro-reveal .intro-code{animation:intro-rise .85s ease backwards}
+.intro-reveal .intro-chapter{animation:intro-rise .8s ease .08s backwards}
+.intro-reveal h2{animation:intro-rise .9s cubic-bezier(.2,.7,.25,1) .12s backwards}
+.intro-reveal .intro-line{animation:intro-rise .9s ease .3s backwards}
+.intro-reveal .intro-second{animation:intro-rise .9s ease .46s backwards}
+@keyframes intro-rise{
+  from{opacity:0;filter:blur(5px);transform:translateY(12px)}
+  to{opacity:1;filter:blur(0);transform:translateY(0)}
+}
+.intro-filmbottom{
+  margin-top:auto;padding:0 clamp(23px,5vw,75px) clamp(22px,4vh,40px);
+}
+.intro-frame-controls,.intro-bottomrow{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+}
+.intro-frames{display:flex;gap:7px;align-items:center}
+.intro-frame{
+  position:relative;display:block;width:clamp(21px,5vw,48px);height:18px;
+  padding:0;border:0;cursor:pointer;background:none;
+}
+.intro-frame::before{
+  content:'';display:block;height:2px;width:100%;
+  position:absolute;top:8px;left:0;background:rgba(26,23,20,.23);
+  transition:height .3s,background .3s;
+}
+.intro-frame.active::before{height:3px;background:var(--red)}
+.intro-frame.visited::before{background:rgba(26,23,20,.7)}
+.intro-frame:focus-visible,.intro-minor:focus-visible,.intro-next:focus-visible,
+.intro-start-btn:focus-visible,.story-title-action:focus-visible{
+  outline:2px solid var(--red);outline-offset:3px;
+}
+.intro-timeline{height:1px;background:rgba(26,23,20,.2);margin:11px 0 16px;overflow:hidden}
+.intro-progress{height:100%;width:0;background:var(--red);transition:width .12s linear}
+.intro-bottomrow span{font-size:9px;letter-spacing:.28em;color:var(--ink-70)}
+.intro-next{
+  position:relative;background:#1a1714;color:#ede7d9;
+  font:600 10px var(--mono);letter-spacing:.24em;
+  padding:14px 24px;border:0;cursor:pointer;white-space:nowrap;
+  transition:transform .2s ease;
+}
+.intro-next:hover{transform:translateY(-2px)}
+.intro-start{
+  position:absolute;inset:0;z-index:4;display:grid;place-items:center;
+  background:radial-gradient(ellipse at 50% 52%,rgba(237,231,217,.85),rgba(237,231,217,.98) 62%);
+}
+.intro-start-inner{
+  display:flex;flex-direction:column;align-items:center;gap:19px;
+  text-align:center;padding:30px;max-width:95vw;
+}
+.intro-start-kanji{
+  font:normal 60px/1 var(--display);color:var(--red);
+  border:2px solid var(--red);width:74px;height:76px;
+  display:grid;place-items:center;transform:rotate(-8deg);margin-bottom:10px;
+}
+.intro-start-kicker{font-size:10px;letter-spacing:.4em;color:var(--ink-70)}
+.intro-start h2{
+  font:normal clamp(65px,13vw,160px)/.85 var(--display);
+  letter-spacing:-.06em;
+}
+.intro-start h2 em{font-style:normal;color:var(--red)}
+.intro-start p{font:normal 16px/1.5 var(--display);color:var(--ink-70)}
+.intro-start-btn{
+  margin:12px 0 0;background:var(--ink);color:var(--paper);cursor:pointer;
+  font:600 12px var(--mono);letter-spacing:.24em;
+  padding:18px 28px;display:flex;gap:25px;border:0;
+}
+.intro-start-btn span{font-size:18px;line-height:12px}
+.intro-start-note{font-size:9px;letter-spacing:.2em;color:var(--ink-45)}
+.story-title-actions{
+  display:flex;gap:13px;align-items:center;justify-content:center;
+  margin-top:12px;animation:riseIn .7s ease .8s backwards;
+}
+.story-title-action{
+  background:none;color:var(--ink-70);cursor:pointer;
+  font:600 9px var(--mono);letter-spacing:.2em;
+  padding:9px;transition:opacity .15s;
+}
+.story-title-divider{color:var(--red);opacity:.7}
+.screen-chronicle{
+  overflow-y:auto;display:block;
+  background:linear-gradient(120deg,rgba(255,255,255,.18),transparent),var(--paper);
+}
+.archive-panel{max-width:880px;margin:auto;padding:48px 26px 90px}
+.archive-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.archive-eyebrow{font:600 10px var(--mono);letter-spacing:.3em;color:var(--red)}
+.archive-panel h2{font:normal clamp(55px,9vw,100px)/1.1 var(--display);margin:46px 0 8px}
+.archive-sub{font:normal 15px/1.7 var(--display);max-width:50ch;color:var(--ink-70);margin-bottom:45px}
+.archive-chapters{border-top:1px solid var(--ink-25)}
+.archive-entry{
+  display:grid;grid-template-columns:70px 1fr;gap:25px;
+  padding:32px 0;border-bottom:1px solid var(--ink-25);
+}
+.archive-index{font:normal 40px/1 var(--display);color:var(--red)}
+.archive-entry h3{font:normal 22px var(--display);margin-bottom:12px}
+.archive-entry p{font:normal 13px/1.95 var(--mono);letter-spacing:.025em;color:var(--ink-70);max-width:65ch}
+.archive-entry.sealed{opacity:.55}
+.archive-foot{margin-top:45px;text-align:center;font-size:9px;letter-spacing:.25em;color:var(--ink-45)}
+@media(max-width:720px){
+  .intro-filmhead{padding:18px 17px;font-size:8px;letter-spacing:.14em}
+  .intro-filmhead .intro-count{display:none}
+  .intro-content{top:48%;width:calc(100vw - 30px);gap:11px}
+  .intro-chapter{font-size:8px;letter-spacing:.19em}
+  .intro-code{font-size:46px}
+  .intro-content h2{font-size:clamp(32px,10vw,52px);max-width:13ch}
+  .intro-line{font-size:clamp(14px,4vw,18px);max-width:29ch;margin-top:2px}
+  .intro-second{font-size:10px;max-width:35ch;line-height:1.55}
+  .intro-filmbottom{padding:0 17px max(20px,env(safe-area-inset-bottom))}
+  .intro-bottomrow span{font-size:7px;letter-spacing:.1em;max-width:50%}
+  .intro-next{padding:11px 14px;letter-spacing:.1em;font-size:9px}
+  .intro-start-inner{gap:13px}
+  .intro-start h2{font-size:clamp(64px,17vw,98px)}
+  .intro-start-kanji{font-size:47px;width:64px;height:64px}
+  .intro-start p{font-size:14px}
+  .intro-start-note{font-size:8px}
+  .story-title-actions{flex-wrap:wrap;gap:4px;margin-top:8px}
+  .story-title-action{font-size:8px;letter-spacing:.08em}
+  .archive-panel{padding:28px 18px 70px}
+  .archive-entry{grid-template-columns:38px 1fr;gap:12px;padding:24px 0}
+  .archive-index{font-size:27px}
+  .archive-entry h3{font-size:19px}
+  .archive-entry p{font-size:11px}
+  .archive-eyebrow{font-size:8px;letter-spacing:.12em}
+}
+@media(max-height:600px){
+  .intro-content{gap:7px;top:48%}
+  .intro-code{font-size:35px}
+  .intro-content h2{font-size:clamp(25px,6vh,44px)}
+  .intro-line{font-size:14px;max-width:70ch}
+  .intro-second{font-size:10px}
+  .intro-filmhead{padding-top:10px;padding-bottom:10px}
+  .intro-filmbottom{padding-bottom:11px}
+  .intro-start-inner{gap:8px}
+  .intro-start h2{font-size:clamp(45px,13vh,72px)}
+  .intro-start-kanji{width:43px;height:43px;font-size:31px;margin-bottom:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .intro-reveal .intro-code,.intro-reveal .intro-chapter,
+  .intro-reveal h2,.intro-reveal .intro-line,.intro-reveal .intro-second,
+  .story-title-actions{animation:none!important}
+  .intro-frame::before,.intro-next,.intro-progress{transition:none}
+}
+
+/* Film-accurate night polarity: white ink against the second scroll. */
+.screen-intro.is-night{color:#e9e2d2;background:#17130f}
+.screen-intro.is-night .intro-shade{
+  background:linear-gradient(to bottom,rgba(23,19,15,.35),transparent 22%,transparent 52%,rgba(23,19,15,.88) 90%,#17130f)
+}
+.screen-intro.is-night .intro-content{
+  text-shadow:0 1px 20px rgba(23,19,15,.94),0 1px 30px rgba(23,19,15,.9)
+}
+.screen-intro.is-night .intro-second,
+.screen-intro.is-night .intro-bottomrow span{color:#c5bcaa}
+.screen-intro.is-night .intro-frame::before{background:rgba(233,226,210,.32)}
+.screen-intro.is-night .intro-frame.active::before{background:#b23a2b}
+.screen-intro.is-night .intro-frame.visited::before{background:rgba(233,226,210,.75)}
+.screen-intro.is-night .intro-timeline{background:rgba(233,226,210,.35)}
+.screen-intro.is-night .intro-next{background:#e9e2d2;color:#17130f}
+
+/* =============================================================
+   THE LAST STROKE: TRUE MOVING-PICTURE PRESENTATION
+   Cinema is full-bleed. Captions are timed overlays, not cards.
+   New scoped rules supersede the prototype's frame-strip UI.
+   ============================================================= */
+.screen-intro{display:block;overflow:hidden;background:#ede7d9;touch-action:manipulation}
+.screen-intro #introCanvas{z-index:0;width:100%;height:100%;display:block}
+.screen-intro .intro-filmhead{
+  position:absolute;top:0;left:0;right:0;z-index:3;
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:clamp(14px,3.1vh,30px) clamp(20px,5vw,72px);
+  background:linear-gradient(to bottom,rgba(237,231,217,.96),rgba(237,231,217,.57) 61%,transparent);
+}
+.screen-intro .intro-film-brand{
+  font-size:clamp(8px,.85vw,11px);font-weight:600;letter-spacing:.20em;
+  white-space:nowrap;
+}
+.screen-intro .intro-film-brand i{color:var(--red);font-style:normal;margin:0 6px}
+.screen-intro .intro-count{
+  display:inline-block;font-size:9px;letter-spacing:.12em;
+  font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-70);
+}
+.screen-intro .intro-film-actions{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.screen-intro .intro-minor{font-size:9px;letter-spacing:.12em}
+.screen-intro .intro-skip{
+  padding:9px 13px;border:1px solid var(--ink-25);
+  background:rgba(237,231,217,.7);
+}
+.screen-intro .intro-content{
+  position:absolute;top:auto;left:clamp(20px,6vw,85px);
+  bottom:clamp(63px,10vh,100px);z-index:2;
+  transform:none;width:min(760px,calc(100vw - 40px));
+  text-align:left;align-items:flex-start;gap:5px;
+  color:var(--ink);text-shadow:0 1px 12px var(--paper),0 1px 24px var(--paper);
+  opacity:0;transition:opacity .45s ease;
+}
+.screen-intro .intro-content.intro-text-in{opacity:1}
+.screen-intro .intro-code{
+  position:absolute;bottom:8px;right:2%;
+  font:normal clamp(52px,7vw,90px)/1 var(--display);
+  color:var(--red);opacity:.15;transform:rotate(-6deg);pointer-events:none;
+}
+.screen-intro .intro-chapter{
+  order:0;color:var(--red);font:600 9px var(--mono);
+  letter-spacing:.23em;margin:0 0 2px;
+}
+.screen-intro .intro-content h2{
+  order:1;font:normal clamp(23px,3.6vw,46px)/1.12 var(--display);
+  letter-spacing:-.012em;max-width:100%;margin:0;
+  text-transform:none;text-wrap:balance;
+}
+.screen-intro .intro-line{
+  order:2;max-width:60ch;margin:3px 0 0;
+  font:normal clamp(14px,1.4vw,20px)/1.38 var(--display);
+  opacity:0;transition:opacity .65s ease;
+}
+.screen-intro .intro-content.intro-text-main .intro-line{opacity:1}
+.screen-intro .intro-second{
+  order:3;margin:3px 0 0;font:400 clamp(10px,.92vw,13px)/1.4 var(--mono);
+  letter-spacing:.04em;color:#494138;opacity:0;
+  transition:opacity .75s ease;max-width:72ch;
+}
+.screen-intro .intro-content.intro-text-end .intro-second{opacity:1}
+.screen-intro.is-finale .intro-content h2,
+.screen-intro.is-finale .intro-code{display:none}
+.screen-intro.is-finale .intro-content{bottom:clamp(74px,16vh,140px);text-align:center;align-items:center;left:50%;transform:translateX(-50%);width:min(680px,calc(100vw - 40px))}
+.screen-intro .intro-filmbottom{
+  position:absolute;bottom:0;left:0;right:0;z-index:3;
+  margin:0;padding:0 clamp(20px,5vw,72px) max(16px,env(safe-area-inset-bottom));
+}
+.screen-intro .intro-timeline{
+  height:2px;margin:0 0 12px;background:rgba(26,23,20,.16);
+}
+.screen-intro .intro-progress{transition:none;height:2px}
+.screen-intro .intro-bottomrow{display:flex;justify-content:space-between}
+.screen-intro .intro-bottomrow span{font-size:8px;letter-spacing:.22em}
+.screen-intro.is-night .intro-filmhead{
+  background:linear-gradient(to bottom,rgba(23,19,15,.93),rgba(23,19,15,.56) 64%,transparent);
+}
+.screen-intro.is-night .intro-content{color:#e9e2d2;text-shadow:0 1px 16px #17130f,0 1px 24px #17130f}
+.screen-intro.is-night .intro-second,
+.screen-intro.is-night .intro-count{color:#c5bcaa}
+.screen-intro.is-night .intro-skip{background:rgba(23,19,15,.58);border-color:rgba(233,226,210,.38)}
+.screen-intro.is-night .intro-timeline{background:rgba(233,226,210,.24)}
+@media(max-width:720px){
+  .screen-intro .intro-filmhead{padding:14px 16px;gap:8px}
+  .screen-intro .intro-film-brand{font-size:9px;letter-spacing:.1em}
+  .screen-intro .intro-count{display:none}
+  .screen-intro .intro-film-actions{gap:4px}
+  .screen-intro .intro-minor{font-size:8px;letter-spacing:.06em;padding:8px}
+  .screen-intro .intro-skip{padding:8px}
+  .screen-intro .intro-content{
+    left:17px;bottom:clamp(69px,12vh,115px);
+    width:calc(100vw - 34px);gap:4px;
+  }
+  .screen-intro .intro-chapter{font-size:8px;letter-spacing:.10em}
+  .screen-intro .intro-content h2{font-size:clamp(22px,6.2vw,33px)}
+  .screen-intro .intro-line{font-size:clamp(13px,3.5vw,16px);line-height:1.35}
+  .screen-intro .intro-second{font-size:10px;line-height:1.4}
+  .screen-intro .intro-code{font-size:56px}
+  .screen-intro .intro-filmbottom{padding:0 17px max(14px,env(safe-area-inset-bottom))}
+  .screen-intro .intro-bottomrow span{font-size:7px;letter-spacing:.07em}
+  .screen-intro.is-finale .intro-content{left:50%;width:calc(100vw - 34px)}
+}
+@media(max-height:560px){
+  .screen-intro .intro-filmhead{padding-top:9px;padding-bottom:8px}
+  .screen-intro .intro-content{bottom:58px;gap:2px}
+  .screen-intro .intro-code{font-size:38px}
+  .screen-intro .intro-content h2{font-size:clamp(18px,4vh,29px)}
+  .screen-intro .intro-line{font-size:12px;line-height:1.2}
+  .screen-intro .intro-second{font-size:9px;line-height:1.2}
+  .screen-intro .intro-filmbottom{padding-bottom:9px}
+  .screen-intro.is-finale .intro-content{bottom:65px}
+}
+@media(prefers-reduced-motion:reduce){
+  .screen-intro .intro-content,.screen-intro .intro-line,
+  .screen-intro .intro-second{transition:none}
+}

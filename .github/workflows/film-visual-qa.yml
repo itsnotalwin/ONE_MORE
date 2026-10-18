@@ -1,0 +1,42 @@
+name: Film visual QA
+
+on:
+  push:
+    branches: [development]
+    paths:
+      - 'js/film.js'
+      - 'js/intro.js'
+      - 'css/intro.css'
+      - 'index.html'
+      - 'tests/film-browser.cjs'
+      - '.github/workflows/film-visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-film:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Set up test-only browser
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+      - name: Serve the static game
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/one-more-server.log 2>&1 &
+      - name: Capture animated film and smoke test UI
+        run: node tests/film-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: one-more-cinematic-actual-browser-stills
+          path: film-stills/
+          if-no-files-found: ignore
+          retention-days: 14

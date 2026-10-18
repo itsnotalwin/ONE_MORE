@@ -1,5 +1,38 @@
 # ONE MORE
 
+![ONE MORE: The Last Stroke, original illustrated story title card (not a screenshot)](docs/images/last-stroke-hero.svg)
+
+<p align="center"><strong>THE LAST STROKE</strong> · AN EXPERIMENTAL FULL-MOTION INK SHORT FILM<br/>
+The ink remembers every stroke.</p>
+
+> **Active live test build:** [development](https://github.com/itsnotalwin/ONE_MORE/tree/development). The main branch remains unchanged and the short film is under review in [draft PR #5](https://github.com/itsnotalwin/ONE_MORE/pull/5).
+
+**Watch the animated short film:** [Play ONE MORE on the live development Pages site](https://itsnotalwin.github.io/ONE_MORE/). GitHub's [Pages build and deployment succeeded on the development commit](https://github.com/itsnotalwin/ONE_MORE/actions/runs/39126685811). The film starts automatically. Alternative: [third-party branch preview](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html). To switch back to the original release, set GitHub Pages publishing source to `main` in [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages).
+
+
+## A story hidden beneath the paper
+
+Before the world had a name, there was paper. The Painter imagined mountains, rivers, and living things in a single breath. But ink seeped through the other side, and abandoned marks learned to move. Afraid of these mistakes, the Painter tried to wash everything away. One unfinished brushstroke survived.
+
+**You are that stroke.**
+
+The prologue **automatically starts on every page load, without requiring a tap**. It is a **61-second, seven-shot animated short film** rendered by the browser: a droplet falling into blank paper, a moving painter drawing mountains, animated ink creatures rising from the reverse side, a water-front wiping the landscape away, a surviving brush-spirit reforming and moving, three scrolls opening, and a dramatic ONE MORE seal reveal. It uses no stock video, no remote animation model, and no MP4 download. The movie plays on its own, with seven timed shots and captions appearing only after the action begins. You can skip it immediately or replay it from the title. Optional synthesized ambient music is activated by tap, because Safari restricts sound autoplay. Slow camera moves, actual animated actors, wash effects and shot dissolves are all rendered live. Audio remains off until explicitly enabled, as required by mobile autoplay restrictions. A **Chronicle** unlocks the complete fiction as your campaign progresses.
+
+![Seven-frame prologue storyboard, authored SVG illustration, not live gameplay captures](docs/images/seven-frames.svg)
+
+## Three scrolls, one unfinished fate
+
+![The three existing environments in an original editorial SVG triptych, not screenshots](docs/images/three-scrolls.svg)
+
+The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, upgrade picks follow each cleared wave, and permanent campaign unlocks survive failed runs. The short film is entirely separate from gameplay; it does not alter game physics, enemy balance, upgrades, or the protected combat renderer.
+
+**Living project documents:** [Full GAME BIBLE, story, art/sprite/animation atlas and Kanban roadmap](docs/GAME_BIBLE.md) · [Original style protection contract](DESIGN.md) · [Research notes](docs/RESEARCH.md).
+
+*All images in this README are **authored SVG illustrations** made for documentation and direction, not fabricated gameplay screenshots. Real screenshots are explicitly on the QA checklist.*
+
+---
+
+
 *An ink-born survival. No walls. No arena. One endless sheet of washi.*
 
 **ONE MORE** is a zero-dependency, zero-build browser game written in vanilla
@@ -123,21 +156,31 @@ python3 -m http.server 8000
 one-more/
 ├── index.html                  # shell: canvas + all screens + ink wobble filters
 ├── css/
-│   └── style.css               # the sumi-e design system
+│   ├── style.css               # the original sumi-e design system
+│   └── intro.css               # cinematic + Chronicle only
 ├── js/
 │   ├── config.js               # tuning: areas, enemies, waves, upgrades, ranks
 │   ├── campaign.js             # persistent world/level unlocks
 │   ├── audio.js                # synthesized ink sound kit (splats, taiko, gong)
 │   ├── ui.js                   # DOM screens, HUD, kanji numerals, upgrade cards
 │   ├── game.js                 # camera, areas, waves, entities, weapons, flow
-│   ├── render.js               # sumi-e renderer: tiling paper themes, brush
-│   │                           #   strokes, line boil, world-space stain layer
+│   ├── render.js               # original gameplay renderer
+│   ├── film.js                 # procedural actors, ink animations and live-drawn short film
+│   ├── intro.js                # film timeline, captions, sound + Chronicle
 │   └── main.js                 # bootstrap, input, game loop, wiring
 ├── .github/
 │   └── workflows/
-│       └── test.yml            # progression + style-source checks on PRs
+│       ├── test.yml            # progression + style-source checks on PRs
+│       ├── story-preview.yml   # experimental tests + downloadable preview bundle
+│       └── film-visual-qa.yml  # browser smoke test and real cinematic stills
 ├── tests/
-│   └── progression.test.cjs    # Node built-in regression tests, no dependencies
+│   ├── progression.test.cjs    # existing campaign regression tests
+│   ├── story.test.cjs          # seven-shot film and archive regression tests
+│   └── film-browser.cjs        # CI-only real Chromium animation QA
+├── docs/
+│   ├── GAME_BIBLE.md           # canon lore, technical atlas, roadmap checklist
+│   ├── RESEARCH.md             # art, accessibility, hosting choices
+│   └── images/                 # original SVG illustrations (not screenshots)
 ├── DESIGN.md                   # frozen visual style references and rules
 ├── LICENSE
 └── README.md
@@ -163,21 +206,23 @@ only, and the game is 100% client-side by design.
 
 ## Test
 
-Run `node --test tests/progression.test.cjs` (Node.js 18+). The suite checks
+Run `node --test tests/*.test.cjs` (Node.js 18+). The [Film visual QA workflow](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml) additionally uses real desktop/phone-sized Chromium to render the short film and produces **10 real browser screenshots** as a downloadable artifact. Playwright is CI-only; the playable game still has zero third-party runtime dependencies. The suite checks
 all 30 stage clears, 300 wave transitions, sequential unlocks, world-specific
 enemy patterns, final bosses, storage fallback, Endless, and frozen original
 renderer/audio/CSS contents. It is a headless logic test; actual browser visual
 checks on mobile and desktop are still required before deploying.
 
 For exact original appearance, consult [DESIGN.md](DESIGN.md) and its
-commit-pinned references. Existing enemy illustrations, ink effects and
-animations are preserved, not redrawn.
+commit-pinned references. Existing enemy illustrations, combat ink effects and
+animations are preserved. The short film uses its own Canvas2D engine to animate painting, characters, water, camera moves and title reveals. Only dissolve snapshots are cached; the scenes are not static slide backgrounds.
+
+**Live test site:** this repository's GitHub Pages workflow now builds on `development`. The owner explicitly approved using the live URL for previews. The separate third-party raw.githack branch preview remains an alternative. The `main` branch is not merged or modified.
 
 ## Tech
 
 - Vanilla JavaScript (ES6+), Canvas 2D, WebAudio API
 - Procedural brush rendering: tapered strokes, wobbling blobs, splatter
-  stamps, dry-brush streaks, line-boil animation — no image assets
+  stamps, dry-brush streaks, line-boil animation — no imported combat image assets
 - Unbounded world: camera-follow, rectangle-accurate off-screen spawning,
   sprite-cached world-space stains, hash-grid ambient paper marks
 - Zero dependencies, zero build step, zero telemetry
