@@ -66,7 +66,15 @@ const CFG = {
 
   /* new weapons */
   fan:    { period: lv => 3.4 - 0.35 * (lv - 1), count: lv => 4 + lv, speed: 430, life: 0.62, spread: 1.15, dmg: 1 },
-  trail: { gap: lv => [3.6,3.1,2.7][Math.min(3,Math.max(1,lv))-1], radius: lv => [30,38,46][Math.min(3,Math.max(1,lv))-1], life: lv => [2.8,3,3.2][Math.min(3,Math.max(1,lv))-1], maxPools: lv => lv===1?1:2, tick: .55, dmg: 1, slow: .8 },
+  trail: { gap: lv => [12,10,8][Math.min(3,Math.max(1,lv))-1],
+    radius: lv => [5.5,7,8.5][Math.min(3,Math.max(1,lv))-1],
+    life: lv => [2.6,3,3.4][Math.min(3,Math.max(1,lv))-1],
+    maxPools: lv => [72,90,112][Math.min(3,Math.max(1,lv))-1],
+    tick: .55, dmg: 1, slow: .8 },
+  lantern: { period: lv => lv===1?9:7, radius: lv => lv===1?175:225, reveal: 2.5, interrupt: .38 },
+  crescent: { period: lv => [4.7,4.1,3.5][lv-1], speed: 390, reach: lv => 145+25*lv, dmg: lv => lv>=3?2:1 },
+  mirror: { period: lv => [8,6.5,5][lv-1], range: lv => 92+18*lv, speed: 480, dmg: lv => lv===3?2:1 },
+  shroud: { period: lv => lv===1?12:9.5, dash: lv => lv===1?34:48, decoy: lv => lv===1?.55:.82 },
   spirit: { period: lv => 3.1 - 0.3 * (lv - 1), count: lv => 1 + lv, speed: 300, turn: 7.5, life: 3.2, dmg: 1 },
   /* Ink Knots trades area damage for brief control of a few ink beasts. */
   knot: { period: lv => 7.2 - 0.35 * (lv - 1), range: 440, span: 155,
@@ -161,9 +169,15 @@ const UPGRADES = [
   { id: 'ward',   name: 'Paper Ward',   desc: 'A dry talisman swallows one hit whole, then reforms.',       max: 1, apply: s => { s.ward = true; } },
   /* ---- new weapons ---- */
   { id: 'fan',    name: 'Folded Fan',   desc: 'Every few breaths the fan snaps open — a spray of paper blades.', max: 4, weapon: true, apply: s => { s.fan += 1; } },
-  { id: 'trail',  name: 'Suiteki Leak', desc: 'Tip water onto an inkstone: a slow ink spill spreads, slowing and hurting enemies.', max: 3, weapon: true, apply: s => { s.trailW += 1; } },
+  { id: 'trail',  name: 'Suiteki Leak', desc: 'An overturned ink vessel leaks a continuous snail-like wet stroke behind you, slowing nearby ink beasts.', max: 3, weapon: true, apply: s => { s.trailW += 1; } },
   { id: 'spirit', name: 'Spirit Scribes',desc: 'Lesser brushes wake and hunt on their own, seeking the nearest blot.', max: 3, weapon: true, apply: s => { s.spirit += 1; } },
   { id: 'knot',   name: 'Ink Knots',     desc: 'Bind a few nearby beasts with living ink. Slow them, then deal 1 delayed damage.', max: 3, weapon: true, apply: s => { s.knot += 1; } },
+  /* Unlocked only when Night Scroll or later is active. Every new art
+     obeys ordinary mastery -> black signature -> optional Vermilion. */
+  { id:'lantern', name:'Ink Lantern', desc:'A pale paper lantern reveals night spirits and interrupts a nearby ambush.', max:2, world:1, weapon:true, apply:s=>{s.lantern+=1;} },
+  { id:'crescent', name:'Crescent Return', desc:'A crescent-shaped ink blade flies out and returns, cutting twice.', max:3, world:1, weapon:true, apply:s=>{s.crescent+=1;} },
+  { id:'mirror', name:'Mirror Fold', desc:'A folded paper crease catches an ordinary enemy shot and returns a cutting reflection.', max:3, world:1, weapon:true, apply:s=>{s.mirror+=1;} },
+  { id:'shroud', name:'Shroud Step', desc:'After moving steadily, slip forward and leave a false ink-soul behind to mislead beasts.', max:2, world:1, weapon:true, apply:s=>{s.shroud+=1;} },
 ];
 
 /* Terrain painting is a reward for mastering a technique, not something
@@ -173,6 +187,7 @@ const UPGRADES = [
 const TERRAIN_SKILL_KEYS = Object.freeze({
   echo:'echo', fan:'fan', trail:'trail', spirit:'spirit', knot:'knot',
   eraser:'orbit', nova:'nova', ward:'ward', shock:'shock',
+  lantern:'lantern', crescent:'crescent', mirror:'mirror', shroud:'shroud',
   over:'over', plate:'plate', adren:'adren', crit:'crit', slow:'slow',
 });
 const RED_SEALS = Object.entries(TERRAIN_SKILL_KEYS).map(([mark, skill]) => {
