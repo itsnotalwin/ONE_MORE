@@ -329,17 +329,26 @@ const G = (() => {
 
   function pickUpgrades(n) {
     const st=S.stats;
-    const available=shuffle(UPGRADES.filter(u=>(st.levels[u.id]||0)<u.max));
+    const world=S.runMode==='endless'?S.areaIdx:S.worldIndex;
+    const available=shuffle(UPGRADES.filter(u=>
+      (st.levels[u.id]||0)<u.max && (u.world==null||u.world<=world)));
     /* Once a technique has reached the original rank cap, its unique
        post-max red upgrade enters the next rank-up menu. Reserve one
        slot when possible so the crimson milestone is actually findable
        among the many existing choices. It is NEVER automatic. */
     const seals=shuffle(RED_SEALS.filter(u=>
       (st.levels[u.requires]||0)>=(UPGRADES.find(v=>v.id===u.requires)?.max||Infinity)
-      && (st.levels[u.id]||0)===0));
+      && (st.levels[u.id]||0)===0 && (u.world==null||u.world<=world)));
     const out=[];
     if(seals.length)out.push(seals.shift());
-    out.push(...available.slice(0,n-out.length));
+    /* The first few Night Scroll rank-ups show a genuinely new
+       world-specific art, not a pool diluted by nineteen older cards. */
+    const fresh=available.filter(u=>u.world===1 && !(st.levels[u.id]||0));
+    if(world>=1 && fresh.length && out.length<n){
+      const next=fresh[0];out.push(next);
+      available.splice(available.indexOf(next),1);
+    }
+    out.push(...available.filter(u=>!out.includes(u)).slice(0,n-out.length));
     while(out.length<n&&seals.length)out.push(seals.shift());
     let i=0;
     while(out.length<n){
