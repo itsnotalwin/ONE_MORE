@@ -108,6 +108,25 @@ const R = (() => {
     p.fillStyle = th.paper;
     p.fillRect(0, 0, TILE, TILE);
 
+    /* THE UNTOUCHED SHEET. Paper I is one flat warm handmade surface:
+       no repeated horizontal laid lines, fake aged washes or kanji.
+       A few almost invisible kozo flecks give it just enough tooth. */
+    if(key==='pale'){
+      for(let i=0;i<20;i++){
+        const x=rnd()*TILE,y=rnd()*TILE,angle=rnd()*TAU;
+        const len=1+rnd()*2;
+        p.strokeStyle='rgba(93,85,66,'+(.012+rnd()*.015)+')';
+        p.lineWidth=.42;
+        p.beginPath();p.moveTo(x,y);
+        p.lineTo(x+Math.cos(angle)*len,y+Math.sin(angle)*len);p.stroke();
+      }
+      for(let i=0;i<9;i++){
+        p.fillStyle='rgba(93,85,66,.02)';
+        p.fillRect(rnd()*TILE,rnd()*TILE,.45+rnd()*.4,.45+rnd()*.4);
+      }
+      return c;
+    }
+
     /* laid lines — grain that tiles cleanly (8 divides 480) */
     p.lineWidth = 1;
     p.strokeStyle = key === 'dark' ? 'rgba(247,231,207,0.065)' : 'rgba(96,88,70,0.03)';
@@ -1709,7 +1728,7 @@ const R = (() => {
     }
 
     /* faint marks so the sheet feels hand-made and the motion reads */
-    drawDecor(ctx, vx0, vy0, vx1, vy1);
+    if(themeKey!=='pale')drawDecor(ctx, vx0, vy0, vx1, vy1);
 
     /* Stage-long paper history, spatially indexed by viewport cells.
        Old weapon strikes and enemy blood remain through every wave. */
@@ -1771,7 +1790,7 @@ const R = (() => {
     const lowHp = S.stats && S.stats.hp === 1 && (S.mode === 'playing' || S.mode === 'paused');
     const vg = ctx.createRadialGradient(S.W / 2, S.H / 2, Math.min(S.W, S.H) * 0.42, S.W / 2, S.H / 2, Math.max(S.W, S.H) * 0.74);
     vg.addColorStop(0, `rgba(${th.vig},0)`);
-    vg.addColorStop(1, `rgba(${th.vig},${lowHp ? 0.3 : 0.17})`);
+    vg.addColorStop(1, `rgba(${th.vig},${lowHp ? 0.3 : themeKey==='pale' ? .025 : .17})`);
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, S.W, S.H);
 
