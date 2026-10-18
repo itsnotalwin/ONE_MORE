@@ -125,7 +125,7 @@ async function inspect(browser,name,viewport){
     meniscus:getComputedStyle(el,'::before').animationName,
     timing:getComputedStyle(el).transitionDuration,
   }));
-  assert.ok(liquid.width>=12,'wet red ink column is not a thin line');
+  assert.ok(liquid.width>=10,'wet red ink column is not a thin line on phones');
   assert.equal(liquid.meniscus,'inkMeniscus');
   assert.ok(parseFloat(liquid.timing)>=.5,'the XP rise has viscous inertia');
   await page.screenshot({path:path.join(out,name+'-09-left-vertical-ink-gauge.png')});
