@@ -90,7 +90,7 @@ reappears; read the paper.
   **Folded Fan** — a snapping spray of paper blades;
   **Ink Trail** — the smears you leave behind keep biting;
   **Spirit Scribes** — lesser brushes that wake and hunt on their own;
-  **Crimson Hanko** — a great red seal that slams down on the nearest horde.
+  **Ink Knots** — living brush threads bind a small cluster, slow them, and deal one delayed point of damage per target.
 
 ---
 
