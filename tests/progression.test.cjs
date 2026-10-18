@@ -137,44 +137,22 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
     }
     return h.toString(16).padStart(8, '0');
   };
-  /* Phase 4A is deliberately allowed to replace just the player's
-     painter. Mask that region and verify every other combat drawing
-     fragment against the preserved pre-polish source contract. */
-  let renderer = file('js/render.js');
-  const playerStart=renderer.indexOf('  /* ---------------- player:');
-  const playerEnd=renderer.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */',playerStart);
-  assert.ok(playerStart>0&&playerEnd>playerStart);
-  renderer=renderer.slice(0,playerStart)+'  /* PLAYER-RENDER-MASK */\n\n'+renderer.slice(playerEnd);
-  const bossStart=renderer.indexOf('  /* Phase 3 additions reuse');
-  const bossEnd=renderer.indexOf('  function drawRing(c, r) {',bossStart);
-  assert.ok(bossStart>0&&bossEnd>bossStart);
-  renderer=renderer.slice(0,bossStart)+renderer.slice(bossEnd);
-  const barStart=renderer.indexOf('    /* Minimal ink-seal integrity line');
-  const barEnd=renderer.indexOf('    c.restore();\n  }\n',barStart);
-  assert.ok(barStart>0&&barEnd>barStart);
-  renderer=renderer.slice(0,barStart)+renderer.slice(barEnd);
-  renderer=renderer.replace('    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);\n','');
-  renderer=renderer.replace(
-    '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
-    '       No original creature or player sprite functions are modified. */\n' +
-    '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
-  /* Enemy death particles alone now use red ink. Revert that precise
-     one-line color allowance for the historic non-player renderer hash. */
-  renderer=renderer.replace('    c.fillStyle = p.red ? RED : INK;\n    const vang = Math.atan2(p.vy, p.vx);',
-    '    c.fillStyle = INK;\n    const vang = Math.atan2(p.vy, p.vx);');
-  renderer=renderer.replace('inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1, color: p.red ? RED : INK });','inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1 });');
-  assert.equal(fnv(renderer),'70a61c56','all other non-player artwork remains byte-identical');
-  const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
-  const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
-  const call = '    for (const knot of S.knots) drawKnot(ctx, knot, t);';
-  const rc = renderer.indexOf(call, re);
-  assert.ok(rb > 0 && re > rb && rc > re);
-  assert.deepEqual([
-    fnv(renderer.slice(0, rb)),
-    fnv(renderer.slice(re, rc)),
-    fnv(renderer.slice(rc + call.length)),
-  ], ['c698a356', 'f3a0b841', '754cf65c']);
-
+  /* Phase 5 deliberately changes stage-long terrain rendering and the
+     protagonist. The actual enemy and projectile painters are frozen. */
+  const renderer=file('js/render.js');
+  const segment=(from,to)=>{
+    const a=renderer.indexOf(from),b=renderer.indexOf(to,a);
+    assert.ok(a>=0&&b>a,'expected legacy art boundaries');
+    return renderer.slice(a,b);
+  };
+  assert.equal(fnv(segment('  function drawEnemy(c, e, t) {',
+    '  /* ---------------- player:')),'44e8cc52');
+  assert.equal(fnv(segment('  /* ---------------- projectiles, zones, fx ---------------- */',
+    '  /* Phase 3 additions reuse')),'20aee36a');
+  assert.equal(fnv(segment('  function drawRing(c, r) {',
+    '  function draw(ctx, t) {')),'b8275045');
+  assert.ok(renderer.includes('function paintWeaponImprint('));
+  assert.ok(renderer.includes('stainCells.clear()'));
   const audio = file('js/audio.js');
   const ab = audio.indexOf('    /* ink knots tighten like a quiet plucked thread */');
   const afterTag = '    /* the sniper fires its needle */';
