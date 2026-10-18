@@ -629,6 +629,28 @@ const R = (() => {
     }
   }
 
+  /* An additive registration mark behind Night Scroll's spectral
+     monsters. The original fourteen enemy painters, their eye shapes
+     and their dissolve animations stay byte-identical. The broken
+     handmade outline makes even an almost-transparent Shade trackable. */
+  function drawNightSighting(c,e){
+    if(themeKey!=='dark')return;
+    const r=e.r;
+    const spectral=['shade','wraith','kage','stilt','moth'].includes(e.type);
+    c.save();c.translate(e.x,e.y);
+    c.strokeStyle='#ffefd1';c.lineCap='round';
+    c.globalAlpha=spectral?.8:.33;c.lineWidth=spectral?1.5:1.05;
+    const halo=r*(spectral?1.47:1.34);
+    c.beginPath();c.arc(0,0,halo,-.95,.46);
+    c.moveTo(Math.cos(2.2)*halo,Math.sin(2.2)*halo);
+    c.arc(0,0,halo,2.2,3.43);c.stroke();
+    if(spectral){
+      c.fillStyle='#ffefd1';c.globalAlpha=.9;
+      c.beginPath();c.arc(-halo*.92,-halo*.11,1.1,0,TAU);c.fill();
+    }
+    c.restore();
+  }
+
   /* ---------------- creatures ---------------- */
   function seedFor(e, tick) { return ((e.seed * 8191) | 0) ^ (tick * 7919); }
 
@@ -1135,28 +1157,6 @@ const R = (() => {
         c.fillRect(-width / 2 + width * k / (e.guardian.boss ? 3 : 2) - .6, top, 1.2, 3);
       }
       c.restore();
-    }
-    c.restore();
-  }
-
-  /* An additive registration mark behind Night Scroll's spectral
-     monsters. The original fourteen enemy painters, their eye shapes
-     and their dissolve animations stay byte-identical. The broken
-     handmade outline makes even an almost-transparent Shade trackable. */
-  function drawNightSighting(c,e){
-    if(themeKey!=='dark')return;
-    const r=e.r;
-    const spectral=['shade','wraith','kage','stilt','moth'].includes(e.type);
-    c.save();c.translate(e.x,e.y);
-    c.strokeStyle='#ffefd1';c.lineCap='round';
-    c.globalAlpha=spectral?.8:.33;c.lineWidth=spectral?1.5:1.05;
-    const halo=r*(spectral?1.47:1.34);
-    c.beginPath();c.arc(0,0,halo,-.95,.46);
-    c.moveTo(Math.cos(2.2)*halo,Math.sin(2.2)*halo);
-    c.arc(0,0,halo,2.2,3.43);c.stroke();
-    if(spectral){
-      c.fillStyle='#ffefd1';c.globalAlpha=.9;
-      c.beginPath();c.arc(-halo*.92,-halo*.11,1.1,0,TAU);c.fill();
     }
     c.restore();
   }
