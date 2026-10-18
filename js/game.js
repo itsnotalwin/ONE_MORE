@@ -313,6 +313,10 @@ const G = (() => {
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
     S.fanT = 2.2; S.spiritT = 1.6; S.knotT = 3.6; S.trailT = 0;
     S.choices = []; S.selected = null; S.idle = [];
+    /* Each run begins with neutral controls, even after a lost pointer event. */
+    S.joy = null;
+    S.inputVec.x = 0; S.inputVec.y = 0;
+    S.clockT = 0; clockT = 0;
     S.areaIdx = S.worldIndex;
 
     const runs = getRuns() + 1;
@@ -337,6 +341,8 @@ const G = (() => {
   function startLevel(worldIndex, level) { return startRun('journey', worldIndex, level); }
 
   function openCampaign(worldIndex = S.worldIndex) {
+    S.joy = null;
+    S.inputVec.x = 0; S.inputVec.y = 0;
     const progress = CAMPAIGN.read();
     if (!CAMPAIGN.isWorldUnlocked(worldIndex, progress)) worldIndex = 0;
     S.worldIndex = worldIndex;
@@ -362,6 +368,8 @@ const G = (() => {
 
   function abandon() {
     S.mode = 'title';
+    S.joy = null;
+    S.inputVec.x = 0; S.inputVec.y = 0;
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = []; S.queue = [];
     S.puddles = []; S.spirits = []; S.knots = [];
@@ -728,15 +736,35 @@ const G = (() => {
     SFX.shoot();
   }
 
-  function moveBullets(dt) {
+  /* A projectile can cover 28+ pixels in one 50ms phone frame.
+     Store its true traveled segment instead of sampling the endpoint. */
+  function moveBullets(dt, expire = true) {
     for (let i = S.bullets.length - 1; i >= 0; i--) {
       const b = S.bullets[i];
-      b.x += b.vx * dt; b.y += b.vy * dt; b.age += dt;
-      if (b.age > b.life) {
+      b.prevX = b.x; b.prevY = b.y;
+      const travel = Math.max(0, Math.min(dt, b.life - b.age));
+      b.x += b.vx * travel; b.y += b.vy * travel; b.age += dt;
+      if (expire && b.age > b.life) {
         S.stainQueue.push({ x: b.x, y: b.y, r: 2.6, alpha: 0.3 });
         S.bullets.splice(i, 1);
       }
     }
+  }
+
+  /* Earliest entry time of a line segment into a circular hitbox.
+     t=0 also covers a bullet spawned inside its target. */
+  function segmentCircleHit(x0, y0, x1, y1, cx, cy, radius) {
+    const vx = x1 - x0, vy = y1 - y0;
+    const dx = x0 - cx, dy = y0 - cy;
+    const c = dx * dx + dy * dy - radius * radius;
+    if (c <= 0) return 0;
+    const a = vx * vx + vy * vy;
+    if (a <= 1e-10) return null;
+    const b = 2 * (dx * vx + dy * vy);
+    const disc = b * b - 4 * a * c;
+    if (disc < 0) return null;
+    const t = (-b - Math.sqrt(disc)) / (2 * a);
+    return t >= 0 && t <= 1 ? t : null;
   }
 
   function damageEnemy(e, idx, dmg, knock, ang) {
@@ -764,25 +792,42 @@ const G = (() => {
   }
 
   function updateBullets(dt) {
-    moveBullets(dt);
+    /* Delaying expiry until after collision lets a bullet hit an enemy at
+       the end of its lifespan without traveling beyond its range. */
+    moveBullets(dt, false);
     for (let i = S.bullets.length - 1; i >= 0; i--) {
       const b = S.bullets[i];
-      for (let j = S.enemies.length - 1; j >= 0; j--) {
-        const e = S.enemies[j];
-        const dx = e.x - b.x, dy = e.y - b.y;
-        const rr = e.r + 3;
-        if (dx * dx + dy * dy <= rr * rr) {
-          const ang = Math.atan2(b.vy, b.vx);
-          SFX.hit();
-          b.hits--;
-          const dead = damageEnemy(e, j, b.dmg, true, ang);
-          if (b.hits <= 0) {
-            if (b.kind === 'blade') burst(b.x, b.y, 3, false);
-            S.bullets.splice(i, 1);
-          }
-          if (dead) j--;
-          if (b.hits <= 0) break;
+      const x0 = b.prevX, y0 = b.prevY;
+      const contacts = [];
+      const alreadyHit = b.hitEnemies || (b.hitEnemies = new Set());
+      /* Snapshot the targets so a dying splitter cannot inject its new
+         children into the same shot's collision pass. */
+      for (const e of S.enemies) {
+        if (alreadyHit.has(e)) continue;
+        const time = segmentCircleHit(x0, y0, b.x, b.y, e.x, e.y, e.r + 3);
+        if (time !== null) contacts.push({ e, time });
+      }
+      contacts.sort((a, b) => a.time - b.time);
+      let spent = false;
+      for (const { e, time } of contacts) {
+        const index = S.enemies.indexOf(e);
+        if (index === -1) continue; // removed by a prior kill effect
+        alreadyHit.add(e);
+        SFX.hit();
+        b.hits--;
+        damageEnemy(e, index, b.dmg, true, Math.atan2(b.vy, b.vx));
+        if (b.hits <= 0) {
+          const hx = x0 + (b.x - x0) * time;
+          const hy = y0 + (b.y - y0) * time;
+          if (b.kind === 'blade') burst(hx, hy, 3, false);
+          S.bullets.splice(i, 1);
+          spent = true;
+          break;
         }
+      }
+      if (!spent && b.age > b.life) {
+        S.stainQueue.push({ x: b.x, y: b.y, r: 2.6, alpha: 0.3 });
+        S.bullets.splice(i, 1);
       }
     }
   }
@@ -836,18 +881,21 @@ const G = (() => {
         const turn = CFG.spirit.turn * dt;
         sp.ang += clamp(diff, -turn, turn);
       }
+      const x0 = sp.x, y0 = sp.y;
       sp.x += Math.cos(sp.ang) * sp.speed * dt;
       sp.y += Math.sin(sp.ang) * sp.speed * dt;
       if (sp.age < 0.12) continue; /* grace period after leaving the brush */
-      for (let j = S.enemies.length - 1; j >= 0; j--) {
-        const e = S.enemies[j];
-        const dx = e.x - sp.x, dy = e.y - sp.y;
-        const rr = e.r + 4;
-        if (dx * dx + dy * dy <= rr * rr) {
-          damageEnemy(e, j, CFG.spirit.dmg, true, sp.ang);
-          burst(sp.x, sp.y, 4, false);
+      let closest = null, firstT = Infinity;
+      for (const e of S.enemies) {
+        const t = segmentCircleHit(x0, y0, sp.x, sp.y, e.x, e.y, e.r + 4);
+        if (t !== null && t < firstT) { closest = e; firstT = t; }
+      }
+      if (closest) {
+        const idx = S.enemies.indexOf(closest);
+        if (idx !== -1) {
+          damageEnemy(closest, idx, CFG.spirit.dmg, true, sp.ang);
+          burst(x0 + (sp.x - x0) * firstT, y0 + (sp.y - y0) * firstT, 4, false);
           S.spirits.splice(i, 1);
-          break;
         }
       }
     }
@@ -1142,21 +1190,27 @@ const G = (() => {
     const p = S.player;
     for (let i = S.ebullets.length - 1; i >= 0; i--) {
       const b = S.ebullets[i];
-      b.x += b.vx * dt; b.y += b.vy * dt; b.age += dt;
+      const x0 = b.x, y0 = b.y;
+      const travel = Math.max(0, Math.min(dt, b.life - b.age));
+      b.x += b.vx * travel; b.y += b.vy * travel; b.age += dt;
+      if (S.invulnT <= 0) {
+        const br = b.kind === 'needle' ? CFG.needle.r : CFG.glob.r;
+        const rr = p.r - 1 + br;
+        const hitT = segmentCircleHit(x0, y0, b.x, b.y, p.x, p.y, rr);
+        if (hitT !== null) {
+          S.ebullets.splice(i, 1);
+          S.stainQueue.push({
+            x: x0 + (b.x - x0) * hitT,
+            y: y0 + (b.y - y0) * hitT,
+            r: 3.4, alpha: 0.4,
+          });
+          takeHit();
+          continue;
+        }
+      }
       if (b.age > b.life) {
         S.stainQueue.push({ x: b.x, y: b.y, r: 2.4, alpha: 0.22 });
         S.ebullets.splice(i, 1);
-        continue;
-      }
-      if (S.invulnT <= 0) {
-        const dx = b.x - p.x, dy = b.y - p.y;
-        const br = (b.kind === 'needle' ? CFG.needle.r : CFG.glob.r);
-        const rr = p.r - 1 + br;
-        if (dx * dx + dy * dy <= rr * rr) {
-          S.ebullets.splice(i, 1);
-          S.stainQueue.push({ x: b.x, y: b.y, r: 3.4, alpha: 0.4 });
-          takeHit();
-        }
       }
     }
   }
