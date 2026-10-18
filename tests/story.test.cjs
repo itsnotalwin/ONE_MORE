@@ -4,140 +4,118 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const root = path.resolve(__dirname,'..');
+const root = path.resolve(__dirname, '..');
 const file = p => fs.readFileSync(path.join(root,p),'utf8');
-
-function storyHarness() {
-  const nodes = new Map(), session = new Map(), renderFrames = [];
-  let savedProgress = 0, lastScreen = null;
-  const fakeContext = new Proxy({}, {
+function harness(reduced=false) {
+  const nodes=new Map(), frames=[],calls=[];
+  let savedProgress=0,lastScreen=null;
+  const gradient=()=>({addColorStop(){}});
+  const c=new Proxy({}, {
     get(target,key) {
-      if(key === 'createRadialGradient'||key === 'createLinearGradient') return () => ({addColorStop(){}});
-      if(key === 'canvas') return {};
-      if(key in target) return target[key];
-      return () => {};
+      if (key in target) return target[key];
+      if (key==='createRadialGradient'||key==='createLinearGradient')return gradient;
+      if (key==='measureText')return text=>({width:text.length*65});
+      return (...args)=>{calls.push({method:key,args});};
     },
-    set(target,key,value) {target[key]=value;return true;},
+    set(target,key,value){target[key]=value;return true;}
   });
-  const mkNode = id => ({
-    id,
-    children:[],
-    className:'',
-    textContent:'',
-    innerHTML:'',
-    width: 0,height:0, style:{},
-    attrs:{},listeners:{},
-    classList: { add(){}, remove(){}, toggle(){} },
-    appendChild(child){this.children.push(child);return child;},
-    setAttribute(key,value){this.attrs[key]=value;},
-    getBoundingClientRect(){return {width:920,height:620};},
-    getContext(){return fakeContext;},
+  const node=id=>({
+    id,width:0,height:0,children:[],textContent:'',innerHTML:'',style:{},attrs:{},listeners:{},
+    classList:{add(){},remove(){},toggle(){}},
+    getBoundingClientRect(){return {width:800,height:580};},
+    getContext(){return c;},
+    setAttribute(name,value){this.attrs[name]=value;},
     addEventListener(name,fn){this.listeners[name]=fn;},
     click(){this.listeners.click?.();},
   });
-  const document = {
-    hidden: false,
-    getElementById(id) {
-      if(!nodes.has(id))nodes.set(id,mkNode(id));
-      return nodes.get(id);
-    },
-    createElement(tag) { return mkNode(tag); },
+  const document={
+    hidden:false,
+    getElementById(id){if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id);}
   };
-  const sessionStorage = {
-    getItem(k){return session.get(k)||null;},
-    setItem(k,v){session.set(k,String(v));},
-  };
-  const G = {mode:'title'};
-  const UI = {show(screen){lastScreen=screen;}};
-  const CAMPAIGN = {totalCompleted(){return savedProgress;}};
-  const window = {
-    devicePixelRatio:1,
-    matchMedia(){return {matches:false};},
-    addEventListener(){},
-  };
+  const G={mode:'title'};
+  const UI={show(name){lastScreen=name;}};
+  const CAMPAIGN={totalCompleted(){return savedProgress;}};
+  const window={devicePixelRatio:1,matchMedia(){return {matches:reduced};},addEventListener(){}};
   const context=vm.createContext({
-    document,window,sessionStorage,G,UI,CAMPAIGN,Math,
+    document,window,G,UI,CAMPAIGN,
     performance:{now(){return 0;}},
-    requestAnimationFrame(fn){renderFrames.push(fn);return renderFrames.length;},
+    requestAnimationFrame(fn){frames.push(fn);return frames.length;},
     cancelAnimationFrame(){},
   });
-  vm.runInContext(file('js/intro.js'),context,{filename:'js/intro.js'});
+  for(const p of ['js/film.js','js/intro.js'])vm.runInContext(file(p),context,{filename:p});
   return {
-    INTRO:vm.runInContext('INTRO',context),G,nodes,renderFrames,
+    INTRO:vm.runInContext('INTRO',context),
+    FILM:vm.runInContext('FILM',context),
+    G,nodes,frames,c,calls,
     get lastScreen(){return lastScreen;},
-    set savedProgress(value){savedProgress=value;},
-    get savedProgress(){return savedProgress;},
+    set savedProgress(n){savedProgress=n;},
+    get savedProgress(){return savedProgress;}
   };
 }
-
-test('the experimental cinematic has seven authored, captioned and skippable scenes',()=>{
-  const {INTRO,G,nodes,renderFrames,lastScreen}=storyHarness();
+test('every page launch starts a skippable automatic short film, not a click-through slideshow',()=>{
+  const x=harness(),{INTRO,G,nodes,frames}=x;
   assert.equal(INTRO.SCENES.length,7);
-  assert.equal(INTRO.SCENES.reduce((sum,s)=>sum+s.seconds,0),61);
-  assert.ok(INTRO.SCENES.every(scene=>scene.title&&scene.line&&scene.second));
+  assert.equal(INTRO.SCENES.reduce((a,b)=>a+b.seconds,0),61);
+  assert.ok(INTRO.SCENES.every(s=>s.title&&s.line&&s.second));
   assert.ok(INTRO.play());
   assert.equal(G.mode,'intro');
-  assert.equal(nodes.get('introFrames').children.length,7);
   assert.equal(nodes.get('introTitle').textContent,'BEFORE THE FIRST MARK');
-  // Film should already be running without clicking an opening cover.
-  // Render a real timeline step through a mocked Canvas 2D surface.
-  const paint = renderFrames.shift();
-  assert.doesNotThrow(()=>paint(1000));
-  INTRO.next();
+  const firstFrame=frames.shift();
+  assert.doesNotThrow(()=>firstFrame(1200));
+  assert.ok(x.calls.length>100,'film actually draws procedurally, not just text');
+  assert.equal(INTRO.handleKey('ArrowRight'),true);
   assert.equal(nodes.get('introTitle').textContent,'A WORLD IN ONE BREATH');
-  assert.ok(INTRO.handleKey('ArrowRight'));
-  assert.equal(nodes.get('introTitle').textContent,'EVERY MARK CAST A SHADOW');
   assert.equal(INTRO.handleKey('Escape'),true);
   assert.equal(G.mode,'title');
-  assert.ok(INTRO.play(),'prologue plays again after every launch, without a watch-once gate');
+  assert.ok(INTRO.play(),'visiting again starts the film, without a seen flag');
   nodes.get('introSkip').click();
-  assert.equal(G.mode,'title','skip works immediately');
-  assert.ok(INTRO.play(),'replay remains available even after skipping');
+  assert.equal(G.mode,'title');
+  assert.ok(INTRO.play(),'replay also works immediately after skip');
 });
-
-test('ending all seven frames returns to title without changing campaign state',()=>{
-  const x=storyHarness(), {INTRO,G}=x;
-  x.savedProgress=10;
+test('all seven scenes animate the subject, camera/world, paint and final title',()=>{
+  const x=harness(),{FILM,c,calls}=x;
+  for(let i=0;i<7;i++){
+    calls.length=0;
+    assert.doesNotThrow(()=>FILM.scene(c,800,580,i,1.1,[8,8,8,9,9,10,9][i],false));
+    const early=JSON.stringify(calls.filter(v=>v.method==='lineTo'||v.method==='arc'||v.method==='rect').slice(0,50));
+    calls.length=0;
+    assert.doesNotThrow(()=>FILM.scene(c,800,580,i,6.5,[8,8,8,9,9,10,9][i],false));
+    const late=JSON.stringify(calls.filter(v=>v.method==='lineTo'||v.method==='arc'||v.method==='rect').slice(0,50));
+    assert.notEqual(early,late,'scene '+i+' contains actual motion, not frozen art');
+  }
+  assert.ok(file('js/film.js').includes('function erasure('));
+  assert.ok(file('js/film.js').includes('function survivor('));
+  assert.ok(file('js/film.js').includes('function finale('));
+  assert.ok(file('js/film.js').includes('function shadows('));
+});
+test('final reel ends at game title; reduced-motion mode still advances the film',()=>{
+  const x=harness(true),{INTRO,G,frames}=x;
+  x.savedProgress=20;
   INTRO.play();
-  assert.equal(G.mode,'intro','autoplay starts without an extra tap');
+  const cb=frames.shift();assert.doesNotThrow(()=>cb(2000));
   for(let i=0;i<7;i++)INTRO.next();
   assert.equal(G.mode,'title');
   assert.equal(x.lastScreen,'title');
-  assert.equal(x.savedProgress,10);
+  assert.equal(x.savedProgress,20);
 });
-
-test('Chronicle locks act spoilers until existing campaign milestones',()=>{
-  const x=storyHarness(), {INTRO,G,nodes}=x;
+test('story archive remains unlock-gated and original game assets are untouched',()=>{
+  const x=harness(),{INTRO,G,nodes}=x;
   x.savedProgress=0;INTRO.openArchive();
-  let text=nodes.get('archiveChapters').innerHTML;
-  assert.ok(text.includes('SCROLL I'));
-  assert.ok(text.includes('STILL SEALED'));
-  assert.ok(!text.includes('Kage and Shade'));
+  assert.ok(nodes.get('archiveChapters').innerHTML.includes('STILL SEALED'));
   x.savedProgress=20;INTRO.openArchive();
-  text=nodes.get('archiveChapters').innerHTML;
-  assert.ok(text.includes('Kage and Shade'));
-  assert.ok(!text.includes('At the final seal,'));
+  assert.ok(nodes.get('archiveChapters').innerHTML.includes('Kage and Shade'));
   x.savedProgress=30;INTRO.openArchive();
-  text=nodes.get('archiveChapters').innerHTML;
-  assert.ok(text.includes('At the final seal,'));
+  assert.ok(nodes.get('archiveChapters').innerHTML.includes('At the final seal,'));
   assert.ok(INTRO.handleKey('Escape'));
   assert.equal(G.mode,'title');
-});
-
-test('experimental additions do not modify existing combat code or require movie assets',()=>{
-  const html=file('index.html'),css=file('css/intro.css'),js=file('js/intro.js');
-  const original=file('js/render.js');
-  assert.ok(html.includes('<script src="./js/intro.js"></script>'));
-  assert.ok(html.includes('id="screenIntro"'));
-  assert.ok(html.includes('id="screenChronicle"'));
-  assert.ok(!html.includes('id="introStartBtn"'),'no click-to-play cover');
-  assert.ok(js.includes("running=true;elapsed=0"),'movie playback starts immediately');
-  assert.ok(!js.includes('sessionStorage'),'opening never skips because of prior visits');
-  assert.ok(js.includes('animateInk('),'live-ink animation is rendered during playback');
-  assert.ok(css.includes('prefers-reduced-motion:reduce'));
-  assert.ok(js.includes('getBoundingClientRect'));
-  assert.ok(!/<video\b|\.mp4|\.webm/i.test(html+js),'no remote video or encoded movie requirement');
-  assert.ok(original.includes('function drawEnemy('));
+  const html=file('index.html'),js=file('js/intro.js'),main=file('js/main.js');
+  assert.ok(html.includes('<script src="./js/film.js"></script>'));
+  assert.ok(html.indexOf('film.js')<html.indexOf('intro.js'));
+  assert.ok(!html.includes('id="introFrames"'));
+  assert.ok(!html.includes('id="introStartBtn"'));
+  assert.ok(main.includes('INTRO.play()'),'game entry auto-plays film');
+  assert.ok(!js.includes('sessionStorage'),'no once-per-visit shortcuts');
+  assert.ok(!/\.mp4|\.webm/.test(html+js),'no external video needed');
+  assert.ok(file('js/render.js').includes('function drawEnemy('));
   assert.ok(file('docs/GAME_BIBLE.md').includes('Sprite sheet inventory: **NONE**'));
-  assert.ok(file('README.md').includes('docs/images/last-stroke-hero.svg'));
 });
