@@ -19,7 +19,7 @@ function harness() {
   });
   const SFX = new Proxy({}, { get() { return () => {}; } });
   const context = vm.createContext({ localStorage, UI, SFX });
-  for (const p of ['js/config.js', 'js/campaign.js', 'js/wave-director.js', 'js/game.js']) {
+  for (const p of ['js/config.js', 'js/campaign.js', 'js/wave-director.js', 'js/guardians.js', 'js/game.js']) {
     vm.runInContext(file(p), context, { filename: p });
   }
   const dataRefs = vm.runInContext(
