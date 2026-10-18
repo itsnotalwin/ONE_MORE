@@ -140,3 +140,16 @@ test('original renderer, audio, and pre-existing CSS are frozen', () => {
   const original = css.slice(0, css.indexOf('\n/* ============================================================\n   CAMPAIGN SELECTION'));
   assert.equal(gitBlobHash(original), '7438ce27c87e88b507e76abcfbc45fe420ffc1db');
 });
+
+test('mobile upgrade screen retains all three choices in compact grid layout', () => {
+  const css = file('css/style.css');
+  const mobile = css.slice(css.indexOf('UPGRADE CHOICES — keep all three'));
+  assert.ok(mobile.includes('@media (max-width: 720px)'));
+  assert.match(mobile, /\.screen-upgrade \.upgrade-grid\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(mobile, /\.screen-upgrade \.up-card\s*\{\s*display:\s*grid/);
+  assert.match(mobile, /\.screen-upgrade \.panel\s*\{[\s\S]*?max-height:\s*calc\(100dvh - 16px\)/);
+  assert.ok(mobile.includes('@media (min-width: 721px) and (max-height: 520px)'));
+  const html = file('index.html');
+  assert.ok(html.includes('id="upgradeGrid"'));
+  assert.ok(html.includes('id="deployBtn"'));
+});
