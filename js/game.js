@@ -22,7 +22,9 @@ const G = (() => {
 
     player: { x: 0, y: 0, r: CFG.player.r, aim: 0, fireT: 0, recoil: 0,
       visualSeed: 0x51a7, visualAim: 0, visualMoveX: 0, visualMoveY: 0,
-      displayScale: 1, visualTilt: 0 },
+      displayScale: 1, visualTilt: 0, visualState:'idle', visualStateT:0,
+      visualSpeed:0, visualFacing:0, flowPhase:0, hitPulse:0,
+      absorbPulse:0, rankPulse:0 },
     cam: { x: 0, y: 0 },
     stats: null,
     runMode: 'journey',            // 'journey' | 'endless'
@@ -402,6 +404,9 @@ const G = (() => {
     p.visualSeed = 0x51a7;
     p.visualAim = 0; p.visualMoveX = 0; p.visualMoveY = 0;
     p.visualTilt = 0; p.displayScale = 1;
+    p.visualState='idle';p.visualStateT=0;p.visualSpeed=0;
+    p.visualFacing=0;p.flowPhase=0;p.hitPulse=0;
+    p.absorbPulse=0;p.rankPulse=0;
     S.cam.x = 0; S.cam.y = 0;
 
     UI.show(null);
@@ -556,6 +561,7 @@ const G = (() => {
       return;
     }
     st.hp--;
+    S.player.hitPulse=.18;
     if(terrainState('plate'))
       markWeapon('plate',S.player.x,S.player.y,{r:12,alpha:.88});
     S.invulnT = CFG.player.invuln;
@@ -703,6 +709,29 @@ const G = (() => {
     let vx = S.inputVec.x, vy = S.inputVec.y;
     const m = Math.hypot(vx, vy);
     if (m > 1) { vx /= m; vy /= m; }
+    /* Animation controller runs from normalized input, never world
+       coordinates or random wobble. Four recognizable locomotion states
+       plus short hit / absorption / rank impulses. Hitbox stays 10px. */
+    const active=Math.hypot(vx,vy)>.16,oldState=p.visualState;
+    const targetAngle=active?Math.atan2(vy,vx):p.visualFacing;
+    const turn=Math.atan2(Math.sin(targetAngle-p.visualFacing),
+      Math.cos(targetAngle-p.visualFacing));
+    const hasTurn=active&&p.visualSpeed>.5&&Math.abs(turn)>.96;
+    const nextState=active
+      ? (!p.visualSpeed||oldState==='idle'?'anticipate':
+        hasTurn?'turn':oldState==='anticipate'&&p.visualStateT<.08
+          ?'anticipate':'run')
+      : (p.visualSpeed>.12?'brake':
+        oldState==='brake'&&p.visualStateT<.16?'brake':'idle');
+    if(nextState!==oldState)p.visualStateT=0;
+    else p.visualStateT+=dt;
+    p.visualState=nextState;
+    const aK=S.reduced?1:1-Math.exp(-dt*13);
+    p.visualSpeed+=(active?Math.min(1,Math.hypot(vx,vy)):0-p.visualSpeed)*aK;
+    p.visualFacing+=turn*(S.reduced?1:1-Math.exp(-dt*14));
+    if(active&&!S.reduced)p.flowPhase+=dt*2*Math.PI*(5.6+1.2*p.visualSpeed);
+    for(const prop of ['hitPulse','absorbPulse','rankPulse'])
+      p[prop]=Math.max(0,p[prop]-dt);
     const sp = CFG.player.speed * st.moveMult * (S.adrenT > 0 ? CFG.adrenaline.mult : 1);
     p.x += vx * sp * dt;
     p.y += vy * sp * dt;
@@ -1552,9 +1581,11 @@ const G = (() => {
   function collectInk(value, x, y) {
     const st = S.stats;
     st.inkCollected += value;
+    if(value>=3)S.player.absorbPulse=Math.max(S.player.absorbPulse,.13);
     const ranks = INK_XP.grant(st, value);
     UI.setInkProgress(st.inkRank, st.inkXp, INK_XP.needed(st.inkRank), ranks > 0);
     if (ranks) {
+      S.player.rankPulse=.48;
       S.rings.push({ x:S.player.x, y:S.player.y,
         max:35 + st.inkRank * 2, life:.65, maxLife:.65, red:true });
       S.popups.push({ x:S.player.x, y:S.player.y - 23,
