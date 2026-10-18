@@ -16,7 +16,10 @@ const INK_XP = (() => {
     hpGrowth: .018,
   };
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  const needed = rank => Math.round(14 + rank * 7 + Math.pow(rank,1.43)*2.1);
+  /* Early ranks arrive quickly. After Brush 09 the rising cost prevents
+     late-world swarms turning every few kills into an interrupting menu. */
+  const needed = rank => Math.round(14 + rank * 7 + Math.pow(rank,1.43)*2.1 +
+    3 * Math.pow(Math.max(0,rank-9),2));
   function value(def, enemy, run) {
     const wave=Math.max(1,run.wave||1);
     const world=Math.max(0,run.worldIndex||0);
