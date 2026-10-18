@@ -89,6 +89,11 @@ const UI = (() => {
     trailW: '<path d="M5 14.5h13l-1.6 4.3H7.2L5 14.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 14.5V7.1c0-1.7 1.4-3 3.2-3h3.6c1.8 0 3.2 1.3 3.2 3v7.4M9 6.4h6M13.5 10.2l4.7-2.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M19 10.5c0 1.5-1.2 2.7-2.4 2.7-1.2 0-2.4-1.2-2.4-2.7 0-1.1 2.4-4 2.4-4s2.4 2.9 2.4 4z" fill="currentColor" opacity=".68"/>',
     spirit: '<path d="M15.5 6.5c2.6 1.2 4 3.6 3.6 6.4-.4 3-2.6 5.3-5.8 5.4-2.8.1-5-1.8-5.2-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8.4 14.2c-.5-2.4.8-4.6 3-5.6 2.4-1 5-.2 6.3 1.8" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".55"/><circle cx="7" cy="17.4" r="2.2" fill="currentColor"/>',
     knot: '<path d="M4 7C7 3 13 4 14 8s-4 8-7 6 0-6 4-5 7 5 9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="7" cy="14" r="2" fill="#b23a2b"/><circle cx="19.6" cy="18" r="1.7" fill="#b23a2b"/>',
+
+    lantern: '<path d="M8 7c2-2 6-2 8 0v9c-2 2-6 2-8 0V7zM12 3v3M9 19h6M12 16v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="12" cy="11.5" r="1.7" fill="currentColor"/>',
+    crescent: '<path d="M17 3.5a8.3 8.3 0 1 0 3 13.4A9.5 9.5 0 0 1 17 3.5z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M18 7l2-1M18.6 12h2.4" stroke="currentColor" stroke-width="1.2"/>',
+    mirror: '<path d="M6 6l6 12 6-12M7.5 7.5l4.5 8 4.5-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>',
+    shroud: '<path d="M9 4.5c3-1.2 6 1.2 6 4v7l-3-1.7L9 16l-2.5-2V9c0-2 .8-3.8 2.5-4.5zM15.5 8.5l3.5-1.5M16 12l4-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
   };
   /* the upgrade is filed under 'trail'; the glyph under 'trailW' — same brush */
   GLYPHS.trail = GLYPHS.trailW;
