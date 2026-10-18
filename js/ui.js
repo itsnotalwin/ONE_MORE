@@ -333,6 +333,7 @@ const UI = (() => {
     el.overRank.textContent = d.rank;
     el.statWaves.innerHTML = `${d.waves} <span class="kanji-inline">${toKanji(d.waves)}</span>`;
     el.statKills.textContent = d.kills.toLocaleString('en-US');
+    el.statInkRank.textContent = pad2(d.inkRank || 1);
     el.statTime.textContent = fmtTime(d.time);
     el.statScore.textContent = d.score.toLocaleString('en-US');
     el.newBestBadge.classList.toggle('hidden', !d.newBest);
