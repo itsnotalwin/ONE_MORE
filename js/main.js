@@ -194,6 +194,8 @@
 
     vec();
     const m = G.mode;
+    /* Film has its own canvas: don't spend battery painting hidden gameplay. */
+    if (m === 'intro' || m === 'chronicle') return;
     if (m === 'playing') G.update(dt);
     else if (m === 'dying') G.updateDying(dt);
     else if (m === 'title' || m === 'select' || m === 'over') G.updateIdle(dt);
