@@ -137,29 +137,28 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
     }
     return h.toString(16).padStart(8, '0');
   };
-  /* Phase 3 added only three guarded drawing fragments. Strip those
-     additions and hash the exact original combat renderer contract. */
+  /* Phase 4A is deliberately allowed to replace just the player's
+     painter. Mask that region and verify every other combat drawing
+     fragment against the preserved pre-polish source contract. */
   let renderer = file('js/render.js');
-  const bossStart = renderer.indexOf('  /* Phase 3 additions reuse');
-  const bossEnd = renderer.indexOf('  function drawRing(c, r) {', bossStart);
-  assert.ok(bossStart > 0 && bossEnd > bossStart);
-  renderer = renderer.slice(0, bossStart) + renderer.slice(bossEnd);
-  const barStart = renderer.indexOf('    /* Minimal ink-seal integrity line');
-  const barEnd = renderer.indexOf('    c.restore();\n  }\n', barStart);
-  assert.ok(barStart > 0 && barEnd > barStart);
-  renderer = renderer.slice(0, barStart) + renderer.slice(barEnd);
-  renderer = renderer.replace(
-    '    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);\n','');
-  renderer = renderer.replace(
+  const playerStart=renderer.indexOf('  /* ---------------- player:');
+  const playerEnd=renderer.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */',playerStart);
+  assert.ok(playerStart>0&&playerEnd>playerStart);
+  renderer=renderer.slice(0,playerStart)+'  /* PLAYER-RENDER-MASK */\n\n'+renderer.slice(playerEnd);
+  const bossStart=renderer.indexOf('  /* Phase 3 additions reuse');
+  const bossEnd=renderer.indexOf('  function drawRing(c, r) {',bossStart);
+  assert.ok(bossStart>0&&bossEnd>bossStart);
+  renderer=renderer.slice(0,bossStart)+renderer.slice(bossEnd);
+  const barStart=renderer.indexOf('    /* Minimal ink-seal integrity line');
+  const barEnd=renderer.indexOf('    c.restore();\n  }\n',barStart);
+  assert.ok(barStart>0&&barEnd>barStart);
+  renderer=renderer.slice(0,barStart)+renderer.slice(barEnd);
+  renderer=renderer.replace('    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);\n','');
+  renderer=renderer.replace(
     '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
     '       No original creature or player sprite functions are modified. */\n' +
     '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
-  const growthStart=renderer.indexOf('    if (playing) {\n      /* Growth is visual ONLY');
-  const growthEnd=renderer.indexOf('    for (const knot of S.knots)',growthStart);
-  assert.ok(growthStart>0 && growthEnd>growthStart);
-  renderer=renderer.slice(0,growthStart)+
-    '    if (playing) drawPlayer(ctx, t);\n'+renderer.slice(growthEnd);
-  assert.equal(fnv(renderer), '84b72d7e', 'all original gameplay rendering remains byte-for-byte intact');
+  assert.equal(fnv(renderer),'70a61c56','non-player combat artwork remains byte-identical');
   const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
   const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
   const call = '    for (const knot of S.knots) drawKnot(ctx, knot, t);';
@@ -169,7 +168,7 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
     fnv(renderer.slice(0, rb)),
     fnv(renderer.slice(re, rc)),
     fnv(renderer.slice(rc + call.length)),
-  ], ['f174f6ee', 'f3a0b841', '754cf65c']);
+  ], ['c698a356', 'f3a0b841', '754cf65c']);
 
   const audio = file('js/audio.js');
   const ab = audio.indexOf('    /* ink knots tighten like a quiet plucked thread */');
