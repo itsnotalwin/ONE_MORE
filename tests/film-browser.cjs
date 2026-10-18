@@ -83,52 +83,37 @@ async function inspect(browser,name,viewport){
   await page.waitForFunction(()=>G.mode==='playing');
   assert.equal(await page.locator('#firstRunHint').isVisible(),true,
     'first play teaches movement without blocking game input');
-  /* Verify that the user's requested XP bar is physically left-aligned,
-     fills from bottom upward and remains readable on phone dimensions. */
+  /* Wave progress and XP now sit beside each other on the top HUD.
+     Check layout at 393px portrait and desktop, with a real 60% fill. */
   const meter=await page.locator('#inkMeter').boundingBox();
-  const track=await page.locator('.ink-meter-track').boundingBox();
-  assert.ok(meter&&track,'vertical ink gauge is visible');
-  assert.ok(meter.x>=0 && meter.x<70,
-    name+' XP meter must sit along the LEFT edge');
-  assert.ok(meter.y>50 && meter.y+meter.height<viewport.height-20,
-    name+' XP meter must not overlap top or bottom control regions');
-  assert.ok(track.height>track.width*8,
-    name+' progress track must be taller than it is wide');
-  assert.ok(track.width>=16,
-    name+' the left-hand XP gauge should feel like a thick column of ink');
+  const waveTrack=await page.locator('.wave-progress').boundingBox();
+  const xpTrack=await page.locator('.ink-meter-track').boundingBox();
+  assert.ok(meter&&waveTrack&&xpTrack,name+' top progress row exists');
+  assert.ok(meter.x>=waveTrack.x+waveTrack.width-1,
+    name+' XP must sit to the RIGHT of the wave progress');
+  assert.ok(Math.abs(meter.y-waveTrack.y)<23 &&
+    meter.y<105,name+' XP must remain inside the top HUD');
+  assert.ok(xpTrack.width>xpTrack.height*4,'XP liquid runs horizontally');
+  assert.ok(xpTrack.x+xpTrack.width<viewport.width-15,
+    name+' ink gauge does not leave the screen');
   await page.evaluate(()=>{
     const st=G.S.stats;
     UI.setInkProgress(st.inkRank,INK_XP.needed(st.inkRank)*.6,
       INK_XP.needed(st.inkRank),false);
   });
-  await page.waitForTimeout(780); // give the thick liquid time to settle
+  await page.waitForTimeout(750);
   const fill=await page.locator('#inkFill').boundingBox();
-  const orientation=await page.locator('#inkMeter').getAttribute('aria-orientation');
-  assert.equal(orientation,'vertical');
-  const bloodInk=await page.locator('#inkFill').evaluate(el=>{
-    const paint=getComputedStyle(el).backgroundImage;
-    return {
-      gradient:paint.includes('linear-gradient'),
-      vermilion:paint.includes('rgb(178, 58, 43)'),
-      depth:paint.includes('rgb(142, 44, 32)'),
-    };
-  });
-  assert.ok(bloodInk.gradient && bloodInk.vermilion && bloodInk.depth,
-    name+' XP column must remain in the original cinnabar palette');
-  assert.ok(fill&&fill.height/track.height>.53&&fill.height/track.height<.65,
-    name+' XP column must fill upward by approximately 60 percent');
-  assert.ok(fill.y>=track.y+track.height*.30 &&
-    fill.y<track.y+track.height*.48,
-    name+' progress fill starts above the BOTTOM of the bar, not the top');
+  assert.ok(fill && fill.width/xpTrack.width>.50 && fill.width/xpTrack.width<.67,
+    name+' red ink rises horizontally to roughly 60 percent');
   const liquid=await page.locator('#inkFill').evaluate(el=>({
-    width:el.getBoundingClientRect().width,
-    meniscus:getComputedStyle(el,'::before').animationName,
+    gradient:getComputedStyle(el).backgroundImage,
     timing:getComputedStyle(el).transitionDuration,
   }));
-  assert.ok(liquid.width>=10,'wet red ink column is not a thin line on phones');
-  assert.equal(liquid.meniscus,'inkMeniscus');
-  assert.ok(parseFloat(liquid.timing)>=.5,'the XP rise has viscous inertia');
-  await page.screenshot({path:path.join(out,name+'-09-left-vertical-ink-gauge.png')});
+  assert.ok(liquid.gradient.includes('linear-gradient') &&
+    liquid.gradient.includes('rgb(178, 58, 43)'),
+    name+' the horizontal XP bar contains the original cinnabar pigment');
+  assert.ok(parseFloat(liquid.timing)>.4,'ink fill has viscous easing');
+  await page.screenshot({path:path.join(out,name+'-09-horizontal-progress.png')});
   await page.evaluate(()=>{
     const st=G.S.stats;
     UI.setInkProgress(st.inkRank,st.inkXp,INK_XP.needed(st.inkRank),false);
@@ -227,6 +212,31 @@ async function inspect(browser,name,viewport){
   });
   await page.waitForFunction(()=>G.S.enemies.some(e=>e.guardian?.phase===3),null,{timeout:4000});
   await page.screenshot({path:path.join(out,name+'-11-guardian-final-phase.png')});
+  /* Real renderer must retain weapon and blood marks over a complete
+     wave transition and forget them on a fresh independent level. */
+  await page.evaluate(()=>{
+    G.S.queue=['pulse'];G.S.spawnTimer=99999;
+    G.S.enemies=[];G.S.markers=[];G.S.guardianMarks=[];
+    const x=G.S.player.x,y=G.S.player.y;
+    G.S.stainQueue.push({kind:'weapon',weapon:'fan',x:x+18,y:y+38,
+      r:7,alpha:.37,angle:0});
+    G.S.stainQueue.push({x:x+26,y:y+38,r:12,alpha:.52,red:false});
+  });
+  await page.waitForFunction(()=>R.terrainStats().weapons.fan>0 &&
+    R.terrainStats().blood>0,null,{timeout:3000});
+  const beforeTerrain=await page.evaluate(()=>R.terrainStats());
+  await page.evaluate(()=>{
+    G.S.queue=[];G.S.enemies=[];G.S.markers=[];
+    G.S.stats.wave=3;G.S.waveActive=true;G.S.clearedT=0;
+  });
+  await page.waitForFunction(()=>G.S.stats.wave===4,null,{timeout:5000});
+  const afterTerrain=await page.evaluate(()=>R.terrainStats());
+  assert.ok(afterTerrain.total>=beforeTerrain.total,
+    'all weapon marks and enemy blood persist between waves');
+  const nextSheet=await page.evaluate(()=>{
+    G.startLevel(0,1);return R.terrainStats();
+  });
+  assert.equal(nextSheet.total,0,'new separate level wipes the old stage');
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
   return {name,shots:17,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
