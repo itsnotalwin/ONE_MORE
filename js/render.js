@@ -938,6 +938,7 @@ const R = (() => {
     c.closePath();
   }
 
+  /* ---------------- player: the awakened brush spirit ---------------- */
   /* A living version of the original blobPath's midpoint brush contour.
      Fixed seeded lobes give the character an identity, while continuous
      small deformations give it that breathing hand-drawn ink personality.
@@ -965,7 +966,7 @@ const R = (() => {
     c.closePath();
   }
 
-  /* ---------------- player: the awakened brush spirit ---------------- */
+
   function drawPlayer(c, t) {
     const S = G.S, p = S.player, st = S.stats;
     const guarded = S.invulnT > 0;
