@@ -19,7 +19,7 @@ test('every authored offensive or defensive weapon has its own terrain impressio
   for(const weapon of ['shot','echo','fan','eraser','nova','trail','spirit','knot','ward','shock']){
     assert.ok(source.includes("'"+weapon+"'"),'missing '+weapon+' mark vocabulary');
   }
-  assert.ok(source.includes("kind: 'weapon', weapon"));
+  assert.ok(source.includes("kind:'weapon',weapon"));
   assert.ok(source.includes("markWeapon('eraser',cx+Math.cos(theta)"));
   assert.ok(source.includes("markWeapon('nova', S.player.x"));
   assert.ok(source.includes("markWeapon('trail', pd.x"));
@@ -50,7 +50,7 @@ test('all enemy sprites retain their style, with at least five splatter composit
   const config=file('js/config.js');
   const families=vm.runInNewContext(config+'; Object.keys(ENEMIES)');
   for(const name of families){
-    assert.ok(render.includes(name+':') || render.includes(name+':{'),
+    assert.ok(render.includes(name+':') || render.includes(name+' :'),
       'a distinctive black ink hand is assigned to '+name);
   }
   assert.ok(render.includes('function paintEnemyBlood('));
@@ -116,7 +116,7 @@ test('renderer caches black stains by world cell and never fades them mid-stage'
   const render=file('js/render.js');
   assert.ok(render.includes('const stainCells = new Map()'));
   assert.ok(render.includes('function paintWeaponImprint('));
-  assert.ok(render.includes("const weapon = q.kind === 'weapon' ? q.weapon : ''"));
+  assert.ok(render.includes("const weapon=q.kind==='weapon'?q.weapon:''"));
   assert.ok(render.includes('const list=stainCells.get('));
   assert.ok(!render.includes('while (stains.length > CFG.world.stainCap)'),
     'do not silently evict early stage blood or weapon marks');
