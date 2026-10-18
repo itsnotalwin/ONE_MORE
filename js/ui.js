@@ -163,6 +163,7 @@ const UI = (() => {
     if (!el.hudArea) return;
     el.hudAreaKanji.textContent = area.kanji;
     el.hudAreaName.textContent = area.name;
+    el.inkMeter.classList.toggle('is-night',area.theme==='dark');
     el.hudWaveTotal.textContent = `${toKanji(waveInArea)} / ${toKanji(CFG.wave.wavesPerArea)}${isElite ? ' · 守' : ''}`;
   }
 
