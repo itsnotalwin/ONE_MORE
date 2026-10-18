@@ -22,7 +22,7 @@ test('every authored offensive or defensive weapon has its own terrain impressio
   assert.ok(source.includes("kind:'weapon',weapon"));
   assert.ok(source.includes("markWeapon('eraser',cx+Math.cos(theta)"));
   assert.ok(source.includes("markWeapon('nova', S.player.x"));
-  assert.ok(source.includes("markWeapon('trail',pd.x"));
+  assert.ok(source.includes("markWeapon('trail',(pd.x+pd.x0)*.5"));
   assert.ok(source.includes("markWeapon('spirit', x0"));
   assert.ok(source.includes("markWeapon('knot', e.x"));
   assert.ok(source.includes("markWeapon('ward', S.player.x"));
@@ -74,8 +74,8 @@ test('black ink only at max, with post-max Vermilion seals for later crimson ter
   const game=file('js/game.js'),render=file('js/render.js');
   assert.ok(game.includes('function paintFlight('));
   assert.ok(game.includes('if(travel>0)paintFlight('));
-  assert.ok(game.includes("return b.kind==='blade'?'fan':b.kind==='echo'?'echo':null"),
-    'only acquired Fan and Echo projectiles may paint a flight path');
+  assert.ok(game.includes("return b.kind==='blade'?'fan':b.kind==='echo'?'echo':b.kind==='mirror'?'mirror':null"),
+    'only acquired Fan, Echo and Mirror projectiles may paint flight paths');
   assert.ok(game.includes("markWeapon('spirit',sp.x,sp.y"));
   assert.ok(game.includes('Math.max(.78,opts.alpha??.9)'));
   assert.ok(game.includes('function terrainState('));
