@@ -17,22 +17,53 @@ const GUARDIANS = (() => {
     ['THE FALSE REFLECTION', 'THE DOUBLE SHADOW', 'THE NIGHT SEAL'],
     ['THE RED IMPRINT', 'THE SECOND SEAL', 'THE CINNABAR CROWN'],
   ];
+  /* The unseen Painter's calligraphy is sampled ONCE and reused for
+     warning, impact ink and hit testing. It is never a wide road AABB. */
+  function heavenlyPoints(a,b,c,d,steps=34){
+    const points=[];
+    for(let i=0;i<=steps;i++){
+      const u=i/steps,v=1-u;
+      points.push({
+        x:v*v*v*a.x+3*v*v*u*b.x+3*v*u*u*c.x+u*u*u*d.x,
+        y:v*v*v*a.y+3*v*v*u*b.y+3*v*u*u*c.y+u*u*u*d.y,
+        width:.38+.62*Math.pow(Math.sin(Math.PI*(.09+u*.85)),.7),
+      });
+    }
+    return points;
+  }
+  function divineMark(target,viewport,cast,offset,kind,boss,delay=0){
+    const tall=cast%2===0;
+    const extent=Math.max(470,(tall?viewport.height:viewport.width)*.8);
+    const cx=target.x+(tall?offset:0),cy=target.y+(tall?0:offset);
+    const a=tall?{x:cx-19,y:cy-extent}:{x:cx-extent,y:cy-19};
+    const d=tall?{x:cx+22,y:cy+extent}:{x:cx+extent,y:cy+22};
+    const hook=kind==='hook';
+    const b=tall?{x:cx-28,y:cy-extent*.28}:{x:cx-extent*.28,y:cy-28};
+    const c=tall?{x:cx+(hook?115:28),y:cy+extent*.56}:
+      {x:cx+extent*.56,y:cy+(hook?115:28)};
+    if(hook){
+      d.x+=tall?100:-30;
+      d.y+=tall?-35:100;
+    }
+    return {kind:'heavenlyStroke',style:kind,
+      points:heavenlyPoints(a,b,c,d),width:boss?30:26,
+      delay,seed:cast*31+offset};
+  }
+
   function attack(world, phase, worldBoss, origin, target, viewport, cast = 0) {
     const windup = worldBoss ? 1.25 : 1.15;
     const marks = [];
     if (world === 0) {
-      /* First Wash: ink seams cross the sheet. A perpendicular sidestep
-         reaches the clear corridor before the seam turns solid. */
-      const offset = phase === 1 ? [0]
-        : phase === 2 ? [0, cast % 2 ? 113 : -113]
-        : [0, -136, 136];
-      const vertical = cast % 2 === 0;
-      for (const d of offset) {
-        const x1 = vertical ? target.x + d : target.x - Math.max(420, viewport.width * .7);
-        const y1 = vertical ? target.y - Math.max(420, viewport.height * .7) : target.y + d;
-        const x2 = vertical ? x1 : target.x + Math.max(420, viewport.width * .7);
-        const y2 = vertical ? target.y + Math.max(420, viewport.height * .7) : y1;
-        marks.push({ kind: 'line', x1, y1, x2, y2, width: worldBoss ? 31 : 27 });
+      /* The Hand Above: a tapered downstroke, a staggered crossing,
+         then the hooked judgment of the world Guardian. The curves
+         lock onto the target on cast and never follow it. */
+      const offset=phase===1?[0]:phase===2?[0,cast%2?113:-113]
+        :[0,-136,136];
+      for(let i=0;i<offset.length;i++){
+        const style=phase===3&&i===2?'hook':phase===2&&i===1?'cross':'down';
+        const mark=divineMark(target,viewport,cast+(phase===2&&i===1?1:0),
+          offset[i],style,worldBoss,i*.34);
+        marks.push(mark);
       }
     } else if (world === 1) {
       /* Night Scroll: rays commit to the player's position at cast time.
@@ -66,7 +97,22 @@ const GUARDIANS = (() => {
       windup, recovery: worldBoss ? .32 : .26, marks,
     };
   }
+  function strokeHits(mark,player){
+    const points=mark.points||[];
+    for(let i=1;i<points.length;i++){
+      const a=points[i-1],b=points[i],dx=b.x-a.x,dy=b.y-a.y;
+      const len=dx*dx+dy*dy;
+      const t=len?Math.max(0,Math.min(1,
+        ((player.x-a.x)*dx+(player.y-a.y)*dy)/len)):0;
+      const nearX=a.x+dx*t,nearY=a.y+dy*t;
+      const localW=mark.width*(a.width+(b.width-a.width)*t);
+      const rr=localW*.5+player.r-2;
+      if((player.x-nearX)**2+(player.y-nearY)**2<rr*rr)return true;
+    }
+    return false;
+  }
   function hits(mark, player) {
+    if(mark.kind==='heavenlyStroke')return strokeHits(mark,player);
     if (mark.kind === 'seal') {
       const dx = player.x - mark.x, dy = player.y - mark.y;
       return dx * dx + dy * dy < (mark.radius + player.r - 2) ** 2;
@@ -79,5 +125,5 @@ const GUARDIANS = (() => {
     const ax = player.x - px, ay = player.y - py;
     return ax * ax + ay * ay < (mark.width * .5 + player.r - 2) ** 2;
   }
-  return { phases, attack, hits, titles };
+  return { phases, attack, hits, titles, heavenlyPoints };
 })();
