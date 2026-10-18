@@ -31,6 +31,7 @@ const G = (() => {
     puddles: [], spirits: [], knots: [],
     stainQueue: [],
     queue: [], waveInitial: 0, waveActive: false, spawnTimer: 0, clearedT: 0,
+    wavePlan: null,
 
     invulnT: 0, adrenT: 0, shake: 0, dyingT: 0, novaT: 0, clockT: 0,
     fanT: 2.2, spiritT: 1.6, knotT: 3.6, trailT: 0,
@@ -232,17 +233,26 @@ const G = (() => {
     let budget = CFG.wave.budget(as.waveInArea, as.cycle) * as.budget;
     if (surge) budget *= CFG.wave.surgeMult;
     if (as.isElite) budget *= 1.2;
-    S.queue = buildQueue(Math.round(budget), as.effectiveWave, as.area.roster);
-    /* Each scroll has a unique combat twist, using existing ink creatures and art. */
-    if (S.runMode === 'journey') {
-      if (S.worldIndex === 0 && (n === 6 || n === 9)) S.queue.push('split', 'split', 'split');
-      if (S.worldIndex === 1 && (n === 3 || n === 6 || n === 9)) S.queue.push('shade', 'shade', 'kage');
-      if (S.worldIndex === 2 && (n === 5 || n === 9)) S.queue.push('oni', 'oni', 'crane');
-      shuffle(S.queue);
-    }
+    /* Journey: each of 30 levels has a distinct encounter score.
+       Endless: preserve the historical random queue and side behavior. */
+    S.wavePlan = S.runMode === 'journey'
+      ? WAVE_DIRECTOR.plan({
+          worldIndex: S.worldIndex,
+          levelNumber: S.level,
+          wave: n,
+          budget,
+          effectiveWave: as.effectiveWave,
+          roster: as.area.roster,
+          enemies: ENEMIES,
+          weights: ENEMY_WEIGHTS,
+        })
+      : null;
+    S.queue = S.wavePlan
+      ? S.wavePlan.queue.slice()
+      : buildQueue(Math.round(budget), as.effectiveWave, as.area.roster);
     S.waveInitial = S.queue.length + (as.isElite ? 1 : 0);
     S.waveActive = true;
-    S.spawnTimer = 1.0;
+    S.spawnTimer = S.wavePlan ? S.wavePlan.rate : 1.0;
     S.clearedT = 0;
     UI.setWave(as.waveInArea);
     UI.setArea(as.area, as.waveInArea, as.isElite);
@@ -252,7 +262,8 @@ const G = (() => {
       UI.areaBanner(as.area, as.cycle, S.runMode === 'endless' && as.cycle >= AREAS.length, S.runMode === 'journey' ? S.level : null);
       SFX.gong();
     } else {
-      UI.banner(as.waveInArea, surge, as.isElite, S.runMode === 'journey' && S.level === CAMPAIGN.LEVELS_PER_WORLD);
+      UI.banner(as.waveInArea, surge, as.isElite, S.runMode === 'journey' && S.level === CAMPAIGN.LEVELS_PER_WORLD,
+        S.wavePlan?.cue || null);
       SFX.wave(surge || as.isElite);
     }
     if (as.isElite) {
@@ -309,7 +320,7 @@ const G = (() => {
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
     S.puddles = []; S.spirits = []; S.knots = [];
-    S.queue = []; S.waveInitial = 0; S.waveActive = false;
+    S.queue = []; S.wavePlan = null; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
     S.fanT = 2.2; S.spiritT = 1.6; S.knotT = 3.6; S.trailT = 0;
     S.choices = []; S.selected = null; S.idle = [];
@@ -1231,17 +1242,30 @@ const G = (() => {
   function updateSpawning(dt) {
     if (!S.waveActive || !S.queue.length) return;
     S.spawnTimer -= dt;
+    const director = S.wavePlan;
     const cap = CFG.wave.concurrentCap(S.stats.wave, S.areaIdx);
     const alive = S.enemies.length + S.markers.length;
     if (S.spawnTimer <= 0 && S.markers.length < 6 && alive < cap) {
-      const group = Math.min(CFG.wave.groupSize(S.stats.wave, S.areaIdx), S.queue.length, cap - alive);
-      const sides = shuffle([0, 1, 2, 3]); /* flank: spread each group around the brush */
+      const baseGroup = CFG.wave.groupSize(S.stats.wave, S.areaIdx);
+      const pacedGroup = director ? Math.max(1, Math.round(baseGroup * director.size)) : baseGroup;
+      const group = Math.min(pacedGroup, S.queue.length, cap - alive, 6 - S.markers.length);
+      if (group <= 0) return;
+      const sides = director ? null : shuffle([0, 1, 2, 3]);
+      const arrival = director ? director.group++ : 0;
       for (let i = 0; i < group; i++) {
         const type = S.queue.pop();
-        const pt = edgePoint(sides[i % 4]);
-        S.markers.push({ type, x: pt.x, y: pt.y, t: 0.62 });
+        const side = director
+          ? WAVE_DIRECTOR.side(director, arrival, i)
+          : sides[i % 4];
+        const pt = edgePoint(side);
+        S.markers.push({
+          type, x: pt.x, y: pt.y,
+          t: director ? director.telegraph : 0.62,
+        });
       }
-      S.spawnTimer = CFG.wave.groupInterval(S.stats.wave);
+      S.spawnTimer = director
+        ? Math.max(0.42, CFG.wave.groupInterval(S.stats.wave) * director.rate)
+        : CFG.wave.groupInterval(S.stats.wave);
     }
   }
 
