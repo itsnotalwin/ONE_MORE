@@ -22,7 +22,7 @@ test('every authored offensive or defensive weapon has its own terrain impressio
   assert.ok(source.includes("kind:'weapon',weapon"));
   assert.ok(source.includes("markWeapon('eraser',cx+Math.cos(theta)"));
   assert.ok(source.includes("markWeapon('nova', S.player.x"));
-  assert.ok(source.includes("markWeapon('trail', pd.x"));
+  assert.ok(source.includes("markWeapon('trail',pd.x"));
   assert.ok(source.includes("markWeapon('spirit', x0"));
   assert.ok(source.includes("markWeapon('knot', e.x"));
   assert.ok(source.includes("markWeapon('ward', S.player.x"));
