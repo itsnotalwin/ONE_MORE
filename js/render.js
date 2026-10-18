@@ -1567,7 +1567,7 @@ const R = (() => {
       /* A visible promise on the page, then a rapid brushstroke reveal.
          This very same sampled curve powers GUARDIANS.hits(). */
       const reveal=warning?Math.min(1,(1-remain)*1.8):
-        Math.min(1,Math.max(0,(-mark.t)/.22));
+        GUARDIANS.strokeReveal(mark);
       const limit=warning?pts.length:Math.max(2,Math.ceil(reveal*(pts.length-1)));
       const pigment=INK;
       for(let j=1;j<Math.min(pts.length,limit+1);j++){
