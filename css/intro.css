@@ -210,3 +210,122 @@
 .screen-intro.is-night .intro-frame.visited::before{background:rgba(233,226,210,.75)}
 .screen-intro.is-night .intro-timeline{background:rgba(233,226,210,.35)}
 .screen-intro.is-night .intro-next{background:#e9e2d2;color:#17130f}
+
+/* =============================================================
+   THE LAST STROKE: TRUE MOVING-PICTURE PRESENTATION
+   Cinema is full-bleed. Captions are timed overlays, not cards.
+   New scoped rules supersede the prototype's frame-strip UI.
+   ============================================================= */
+.screen-intro{display:block;overflow:hidden;background:#ede7d9;touch-action:manipulation}
+.screen-intro #introCanvas{z-index:0;width:100%;height:100%;display:block}
+.screen-intro .intro-filmhead{
+  position:absolute;top:0;left:0;right:0;z-index:3;
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:clamp(14px,3.1vh,30px) clamp(20px,5vw,72px);
+  background:linear-gradient(to bottom,rgba(237,231,217,.96),rgba(237,231,217,.57) 61%,transparent);
+}
+.screen-intro .intro-film-brand{
+  font-size:clamp(8px,.85vw,11px);font-weight:600;letter-spacing:.20em;
+  white-space:nowrap;
+}
+.screen-intro .intro-film-brand i{color:var(--red);font-style:normal;margin:0 6px}
+.screen-intro .intro-count{
+  display:inline-block;font-size:9px;letter-spacing:.12em;
+  font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-70);
+}
+.screen-intro .intro-film-actions{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.screen-intro .intro-minor{font-size:9px;letter-spacing:.12em}
+.screen-intro .intro-skip{
+  padding:9px 13px;border:1px solid var(--ink-25);
+  background:rgba(237,231,217,.7);
+}
+.screen-intro .intro-content{
+  position:absolute;top:auto;left:clamp(20px,6vw,85px);
+  bottom:clamp(63px,10vh,100px);z-index:2;
+  transform:none;width:min(760px,calc(100vw - 40px));
+  text-align:left;align-items:flex-start;gap:5px;
+  color:var(--ink);text-shadow:0 1px 12px var(--paper),0 1px 24px var(--paper);
+  opacity:0;transition:opacity .45s ease;
+}
+.screen-intro .intro-content.intro-text-in{opacity:1}
+.screen-intro .intro-code{
+  position:absolute;bottom:8px;right:2%;
+  font:normal clamp(52px,7vw,90px)/1 var(--display);
+  color:var(--red);opacity:.15;transform:rotate(-6deg);pointer-events:none;
+}
+.screen-intro .intro-chapter{
+  order:0;color:var(--red);font:600 9px var(--mono);
+  letter-spacing:.23em;margin:0 0 2px;
+}
+.screen-intro .intro-content h2{
+  order:1;font:normal clamp(23px,3.6vw,46px)/1.12 var(--display);
+  letter-spacing:-.012em;max-width:100%;margin:0;
+  text-transform:none;text-wrap:balance;
+}
+.screen-intro .intro-line{
+  order:2;max-width:60ch;margin:3px 0 0;
+  font:normal clamp(14px,1.4vw,20px)/1.38 var(--display);
+  opacity:0;transition:opacity .65s ease;
+}
+.screen-intro .intro-content.intro-text-main .intro-line{opacity:1}
+.screen-intro .intro-second{
+  order:3;margin:3px 0 0;font:400 clamp(10px,.92vw,13px)/1.4 var(--mono);
+  letter-spacing:.04em;color:#494138;opacity:0;
+  transition:opacity .75s ease;max-width:72ch;
+}
+.screen-intro .intro-content.intro-text-end .intro-second{opacity:1}
+.screen-intro.is-finale .intro-content h2,
+.screen-intro.is-finale .intro-code{display:none}
+.screen-intro.is-finale .intro-content{bottom:clamp(74px,16vh,140px);text-align:center;align-items:center;left:50%;transform:translateX(-50%);width:min(680px,calc(100vw - 40px))}
+.screen-intro .intro-filmbottom{
+  position:absolute;bottom:0;left:0;right:0;z-index:3;
+  margin:0;padding:0 clamp(20px,5vw,72px) max(16px,env(safe-area-inset-bottom));
+}
+.screen-intro .intro-timeline{
+  height:2px;margin:0 0 12px;background:rgba(26,23,20,.16);
+}
+.screen-intro .intro-progress{transition:none;height:2px}
+.screen-intro .intro-bottomrow{display:flex;justify-content:space-between}
+.screen-intro .intro-bottomrow span{font-size:8px;letter-spacing:.22em}
+.screen-intro.is-night .intro-filmhead{
+  background:linear-gradient(to bottom,rgba(23,19,15,.93),rgba(23,19,15,.56) 64%,transparent);
+}
+.screen-intro.is-night .intro-content{color:#e9e2d2;text-shadow:0 1px 16px #17130f,0 1px 24px #17130f}
+.screen-intro.is-night .intro-second,
+.screen-intro.is-night .intro-count{color:#c5bcaa}
+.screen-intro.is-night .intro-skip{background:rgba(23,19,15,.58);border-color:rgba(233,226,210,.38)}
+.screen-intro.is-night .intro-timeline{background:rgba(233,226,210,.24)}
+@media(max-width:720px){
+  .screen-intro .intro-filmhead{padding:14px 16px;gap:8px}
+  .screen-intro .intro-film-brand{font-size:9px;letter-spacing:.1em}
+  .screen-intro .intro-count{display:none}
+  .screen-intro .intro-film-actions{gap:4px}
+  .screen-intro .intro-minor{font-size:8px;letter-spacing:.06em;padding:8px}
+  .screen-intro .intro-skip{padding:8px}
+  .screen-intro .intro-content{
+    left:17px;bottom:clamp(69px,12vh,115px);
+    width:calc(100vw - 34px);gap:4px;
+  }
+  .screen-intro .intro-chapter{font-size:8px;letter-spacing:.10em}
+  .screen-intro .intro-content h2{font-size:clamp(22px,6.2vw,33px)}
+  .screen-intro .intro-line{font-size:clamp(13px,3.5vw,16px);line-height:1.35}
+  .screen-intro .intro-second{font-size:10px;line-height:1.4}
+  .screen-intro .intro-code{font-size:56px}
+  .screen-intro .intro-filmbottom{padding:0 17px max(14px,env(safe-area-inset-bottom))}
+  .screen-intro .intro-bottomrow span{font-size:7px;letter-spacing:.07em}
+  .screen-intro.is-finale .intro-content{left:50%;width:calc(100vw - 34px)}
+}
+@media(max-height:560px){
+  .screen-intro .intro-filmhead{padding-top:9px;padding-bottom:8px}
+  .screen-intro .intro-content{bottom:58px;gap:2px}
+  .screen-intro .intro-code{font-size:38px}
+  .screen-intro .intro-content h2{font-size:clamp(18px,4vh,29px)}
+  .screen-intro .intro-line{font-size:12px;line-height:1.2}
+  .screen-intro .intro-second{font-size:9px;line-height:1.2}
+  .screen-intro .intro-filmbottom{padding-bottom:9px}
+  .screen-intro.is-finale .intro-content{bottom:65px}
+}
+@media(prefers-reduced-motion:reduce){
+  .screen-intro .intro-content,.screen-intro .intro-line,
+  .screen-intro .intro-second{transition:none}
+}
