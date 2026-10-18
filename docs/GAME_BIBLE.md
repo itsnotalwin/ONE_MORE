@@ -309,6 +309,27 @@ The director chooses:
 
 **Verification:** `tests/story.test.cjs` covers the film/replay while the full Node test suite protects combat and progression. Real Chromium at desktop and mobile dimensions screenshots the new home, onboarding, campaign and in-game sequences. Physical iPhone Safari review of touch spacing and transitions remains an acceptance step.
 
+## First Wash pacing and Night Scroll clarity (development)
+
+**Implemented.** Eraser’s circular clearing field now scales through **65 / 100 / 135 px** for ranks 1–3; its previous starting size is its new maximum. Eraser damage remains **1 per enemy per 0.82 s** with the same erasure cadence and red-seal progression. It is much less dominant immediately after selection.
+
+**First Wash levels 01–03 last longer, without harder early enemies.** The stage-specific spawn groups are slightly smaller and intervals longer: initial level 01 uses 1.65× the ordinary arrival gap and a .67× group size, level 02 uses 1.40× and .82×, level 03 uses 1.20×, and level 04 onward runs at the existing pace. Early-wave enemy budget, HP, damage and the first boss are unchanged. The player has time to settle into the new encounter language and gather XP over a fuller stage.
+
+**Night Scroll (Paper II) now feels deliberately different and tougher.** Its world multipliers are HP 1.65×, speed 1.09× and enemy budget 1.48× relative to First Wash, with no new enemy types yet. Its paper is indigo blue-charcoal (`#242b39`), a textured dye-wash with paper fibers and faint tide lines against warm ivory ink (`#fff1da`). The whole HUD, health shapes, wave progress and wave calligraphy change to contrasting ivory over the night sheet. Small broken ivory registration arcs under elusive monsters allow the player to track Shades and Wisps even through their intentionally transparent animations. Enemy sprites, AI, attack patterns and their existing silhouette painter are unchanged. Visual direction is informed by Awagami's indigo-dyed Awa Washi (https://www.awagami.or.jp/indigo/en/about/).
+
+**Paper I Guardian encounter was not retuned.** Its separate difficulty/phase redesign is intentionally deferred.
+
+### Paper II new powers: concepts only, NOT implemented
+
+New Paper II abilities must unlock as choices only on this paper or later. All preserve the existing upgrade rule: function first, black lasting terrain only at maximum ordinary rank, optional post-max red Vermilion choice afterward. Candidate roster awaiting approval:
+
+- **Crescent Return** (weapon, 3 ranks): a small ivory crescent thrown toward a distant target that arcs back to the player, striking on the outward and return journey. Distinct from Fan's cone, with a cap on repeat hits per enemy. At mastery, paints two asymmetric broken crescent tracks; the seal makes the tracks lacquer-crimson.
+- **Ink Lantern** (utility/power, 2 ranks): an orbit-free hovering paper lantern that briefly reveals or outlines Night Scroll phantoms and interrupts an impending ambush once on a long cooldown. Strengthens readability through a spell rather than additional HUD clutter. At mastery, stamps fine concentric lantern marks where it reveals threats; Vermilion adds red.
+- **Mirror Fold** (weapon, 3 ranks): a folded-paper blade briefly captures the direction of an incoming enemy shot and returns a weaker single slash in that direction. It cannot reflect Guardian attacks and has a strict cooldown. At mastery the returned slash leaves a geometric folded crease on the paper.
+- **Shroud Step** (mobility/power, 2 ranks): an occasional short displacement after sustained movement, leaving a false ink-soul afterimage behind, with no permanent invulnerability and a visible cooldown. At mastery, thin moving footprints are stamped along the displacement; Vermilion changes only those marks.
+
+These are proposals for the owner's approval. **No new Paper II weapon/power behavior or unlock logic has been committed.**
+
 ## Phase 5B / the living paper, Eraser and mastered crimson
 
 **Implemented on `development`; iPhone device review outstanding.** The visual direction follows three references: [Ōkami](https://en.wikipedia.org/wiki/%C5%8Ckami) for meaningful brush techniques, [The Unfinished Swan](https://store.steampowered.com/app/1206430/The_Unfinished_Swan/) for expressive paint that transforms the world, and [haboku](https://en.wikipedia.org/wiki/Haboku) for the tension between a dense wet core and scattered uncontrolled streaks. These are inspirations; we use none of their artwork or code.
