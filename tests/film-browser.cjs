@@ -103,6 +103,16 @@ async function inspect(browser,name,viewport){
   const fill=await page.locator('#inkFill').boundingBox();
   const orientation=await page.locator('#inkMeter').getAttribute('aria-orientation');
   assert.equal(orientation,'vertical');
+  const bloodInk=await page.locator('#inkFill').evaluate(el=>{
+    const paint=getComputedStyle(el).backgroundImage;
+    return {
+      gradient:paint.includes('linear-gradient'),
+      vermilion:paint.includes('rgb(178, 58, 43)'),
+      depth:paint.includes('rgb(142, 44, 32)'),
+    };
+  });
+  assert.ok(bloodInk.gradient && bloodInk.vermilion && bloodInk.depth,
+    name+' XP column must fill with the same red ink as enemy blood');
   assert.ok(fill&&fill.height/track.height>.53&&fill.height/track.height<.65,
     name+' XP column must fill upward by approximately 60 percent');
   assert.ok(fill.y>=track.y+track.height*.30 &&
