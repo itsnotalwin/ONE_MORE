@@ -172,6 +172,13 @@ async function inspect(browser,name,viewport){
   await page.screenshot({path:path.join(out,name+'-12-awakened-brush.png')});
   await page.keyboard.down('d');
   await page.waitForTimeout(480);
+  const motion=await page.evaluate(()=>({
+    state:G.S.player.visualState,phase:G.S.player.flowPhase,
+    speed:G.S.player.visualSpeed,r:G.S.player.r,
+  }));
+  assert.equal(motion.state,'run',name+' player visibly transitions to flowing RUN');
+  assert.ok(motion.phase>1&&motion.speed>.5&&motion.r===10,
+    name+' player folds advance while collision radius stays fixed');
   await page.screenshot({path:path.join(out,name+'-13-stable-brush-moving.png')});
   await page.keyboard.up('d');
   /* Palettes must still render living ink on the reverse/night scroll. */
@@ -244,6 +251,9 @@ async function inspect(browser,name,viewport){
   /* Real renderer must retain weapon and blood marks over a complete
      wave transition and forget them on a fresh independent level. */
   await page.evaluate(()=>{
+    /* Earlier randomized rank choice can select Eraser. Disable it
+       while proving that unrelated terrain persists across wave turns. */
+    G.S.stats.orb=0;G.S.eraserT=0;
     G.S.queue=['pulse'];G.S.spawnTimer=99999;
     G.S.enemies=[];G.S.markers=[];G.S.guardianMarks=[];
     const x=G.S.player.x,y=G.S.player.y;
