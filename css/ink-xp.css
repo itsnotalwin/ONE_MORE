@@ -5,9 +5,9 @@
   position:absolute;
   left:max(12px, calc(env(safe-area-inset-left) + 12px));
   top:49%;bottom:auto;transform:translateY(-50%);
-  width:40px;height:clamp(138px,30vh,240px);
+  width:58px;height:clamp(146px,31vh,246px);
   display:flex;flex-direction:row;align-items:stretch;justify-content:center;
-  gap:6px;
+  gap:7px;
   color:var(--ink);pointer-events:none;
   font-family:var(--mono);
   filter:drop-shadow(0 1px 1px rgba(237,231,217,.66));
@@ -29,39 +29,46 @@
   transform:rotate(180deg);
   white-space:nowrap;
 }
+/* Broad washi trough. The ink pools at its foot and rises like pigment,
+   not a segmented mobile-game progress indicator. */
 .ink-meter-track{
-  position:relative;flex:0 0 8px;
-  width:8px;height:100%;padding:1px;overflow:hidden;
+  position:relative;flex:0 0 21px;
+  width:21px;height:100%;padding:2px;overflow:hidden;
   display:flex;flex-direction:column;justify-content:flex-end;
-  border:1px solid var(--ink-45);
-  background:rgba(237,231,217,.77);
-  transform:rotate(.65deg);
+  border:1.2px solid var(--ink-45);
+  border-radius:11px 11px 7px 7px;
+  background:linear-gradient(90deg,rgba(26,23,20,.13),rgba(237,231,217,.90) 42%,rgba(237,231,217,.79));
+  transform:rotate(.45deg);
+  box-shadow:inset 1px 0 3px rgba(26,23,20,.09);
 }
-.ink-meter-track::after{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(to top, transparent 0 25px,
-    rgba(237,231,217,.45) 25px 26px);
-}
-/* A narrow channel of the SAME cinnabar pigment as enemy blood.
-   It physically rises from the foot of the track rather than sliding
-   a rectangular progress indicator. The dark gradient gives pigment depth. */
+/* The same cinnabar UI accent as before, visibly deeper and heavier.
+   Only progression is vermilion: enemies and reclaimed blobs stay ink black. */
 .ink-meter-fill{
   position:relative;
   width:100%;height:0%;flex:0 0 auto;
-  background:linear-gradient(90deg,var(--red-deep) 0%,var(--red) 58%,#c44935 100%);
-  box-shadow:inset 1px 0 1px rgba(98,24,16,.35);
-  transition:height .22s cubic-bezier(.16,.67,.28,1);
+  border-radius:8px 8px 3px 3px;
+  background:linear-gradient(90deg,var(--red-deep) 0%,var(--red) 43%,#ba4030 78%,#c44935 100%);
+  box-shadow:inset 2px 0 3px rgba(83,16,11,.22),inset -1px 0 2px rgba(255,161,121,.16);
+  transition:height .58s cubic-bezier(.16,.70,.22,1);
   will-change:height;
 }
+/* Small uneven meniscus drifting on the surface, not cartoon bubbles. */
 .ink-meter-fill::before{
-  content:'';position:absolute;
-  left:-1px;right:-1px;top:-3px;height:5px;
+  content:'';position:absolute;z-index:1;
+  left:-1px;right:-1px;top:-4px;height:9px;
   background:var(--red);
-  clip-path:polygon(0 90%,12% 36%,34% 67%,57% 12%,79% 55%,100% 24%,100% 100%,0 100%);
+  border-radius:55% 44% 29% 18%;
+  clip-path:polygon(0 83%,0 38%,16% 43%,31% 28%,51% 36%,69% 22%,84% 44%,100% 26%,100% 100%,0 100%);
+  animation:inkMeniscus 2.4s ease-in-out infinite alternate;
 }
 .ink-meter-fill::after{
-  content:'';position:absolute;inset:3px 1px 0 auto;width:1px;
-  background:rgba(244,153,115,.28);
+  content:'';position:absolute;inset:9px 2px 2px auto;width:2px;
+  border-radius:2px;
+  background:rgba(245,160,119,.19);
+}
+@keyframes inkMeniscus{
+  from{transform:translateY(.8px) skewY(-2deg)}
+  to{transform:translateY(-1px) skewY(2deg)}
 }
 .ink-meter.is-ranking .ink-meter-track{animation:inkVerticalPulse .56s ease-out}
 @keyframes inkVerticalPulse{
@@ -71,20 +78,21 @@
 }
 @media(max-width:600px){
   .ink-meter{
-    left:max(8px, calc(env(safe-area-inset-left) + 8px));
+    left:max(7px, calc(env(safe-area-inset-left) + 7px));
     top:47%;
-    width:32px;height:clamp(126px,26vh,190px);gap:5px;
+    width:46px;height:clamp(126px,28vh,203px);gap:5px;
   }
   .ink-meter-label{min-width:18px}
   .ink-meter-title{font-size:17px}
   #inkRank{font-size:8px;letter-spacing:.07em}
-  .ink-meter-track{flex-basis:7px;width:7px}
+  .ink-meter-track{flex-basis:17px;width:17px}
 }
 @media(max-height:620px){
   .ink-meter{top:50%;height:min(38vh,155px)}
 }
 @media(prefers-reduced-motion:reduce){
   .ink-meter-fill{transition:none}
+  .ink-meter-fill::before{animation:none}
   .ink-meter.is-ranking .ink-meter-track{animation:none}
 }
 /* The reverse scroll swaps paper and ink, while the progress remains red. */
