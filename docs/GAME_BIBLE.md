@@ -354,13 +354,14 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [ ] Compare captured film stills against pinned original gameplay art and review compositions on physical devices.
 - [ ] Owner decides whether to merge story experiment into `main`.
 
-### NEXT SPEC / PHASE 4A — BRUSH AND INK VISUAL POLISH
+### COMPLETED IMPLEMENTATION / PHASE 4A — BRUSH AND INK VISUAL POLISH
 
-- [x] **Specification written:** [Phase 4A / Living Ink Visual Refinement](PHASE-4A-PROGRESSION-VISUAL-POLISH.md). This is a **visual refinement plan only**, not a claim that the brush has been changed yet.
-- [ ] Remove the position-derived player silhouette seed and stabilize hand-drawn line boil.
-- [ ] Replace the large instant scale step with a deliberately tapered, tiered, gently eased brush evolution; keep the real hitbox unchanged.
-- [ ] Replace circular XP orbs with living ink seeds and tapered reabsorption motion; preserve all XP rewards and the no-loss rule.
-- [ ] Confirm real desktop / phone-sized browser renders, regression tests and physical iPhone Safari review.
+- [x] **Phase 4A implemented:** [Living Ink Visual Refinement](PHASE-4A-PROGRESSION-VISUAL-POLISH.md) directly on `development`, including stable brush appearance, tiered subtle growth and new ink-seed pickups.
+- [x] Remove position-derived player silhouette seed; the nib and taper keep their identity across movement.
+- [x] Replace the instant whole-player scale with nib-only rank tiers (maximum 1.18×) and exponential easing; orbit/ward and collision radius unchanged.
+- [x] Replace circular XP orbs with five seeded living ink-nib silhouettes and tapered magnetic return ribbons; XP reward logic and no-loss rule unchanged.
+- [x] Automated gameplay regression tests passed; desktop/phone-sized Chromium screenshot suite runs for this code.
+- [ ] Owner's physical iPhone Safari review of long fights, Night Scroll contrast, pickup density and movement jitter.
 - [ ] Merge nothing to `main` without explicit approval.
 
 ### CURRENT SPRINT / DEVELOPMENT ONLY
