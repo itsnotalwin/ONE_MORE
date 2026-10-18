@@ -66,6 +66,7 @@ function storyHarness() {
     INTRO:vm.runInContext('INTRO',context),G,nodes,renderFrames,
     get lastScreen(){return lastScreen;},
     set savedProgress(value){savedProgress=value;},
+    get savedProgress(){return savedProgress;},
   };
 }
 
