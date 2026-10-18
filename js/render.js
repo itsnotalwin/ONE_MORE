@@ -49,8 +49,14 @@ const R = (() => {
   let lw = 0, lh = 0, ldpr = 1;
   let lastT = 0, lastTrailT = -1;
 
-  /* dried ink lives in world space, each stain its own sprite */
+  /* Stage-bound paper memory: compact cached stamps, indexed by
+     world tile so even a very long wave stays cheap on mobile. */
   let stains = [];
+  const stainCells = new Map();
+  const stampCache = new Map();
+  const STAIN_CELL = 240;
+  const stainCellKey = (x, y) =>
+    Math.floor(x / STAIN_CELL) + ',' + Math.floor(y / STAIN_CELL);
 
   function ensurePatterns(ctx) {
     if (patHatchDark) return;
@@ -305,37 +311,121 @@ const R = (() => {
     c.restore();
   }
 
-  /* ---------------- stains: dried ink, cached as sprites ---------------- */
+  /* ---------------- stage-long washi marks ----------------
+     Both enemy blood and weapon imprints belong to the SAME ink sheet.
+     Sprite shapes are reused by radius, kind and seed variant to avoid
+     allocating thousands of canvases over ten consecutive waves. */
+  function paintWeaponImprint(g, weapon, r, seed, color) {
+    const rnd = mulberry(seed);
+    g.save();
+    g.strokeStyle = color;g.fillStyle=color;g.lineCap='round';
+    switch (weapon) {
+      case 'shot': /* a pointed drop ends in a light calligraphic fleck */
+        splatPaint(g,0,0,r*.72,seed,.8,color);
+        inkStroke(g,[{x:-r*.5,y:r*.1},{x:r*.55,y:-r*.3},{x:r*1.7,y:-r*.5}],
+          Math.max(1,r*.21),{alpha:.58,color,seed});
+        break;
+      case 'echo': /* mirrored answer of the opposite brush stroke */
+        inkStroke(g,[{x:-r*1.8,y:r*.43},{x:0,y:0},{x:r*1.4,y:-r*.48}],
+          Math.max(1.2,r*.33),{alpha:.83,color,seed});
+        blobPath(g,0,0,r*.35,seed,.22,9);g.globalAlpha=.66;g.fill();break;
+      case 'fan': /* a long folded slash left in the paper */
+        inkStroke(g,[{x:-r*2.0,y:r*.45},{x:-r*.2,y:0},{x:r*2.2,y:-r*.58}],
+          Math.max(1.5,r*.52),{alpha:.75,color,seed,dry:true,dryColor:PAPER});
+        break;
+      case 'orbit': /* compact crescent scuff of a grinding ink bead */
+        g.globalAlpha=.59;g.lineWidth=Math.max(1.2,r*.31);
+        g.beginPath();g.arc(0,0,r*.94,-2.3,1.2);g.stroke();
+        blobPath(g,r*.65,r*.15,r*.32,seed,.24,8);g.fill();break;
+      case 'nova': /* a broken shock ring, not a temporary magic aura */
+      case 'shock':
+        g.globalAlpha=.55;g.lineWidth=Math.max(1.2,r*.13);
+        for(const off of [0,2.4,4.8]){
+          g.beginPath();g.arc(0,0,r*(.7+rnd()*.24),off,off+1.2);g.stroke();
+        }
+        for(let i=0;i<4;i++){
+          const ang=i*TAU/4+rnd()*.3;
+          inkStroke(g,[{x:Math.cos(ang)*r*.65,y:Math.sin(ang)*r*.65},
+            {x:Math.cos(ang)*r*1.35,y:Math.sin(ang)*r*1.35}],
+            Math.max(1,r*.09),{alpha:.29,color,seed:seed+i});
+        }
+        break;
+      case 'trail': /* pooled wet dragging along the sheet */
+        inkStroke(g,[{x:-r*1.5,y:r*.3},{x:0,y:0},{x:r*1.6,y:-r*.22}],
+          Math.max(2,r*.8),{alpha:.64,color,seed,dry:true,dryColor:PAPER});
+        break;
+      case 'spirit': /* little afterimage of a visiting lesser brush */
+        inkStroke(g,[{x:-r*1.5,y:r*.5},{x:-r*.1,y:0},{x:r*1.65,y:-r*.6}],
+          Math.max(1,r*.29),{alpha:.63,color,seed});
+        blobPath(g,r*.55,-r*.26,r*.25,seed,.2,8);g.globalAlpha=.68;g.fill();
+        break;
+      case 'knot': /* three tied calligraphic fibres */
+        for(let k=-1;k<=1;k++){
+          inkStroke(g,[{x:-r*1.2,y:k*r*.45},{x:0,y:k*r*.13},
+            {x:r*1.25,y:-k*r*.45}],Math.max(1,r*.18),
+            {alpha:.52,color,seed:seed+k});
+        }
+        break;
+      case 'ward': /* a stamp's imperfect paper border */
+        g.globalAlpha=.61;g.lineWidth=Math.max(1.2,r*.11);
+        g.strokeRect(-r*.66,-r*.9,r*1.35,r*1.75);
+        inkStroke(g,[{x:-r*.18,y:-r*.6},{x:r*.12,y:r*.57}],
+          Math.max(1.4,r*.18),{alpha:.48,color,seed});
+        break;
+      default:
+        splatPaint(g,0,0,r,seed,.85,color);
+    }
+    g.restore();
+  }
+
   function stampStains(S) {
     if (!S.stainQueue.length) return;
     for (const q of S.stainQueue) {
-      const r = Math.max(2.4, q.r);
-      const scale = 2; /* render sprites at 2x for crisp hidpi */
-      const half = Math.ceil(r * 2.9);
-      const spr = document.createElement('canvas');
-      spr.width = spr.height = half * 2 * scale;
-      const g = spr.getContext('2d');
-      g.setTransform(scale, 0, 0, scale, half * scale, half * scale);
-      splatPaint(g, 0, 0, r, (Math.random() * 1e9) | 0, q.alpha ?? 0.5, q.red ? RED : INK);
-      stains.push({ x: q.x, y: q.y, a: q.alpha ?? 0.5, age: 0, spr, half });
+      const r = Math.max(2.4, Math.min(100, q.r));
+      const weapon = q.kind === 'weapon' ? q.weapon : '';
+      const radius = Math.max(3,Math.round(r/2)*2);
+      const variant = ((Math.floor(Math.abs(q.x*13+q.y*7))%4)+4)%4;
+      const color = q.red ? RED : INK;
+      const key = themeKey+':'+weapon+':'+radius+':'+variant+':'+color;
+      let sprite = stampCache.get(key);
+      if(!sprite){
+        const half = Math.ceil(radius*3.3+8), scale=2;
+        const spr=document.createElement('canvas');
+        spr.width=spr.height=half*2*scale;
+        const g=spr.getContext('2d');
+        g.setTransform(scale,0,0,scale,half*scale,half*scale);
+        const seed=radius*181+variant*7919;
+        if(weapon)paintWeaponImprint(g,weapon,radius,seed,color);
+        else splatPaint(g,0,0,radius,seed,.9,color);
+        sprite={spr,half};
+        stampCache.set(key,sprite);
+        /* Eviction does not erase existing terrain: records keep the sprite. */
+        if(stampCache.size>260)stampCache.delete(stampCache.keys().next().value);
+      }
+      const mark={
+        x:q.x,y:q.y,spr:sprite.spr,half:sprite.half,
+        angle:weapon ? (q.angle||0) : 0, a:q.alpha??.5,
+        kind:weapon||'blood',
+      };
+      stains.push(mark);
+      const cell=stainCellKey(mark.x,mark.y);
+      if(!stainCells.has(cell))stainCells.set(cell,[]);
+      stainCells.get(cell).push(mark);
     }
-    S.stainQueue.length = 0;
-    while (stains.length > CFG.world.stainCap) stains.shift();
+    S.stainQueue.length=0;
+    /* No fade and no oldest-first cap. Even the very first blood splatter
+       still exists when the Guardian appears on wave ten. */
   }
 
   function updateStains(dt) {
-    const fade = CFG.world.stainFade;
-    for (let i = stains.length - 1; i >= 0; i--) {
-      const st = stains[i];
-      st.age += dt;
-      if (st.a * (1 - st.age * fade) <= 0.02) {
-        stains[i] = stains[stains.length - 1];
-        stains.pop();
-      }
-    }
+    /* Stage memory is intentionally permanent. Never age away marks. */
   }
 
-  function resetStains() { stains.length = 0; }
+  function resetStains() {
+    stains.length=0;
+    stainCells.clear();
+    stampCache.clear();
+  }
 
   /* ---------------- ambient paper marks (world decor) ----------------
      faint hairs, flecks and ghost seals scattered across the sheet,
@@ -1529,14 +1619,27 @@ const R = (() => {
     /* faint marks so the sheet feels hand-made and the motion reads */
     drawDecor(ctx, vx0, vy0, vx1, vy1);
 
-    /* dried ink from every fight before this moment */
-    const cullM = 80;
-    for (const st of stains) {
-      if (st.x < vx0 - cullM || st.x > vx1 + cullM || st.y < vy0 - cullM || st.y > vy1 + cullM) continue;
-      ctx.globalAlpha = Math.max(0, st.a * (1 - st.age * CFG.world.stainFade));
-      ctx.drawImage(st.spr, st.x - st.half, st.y - st.half, st.half * 2, st.half * 2);
+    /* Stage-long paper history, spatially indexed by viewport cells.
+       Old weapon strikes and enemy blood remain through every wave. */
+    const cullM=105;
+    for(let cy=Math.floor((vy0-cullM)/STAIN_CELL);
+      cy<=Math.floor((vy1+cullM)/STAIN_CELL);cy++){
+      for(let cx=Math.floor((vx0-cullM)/STAIN_CELL);
+        cx<=Math.floor((vx1+cullM)/STAIN_CELL);cx++){
+        const list=stainCells.get(cx+','+cy);
+        if(!list)continue;
+        for(const st of list){
+          if(st.x<vx0-cullM||st.x>vx1+cullM||st.y<vy0-cullM||st.y>vy1+cullM)continue;
+          ctx.globalAlpha=st.a;
+          if(st.angle){
+            ctx.save();ctx.translate(st.x,st.y);ctx.rotate(st.angle);
+            ctx.drawImage(st.spr,-st.half,-st.half,st.half*2,st.half*2);
+            ctx.restore();
+          }else ctx.drawImage(st.spr,st.x-st.half,st.y-st.half,st.half*2,st.half*2);
+        }
+      }
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha=1;
 
     for (const pd of S.puddles) drawPuddle(ctx, pd);
     if (!S.reduced) updateAmbient(dt, S);
