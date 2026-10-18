@@ -221,6 +221,16 @@ const G = (() => {
     return best;
   }
 
+  /* Persistent brush impressions join the enemy blood on the washi.
+     Stamped weapon marks survive wave changes, but not a stage reset. */
+  function markWeapon(weapon, x, y, opts = {}) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    S.stainQueue.push({
+      x, y, r: opts.r ?? 5, alpha: opts.alpha ?? 0.28,
+      kind: 'weapon', weapon, angle: opts.angle ?? 0, red: false,
+    });
+  }
+
   /* ---------------- waves ---------------- */
   function buildQueue(budget, wave, roster) {
     const pool = roster.filter(k => ENEMIES[k].cost > 0 && ENEMIES[k].intro <= wave);
@@ -245,6 +255,10 @@ const G = (() => {
     const st = S.stats;
     st.wave = n;
     const as = areaStateFor(n);
+    if (S.runMode === 'endless' && n > 1 && as.waveInArea === 1) {
+      S.stainQueue.length = 0;
+      if (typeof R !== 'undefined') R.resetStains();
+    }
     S.areaIdx = as.themeIdx;
     const surge = !as.isElite && as.waveInArea % CFG.wave.surgeEvery === 0;
     let budget = CFG.wave.budget(as.waveInArea, as.cycle) * as.budget;
@@ -333,6 +347,8 @@ const G = (() => {
     S.level = S.runMode === 'endless' ? 1 : level;
     S.lastVictory = false;
     S.nextStage = null;
+    /* A new ten-wave level begins with clean washi. */
+    if (typeof R !== 'undefined') R.resetStains();
     S.stats = freshStats();
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
@@ -403,6 +419,7 @@ const G = (() => {
 
   function abandon() {
     S.mode = 'title';
+    if (typeof R !== 'undefined') R.resetStains();
     S.joy = null;
     S.inputVec.x = 0; S.inputVec.y = 0;
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
@@ -473,6 +490,8 @@ const G = (() => {
     const cleared = victory ? st.wave : Math.max(0, st.wave - 1);
     S.lastVictory = !!victory;
     S.nextStage = null;
+    S.stainQueue.length = 0;
+    if (typeof R !== 'undefined') R.resetStains();
     if (victory && S.runMode === 'journey') {
       CAMPAIGN.complete(S.worldIndex, S.level);
       S.nextStage = CAMPAIGN.next(S.worldIndex, S.level);
@@ -504,6 +523,7 @@ const G = (() => {
       S.invulnT = Math.max(S.invulnT, 0.7);
       burst(S.player.x, S.player.y, 12, false);
       S.rings.push({ x: S.player.x, y: S.player.y, max: 64, life: 0.32, maxLife: 0.32 });
+      markWeapon('ward', S.player.x, S.player.y, { r: 13, alpha: .34 });
       S.shake = Math.max(S.shake, 4);
       SFX.ward();
       return;
@@ -523,6 +543,7 @@ const G = (() => {
     SFX.hurt();
     if (st.shock) {
       S.rings.push({ x: S.player.x, y: S.player.y, max: CFG.shockwave.radius, life: 0.45, maxLife: 0.45 });
+      markWeapon('shock', S.player.x, S.player.y, { r: 22, alpha: .27 });
       for (const e of S.enemies) {
         const dx = e.x - S.player.x, dy = e.y - S.player.y;
         const d = Math.hypot(dx, dy) || 1;
@@ -562,6 +583,8 @@ const G = (() => {
       r: CFG.trail.radius(st.trailW), life: CFG.trail.life, max: CFG.trail.life,
       tickT: 0.1, seed: (Math.random() * 1e9) | 0,
     });
+    markWeapon('trail', S.puddles[S.puddles.length - 1].x,
+      S.puddles[S.puddles.length - 1].y, { r: 9, alpha: .22 });
     if (S.puddles.length > 26) S.puddles.shift();
   }
 
@@ -621,6 +644,7 @@ const G = (() => {
           if (idx === -1) continue;
           e.hp -= CFG.knot.dmg;
           e.hitFlash = Math.max(e.hitFlash, 0.08);
+          markWeapon('knot', e.x, e.y, { r: 8, alpha: .28 });
           if (e.hp <= 0) {
             S.enemies.splice(idx, 1);
             killEnemy(e);
@@ -701,6 +725,7 @@ const G = (() => {
             e.hitFlash = 0.08;
             const d = Math.hypot(dx, dy) || 1;
             e.kbx += (dx / d) * 170; e.kby += (dy / d) * 170;
+            markWeapon('orbit', ox, oy, { r: 5, alpha: .32, angle: a });
             SFX.hit();
             if (e.hp <= 0) { S.enemies.splice(kk, 1); killEnemy(e); }
             break;
@@ -756,6 +781,7 @@ const G = (() => {
         if (e.hp <= 0) { S.enemies.splice(k, 1); killEnemy(e); }
       }
     }
+    markWeapon('nova', S.player.x, S.player.y, { r: 23, alpha: .25 });
     S.shake = Math.max(S.shake, 3);
     SFX.nova();
   }
@@ -786,7 +812,7 @@ const G = (() => {
           x: p.x + Math.cos(a) * 13, y: p.y + Math.sin(a) * 13,
           vx: Math.cos(a) * spd * 0.92, vy: Math.sin(a) * spd * 0.92,
           ang: a, dmg: st.dmg, hits: 1 + st.pierce, age: 0, life: CFG.player.bulletLife,
-          kind: 'drop',
+          kind: 'echo',
         });
       }
     }
@@ -803,7 +829,8 @@ const G = (() => {
       const travel = Math.max(0, Math.min(dt, b.life - b.age));
       b.x += b.vx * travel; b.y += b.vy * travel; b.age += dt;
       if (expire && b.age > b.life) {
-        S.stainQueue.push({ x: b.x, y: b.y, r: 2.6, alpha: 0.3 });
+        markWeapon(b.kind === 'blade' ? 'fan' : b.kind === 'echo' ? 'echo' : 'shot',
+          b.x, b.y, { r: 4.5, alpha: .26, angle: b.ang });
         S.bullets.splice(i, 1);
       }
     }
@@ -873,6 +900,9 @@ const G = (() => {
         alreadyHit.add(e);
         SFX.hit();
         b.hits--;
+        const wx = x0 + (b.x - x0) * time, wy = y0 + (b.y - y0) * time;
+        markWeapon(b.kind === 'blade' ? 'fan' : b.kind === 'echo' ? 'echo' : 'shot',
+          wx, wy, { r: b.kind === 'blade' ? 7 : 4.5, alpha: .34, angle: b.ang });
         damageEnemy(e, index, b.dmg, true, Math.atan2(b.vy, b.vx));
         if (b.hits <= 0) {
           const hx = x0 + (b.x - x0) * time;
@@ -884,7 +914,8 @@ const G = (() => {
         }
       }
       if (!spent && b.age > b.life) {
-        S.stainQueue.push({ x: b.x, y: b.y, r: 2.6, alpha: 0.3 });
+        markWeapon(b.kind === 'blade' ? 'fan' : b.kind === 'echo' ? 'echo' : 'shot',
+          b.x, b.y, { r: 4, alpha: .25, angle: b.ang });
         S.bullets.splice(i, 1);
       }
     }
@@ -896,7 +927,7 @@ const G = (() => {
       pd.life -= dt;
       pd.tickT -= dt;
       if (pd.life <= 0) {
-        S.stainQueue.push({ x: pd.x, y: pd.y, r: pd.r * 0.5, alpha: 0.16 });
+        markWeapon('trail', pd.x, pd.y, { r: 12, alpha: .24 });
         S.puddles.splice(i, 1);
         continue;
       }
@@ -925,7 +956,7 @@ const G = (() => {
       const sp = S.spirits[i];
       sp.age += dt;
       if (sp.age > sp.life) {
-        S.stainQueue.push({ x: sp.x, y: sp.y, r: 2.2, alpha: 0.2 });
+        markWeapon('spirit', sp.x, sp.y, { r: 4, alpha: .23, angle: sp.ang });
         S.spirits.splice(i, 1);
         continue;
       }
@@ -952,6 +983,8 @@ const G = (() => {
         const idx = S.enemies.indexOf(closest);
         if (idx !== -1) {
           damageEnemy(closest, idx, CFG.spirit.dmg, true, sp.ang);
+          markWeapon('spirit', x0 + (sp.x - x0) * firstT,
+            y0 + (sp.y - y0) * firstT, { r: 7, alpha: .31, angle: sp.ang });
           burst(x0 + (sp.x - x0) * firstT, y0 + (sp.y - y0) * firstT, 4, false);
           S.spirits.splice(i, 1);
         }
