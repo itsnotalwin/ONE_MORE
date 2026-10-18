@@ -7,7 +7,7 @@ The ink remembers every stroke.</p>
 
 > **Experimental story branch:** [experiment/the-last-stroke](https://github.com/itsnotalwin/ONE_MORE/tree/experiment/the-last-stroke). This is a creative preview, **not the live production release**. The current original game remains on [main](https://github.com/itsnotalwin/ONE_MORE/tree/main).
 
-**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/experiment/the-last-stroke/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. Production still lives at [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/).
+**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. Production still lives at [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/).
 
 ## A story hidden beneath the paper
 
