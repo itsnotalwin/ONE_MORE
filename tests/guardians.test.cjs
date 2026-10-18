@@ -51,7 +51,7 @@ test('each scroll has a distinct attack language with fair 1s+ warnings',()=>{
     assert.ok(c.title!==a.title);
     signatures.push([a.marks[0].kind,c.marks[0].kind]);
   }
-  assert.equal(signatures[0][0],'line');
+  assert.equal(signatures[0][0],'heavenlyStroke');
   assert.equal(signatures[1][0],'line');
   assert.equal(signatures[2][0],'seal');
 });
@@ -93,7 +93,7 @@ test('Guardian attack only deals damage AFTER telegraph, using normal invulnerab
   x.G.update(.05);
   assert.equal(x.G.S.stats.hp,initial,'windup is harmless');
   step(x.G,30);
-  assert.equal(x.G.S.stats.hp,initial-1,'an active seam can deal exactly one hit');
+  assert.equal(x.G.S.stats.hp,initial-1,'an active heavenly stroke can deal exactly one hit');
   step(x.G,5);
   assert.equal(x.G.S.stats.hp,initial-1,'invulnerability blocks multi-hit overlap');
   assert.equal(e.guardian.phase,1);
