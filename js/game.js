@@ -1069,7 +1069,7 @@ const G = (() => {
      Ordinary auto-fire droplets (kind:'drop') remain purely projectiles
      throughout flight, hits, piercing and expiry, including maxed stats. */
   function projectileMarkKind(b){
-    return b.kind==='blade'?'fan':b.kind==='echo'?'echo':null;
+    return b.kind==='blade'?'fan':b.kind==='echo'?'echo':b.kind==='mirror'?'mirror':null;
   }
   function paintFlight(b,x0,y0,x1,y1){
     const kind=projectileMarkKind(b);
@@ -1559,6 +1559,27 @@ const G = (() => {
       const x0 = b.x, y0 = b.y;
       const travel = Math.max(0, Math.min(dt, b.life - b.age));
       b.x += b.vx * travel; b.y += b.vy * travel; b.age += dt;
+      /* Mirror Fold catches only ordinary ink globs or needles, never
+         Guardian handwriting or undodgeable scripted world attacks. */
+      if(S.stats.mirror>0 && S.mirrorT<=0 &&
+         (b.kind==='glob'||b.kind==='needle') &&
+         Math.hypot(b.x-p.x,b.y-p.y)<CFG.mirror.range(S.stats.mirror)){
+        const target=nearestEnemy();
+        const ang=target?Math.atan2(target.y-p.y,target.x-p.x)
+          :Math.atan2(-b.vy,-b.vx);
+        S.bullets.push({
+          x:p.x+Math.cos(ang)*11,y:p.y+Math.sin(ang)*11,
+          vx:Math.cos(ang)*CFG.mirror.speed,
+          vy:Math.sin(ang)*CFG.mirror.speed,
+          ang,dmg:CFG.mirror.dmg(S.stats.mirror),
+          hits:1,age:0,life:.83,kind:'mirror',spin:0,
+        });
+        markWeapon('mirror',p.x,p.y,{r:11,alpha:.9,angle:ang});
+        S.rings.push({x:p.x,y:p.y,max:24,life:.22,maxLife:.22});
+        S.mirrorT=CFG.mirror.period(S.stats.mirror);
+        S.ebullets.splice(i,1);SFX.fan();
+        continue;
+      }
       if (S.invulnT <= 0) {
         const br = b.kind === 'needle' ? CFG.needle.r : CFG.glob.r;
         const rr = p.r - 1 + br;
