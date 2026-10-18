@@ -309,6 +309,31 @@ The director chooses:
 
 **Verification:** `tests/story.test.cjs` covers the film/replay while the full Node test suite protects combat and progression. Real Chromium at desktop and mobile dimensions screenshots the new home, onboarding, campaign and in-game sequences. Physical iPhone Safari review of touch spacing and transitions remains an acceptance step.
 
+## Stage-long painting / persistent weapon signatures (development)
+
+**Status: implemented on `development` only.** The old semi-transient stain layer faded after several seconds and discarded marks when it hit its cap. This has been replaced with a **ten-wave stage memory** shared by enemy blood and the player's weapon impacts. Rendering uses reuseable cached Canvas2D stamps, grouped in world-space 240 px cells, so off-screen stains are not repainted on every frame. No raster files or external art packages are required.
+
+| Weapon or effect | Permanent terrain impression |
+|---|---|
+| Ink Shot | Small splash and directional brush fleck |
+| Echo Stroke | Mirrored answer/crossing stroke |
+| Folded Fan | Long dry-brush slash |
+| Orbit | Crescent scuff and compact blot |
+| Black Tide (nova) | Fractured wash ring |
+| Ink Trail | Pooled dragging wash |
+| Spirit Scribes | Thin wispy brush traces |
+| Ink Knots | Several crossed tied fibers |
+| Paper Ward | Rectangular stamped border |
+| Shockwave | Short radial cracked arcs |
+
+All combat stains remain in the world's enemy-colored **INK** palette, black on normal paper and appropriately inverted on Night Scroll. Red belongs to the rank/XP gauge (plus established screen-specific highlights). **Stains are cumulative for all ten waves** and deliberately clear at a new level, a finished/failed/abandoned stage, or after ten Endless waves, never simply because a wave turns. Physical damage, knockback, targeting and XP mathematics are untouched.
+
+The player was separately redesigned as a single rounded living ink creature, with one carved paper eye and a short attached tapering motion stroke. The added bristle ornament and disconnected tail have been removed; the stable enemy-like line-boil animation and unchanged hitbox remain.
+
+The XP HUD is now a **horizontal red liquid-ink meter alongside the existing wave progress at the top**, not a tall left-side column. Mobile layouts shrink it without covering the top-right health cells.
+
+**Verification:** `tests/terrain-stages.test.cjs` covers weapon impression vocabulary, wave-to-wave persistence, full-stage clearing, Endless sheet turns and renderer caching. `tests/film-browser.cjs` verifies real stage persistence, reset, XP fill and phone/desktop layout. Physical iPhone Safari timing and crowded late-wave performance still warrant owner's acceptance test.
+
 ## 8. Roadmap board
 
 A source-controlled checklist, not a claim of a live GitHub Projects integration. Mark a box complete **only after verified**. Keep product delivery, technical debt, visual art and narrative tasks separate.
@@ -360,8 +385,8 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [x] Restore the original rounded living blob, now animated by smoothly evolving seeded contour points independent of character position; its tail and aim stay eased.
 - [x] Replace instant whole-player growth with 1.18×-capped, eased blob-body growth; orbit/ward and collision radius unchanged.
 - [x] Replace circular XP orbs with five seeded living ink-nib silhouettes and tapered magnetic return ribbons; XP reward logic and no-loss rule unchanged.
-- [x] Widen the left-side vertical cinnabar gauge and make the fill move upward slowly like thick liquid, with a subtly undulating meniscus, readable label, accessible progress and mobile safe-area spacing.
-- [x] Keep the player round and animated in the enemy's `INK` color and BLOT animation language. Remove awkward rank bristles and reduce the trailing brush tail. Enemy death particles, stains and small recovered XP blobs are black/pale-themed ink, while the wider vertical XP gauge alone contains red cinnabar.
+- [x] Move the XP fill horizontally beside the top wave progress, retaining the subtle cinnabar liquid meniscus and mobile-safe layout.
+- [x] Redesign protagonist as one round ink-born spirit with a paper eye, a short rooted tail and no stray bristle ornaments. Enemy blood, terrain marks and recovered XP blobs use themed INK; the horizontal top XP meter contains cinnabar.
 - [x] Automated gameplay regression tests passed; desktop/phone-sized Chromium screenshot suite runs for this code.
 - [ ] Owner's physical iPhone Safari review of long fights, Night Scroll contrast, pickup density and movement jitter.
 - [ ] Merge nothing to `main` without explicit approval.
@@ -373,6 +398,8 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [x] **Phase 3 — Guardians:** Introduced different attack geometry, phase shifts, and boss HP ticks on development.
 - [x] **Menu and onboarding polish:** Mobile-first title hierarchy, optional how-to sheet, gentle first-play hint and exact-frame cinematic-to-home transitions (development only).
 - [x] **Ink Absorption progression:** XP from reclaimable splat hearts, magnet pickup and wave-end suction, brush-rank choices midfight, compact HUD and collision-safe visual growth on development.
+- [x] **Stage-long terrain paintings:** Different weapon impressions persist with enemy blood across all ten waves; sprite caching and world-cell culling preserve mobile rendering performance.
+- [ ] Physically play-test a full ten-wave stage on iPhone for permanent stain density and HUD legibility.
 - [ ] Play-test later levels for actual number of upgrades, pickup accessibility and build pacing on a physical phone.
 - [ ] Physical iPhone verification of home screen fit, How to Play interactions and Skip/Replay fading.
 - [ ] Physically play-test Guardians on iPhone and adjust unfair or ineffective patterns before releasing to main.
