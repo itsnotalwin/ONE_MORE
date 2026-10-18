@@ -25,22 +25,34 @@ Your **BRUSH rank** now fills a compact horizontal cinnabar-red ink gauge **at t
 
 Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
 
+## Phase 7: quiet movement, living ink trail, the Night arts & First Seal rebalance (development)
+
+**The ink-soul now flows instead of running in place.** The old high-frequency alternating leg cycle and squash/bounce were distracting. The new motion keeps the face and forehead stable, uses a restrained directional lean and gentle trailing hem, with a slower movement rhythm. True movement speed, aim, 10px collision radius, level growth and reduced-motion accessibility are unchanged.
+
+**Suiteki Leak is a proper snail trail.** The little ink vessel follows the hero and leaves a continuous narrow black wet ribbon behind every movement, assembled from short joined world-space brush segments. There are no circular puddle bursts. Enemy contact with the temporary wet ribbon slows and takes at most **1 damage per 0.55 seconds per enemy**, regardless of overlapping segments. Rank 1–3 adjusts width and how long the ribbon remains wet, rather than spawning larger pools. It does **not** permanently mark the page below rank 3; rank 3 leaves sparse black dry streaks, and its separately acquired **Vermilion Seal** turns only that dry ink crimson. The original `trail`, `trailW` and `seal_trail` IDs remain save-compatible.
+
+**Paper II: four real, separately upgradable Night Scroll abilities.** The 3-card XP choices now unlock **Ink Lantern** (2 ranks, reveal/interrupt translucent phantoms), **Crescent Return** (3 ranks, curved blade hits on outward and return flight), **Mirror Fold** (3 ranks, catches ordinary globs/needles and sends a weaker counter-stroke, not Guardian attacks) and **Shroud Step** (2 ranks, short automatic displacement after sustained movement with a brief decoy). Each uses procedural ink-and-washi visuals, has cooldowns and mobile-friendly automatic controls, leaves no lasting map mark until max rank, and may take a **separately selected** one-time Vermilion upgrade. They are unavailable on Paper I; one newly eligible art gets preference in Paper II's rank-up menu so it can actually be discovered.
+
+**First Paper's Level 10 boss is meaningfully tougher, not just a redrawn road.** The Heavenly Brushstroke encounter has approximately **53% more HP** than before, reaches its crossing/hook phases at **74% and 40% HP**, casts more often, and summons a couple of small existing BLIP enemies on phase changes. The warning, visible curve/hit collision match, one-hit protection, stage 1–9 Guardian fights and other worlds' bosses remain unchanged.
+
+See the [Phase 7 implementation notes](docs/PHASE-7-NIGHT-ARTS-AND-FIRST-SEAL.md) and [combat tests](tests/night-arsenal.test.cjs). Gameplay changes are on `development` only; `main` remains untouched.
+
 ## Phase 6: a living hero on untouched washi (development)
 
 **Implemented:** the ink-soul now anticipates movement, flows through a two-beat RUN, eases into turns and braking, and reacts to hits, ink absorption and brush-rank gains. Its original movement physics and 10px collision circle have not changed.
 
 **Paper I** is a near-flat warm-ivory Japanese-inspired sheet with no repeated line pattern, background glyphs or ghost decoration. The world's artwork comes from enemy blood and mastered skills rather than preprinted marks. **The First Guardian** now attacks with an enormous tapered divine brushstroke instead of an ink road: a Downstroke, Crossing and Hook use sampled Bézier paths shared by the visible warning, impact and damage test. Telegraph time, HP and damage have not been raised.
 
-**Suiteki Leak** replaces Ink Trail as a three-rank area-control weapon: an inkstone gently spills into slow-spreading temporary black pools. Placement is occasional, capped to one or two active pools, and damage is limited to one hit per enemy every 0.55 seconds across all pools. At rank 3 it begins leaving a dried black pool on the stage. Selecting its separate one-time Vermilion Seal changes the dried stain to lacquer crimson without any damage increase. Its old internal IDs `trail`, `trailW` and `seal_trail` are retained.
+**Suiteki Leak** originally replaced Ink Trail with a small pool. **Phase 7 supersedes that behavior** with a narrow continuous, snail-like ink ribbon that follows motion. The same internal IDs and optional Vermilion progression remain.
 
-The specific technical [Phase 6 design/implementation specification](docs/PHASE-6-LIVING-INK-DESIGN-SPEC.md) and [regression tests](tests/phase6.test.cjs) document the details. Paper II Ink Lantern and other power unlocks, plus the First Guardian difficulty rebalance, are **not implemented** in this phase.
+The original [Phase 6 specification](docs/PHASE-6-LIVING-INK-DESIGN-SPEC.md) remains as its historical design record. The [Phase 7 changes](docs/PHASE-7-NIGHT-ARTS-AND-FIRST-SEAL.md) implement the revised hero motion, trail, world-specific arts and boss balance.
 
 ## Paper II readability and opening-stage pacing (development)
 
 - **The Eraser is no longer oversized at rank one.** Clearing radius is 65px, then 100px, and finally 135px, which used to be its initial radius. Its damage/cooldown remain unchanged.
 - **Paper I levels 01–03 are substantially longer without tougher opening enemies.** Spawn groups are smaller and spaced farther apart, while enemy budget, HP, damage and the first Guardian are not changed.
 - **Paper II / Night Scroll has become dyed indigo washi.** Blue-charcoal hand-textured paper, warm ivory creature ink, faint material fibers, a properly inverted HUD, and delicate tracking accents for intentionally semi-transparent phantoms prevent visually invisible attackers. Night Scroll also has stronger HP/speed/encounter budget multipliers than Paper I, without rewriting existing enemy silhouettes.
-- **New Night Scroll powers are proposals, not code.** Crescent Return, Ink Lantern, Mirror Fold and Shroud Step are detailed in the [Game Bible](docs/GAME_BIBLE.md), awaiting approval before implementation. The first-paper boss is likewise reserved for its separate design pass.
+- **New Night Scroll powers are playable on Paper II onward.** Ink Lantern, Crescent Return, Mirror Fold and Shroud Step are documented in the [Game Bible](docs/GAME_BIBLE.md) and implemented, together with the First Paper boss balance changes, in Phase 7.
 
 Material reference: [Awagami Factory's indigo-dyed Awa Washi](https://www.awagami.or.jp/indigo/en/about/). No external artwork is copied; the paper grain remains procedural Canvas2D.
 
@@ -60,7 +72,7 @@ Material reference: [Awagami Factory's indigo-dyed Awa Washi](https://www.awagam
 
 ## Stage-long ink painting and the new protagonist (development)
 
-**Special abilities sign the paper; basic shots never do.** Echo leaves mirrored marks, Folded Fan cuts directional slash marks, The Eraser clears accumulated marks, Black Tide makes broken rings, Suiteki Leak leaves timed inkstone pools, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. Special-technique marks appear in scroll-colored black/pale ink only after maxing the underlying skill. A separate post-max red upgrade can then change that skill's marks to deep lacquer crimson. Enemy blood stays black.
+**Special abilities sign the paper; basic shots never do.** Echo leaves mirrored marks, Folded Fan cuts directional slash marks, The Eraser clears accumulated marks, Black Tide makes broken rings, Suiteki Leak leaves a joined wet ink ribbon, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. Special-technique marks appear in scroll-colored black/pale ink only after maxing the underlying skill. A separate post-max red upgrade can then change that skill's marks to deep lacquer crimson. Enemy blood stays black.
 
 **All weapon marks and enemy blood survive the entire independent ten-wave stage** without fading, including the final Guardian encounter. Only a completed/failed/abandoned stage or fresh run turns the sheet; Endless turns the sheet after each ten-wave region. Terrain marks now reuse cached painted sprites and are indexed in small world-space cells to avoid creating new texture canvases per hit or repainting every distant stain on mobile.
 
@@ -188,16 +200,17 @@ SPIT's globs and STILT's needles are dodgable — watch for hollow rings and
 the drawn line. SHADE leaves a stain where it vanished and where it
 reappears; read the paper.
 
-**The brush arts — 19 upgrades**, including four weapons:
+**The brush arts — 23 upgrades**, including eight marked weapons/arts:
 
 - *Strokes*: Quick Hand, Bitter Ink, Twin Stroke, Through Mist, Flick,
   Fleeting Foot, Thick Ink, Red Seal, Ink Burst, Echo Stroke, The Eraser,
   Black Tide, Wet Paper, Crimson Tip, Paper Ward
 - *Weapons* (marked 武 in vermilion on their cards):
   **Folded Fan** — a snapping spray of paper blades;
-  **Suiteki Leak** — a slow spreading inkstone spill slows and damages nearby enemies;
+  **Suiteki Leak** — an ink vessel draws a continuous damaging snail-trail ribbon;
   **Spirit Scribes** — lesser brushes that wake and hunt on their own;
   **Ink Knots** — living brush threads bind a small cluster, slow them, and deal one delayed point of damage per target.
+- *Paper II+ arts*: **Ink Lantern** (phantom reveal), **Crescent Return** (returning blade), **Mirror Fold** (projectile counter), and **Shroud Step** (short misleading afterimage).
 
 ---
 
