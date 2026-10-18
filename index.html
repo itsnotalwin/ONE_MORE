@@ -50,7 +50,13 @@
           <span class="hud-area-name" id="hudAreaName">FIRST WASH</span>
           <span class="hud-area-count" id="hudWaveTotal">一 / 十</span>
         </div>
-        <div class="wave-progress"><div class="wave-fill" id="waveFill"></div></div>
+        <div class="hud-progress-row">
+          <div class="wave-progress" aria-label="Wave progress"><div class="wave-fill" id="waveFill"></div></div>
+          <div id="inkMeter" class="ink-meter" role="progressbar" aria-label="Ink experience toward next brush rank" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+            <span id="inkRank" class="ink-meter-rank">BRUSH 01</span>
+            <div class="ink-meter-track"><div class="ink-meter-fill" id="inkFill"></div></div>
+          </div>
+        </div>
       </div>
       <span class="hud-mode" id="hudMode">THE JOURNEY</span>
     </div>
@@ -61,10 +67,6 @@
     <div class="hud-bl">
       <div class="hud-loadout" id="hudLoadout"></div>
       <span class="hud-time" id="hudTime">00:00</span>
-    </div>
-    <div id="inkMeter" class="ink-meter" role="progressbar" aria-label="Ink experience toward next brush rank" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
-      <div class="ink-meter-label"><span class="ink-meter-title" aria-hidden="true">吸</span><span id="inkRank">BRUSH 01</span></div>
-      <div class="ink-meter-track"><div class="ink-meter-fill" id="inkFill"></div></div>
     </div>
     <div class="hud-br">
       <button id="muteBtn" class="icon-btn" aria-label="Toggle sound" title="Toggle sound (M)">
