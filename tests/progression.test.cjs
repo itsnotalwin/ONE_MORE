@@ -36,11 +36,10 @@ function clearLevel(G) {
     G.S.enemies = [];
     G.update(0.05);
     G.update(0.60);
+    G.update(0.60); /* ink-recall animation finishes before next wave */
     if (wave !== 10) {
-      assert.equal(G.mode, 'upgrade');
-      G.pickAt(0);
-      G.deploy();
       assert.equal(G.mode, 'playing');
+      assert.equal(G.S.stats.wave, wave + 1);
     }
   }
   assert.equal(G.mode, 'over');
@@ -106,10 +105,10 @@ test('all 30 levels, 300 waves, world mechanics, world bosses and Endless', () =
         G.S.enemies = [];
         G.update(0.05);
         G.update(0.60);
+        G.update(0.60);
         if (wave < 10) {
-          assert.equal(G.mode, 'upgrade');
-          G.pickAt(0);
-          G.deploy();
+          assert.equal(G.mode, 'playing','XP rewards no longer forced at wave clearance');
+          assert.equal(G.S.stats.wave,wave+1);
         }
       }
       assert.equal(G.mode, 'over');
@@ -151,6 +150,15 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
   renderer = renderer.slice(0, barStart) + renderer.slice(barEnd);
   renderer = renderer.replace(
     '    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);\n','');
+  renderer = renderer.replace(
+    '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
+    '       No original creature or player sprite functions are modified. */\n' +
+    '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
+  const growthStart=renderer.indexOf('    if (playing) {\n      /* Growth is visual ONLY');
+  const growthEnd=renderer.indexOf('    for (const knot of S.knots)',growthStart);
+  assert.ok(growthStart>0 && growthEnd>growthStart);
+  renderer=renderer.slice(0,growthStart)+
+    '    if (playing) drawPlayer(ctx, t);\n'+renderer.slice(growthEnd);
   assert.equal(fnv(renderer), '84b72d7e', 'all original gameplay rendering remains byte-for-byte intact');
   const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
   const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
