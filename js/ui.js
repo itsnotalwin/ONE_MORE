@@ -126,14 +126,19 @@ const UI = (() => {
     const completeCount = progress.completed[selectedWorld];
     el.campaignWorldName.textContent = area.name;
     el.campaignMechanic.textContent = `${area.desc}  ·  ${area.mechanic}`;
-    el.campaignStatus.textContent = `${completeCount} / 10 LEVELS COMPLETE · 10 WAVES EACH`;
+    const nextLevel = Math.min(CAMPAIGN.LEVELS_PER_WORLD, completeCount + 1);
+    const nextChapter = WAVE_DIRECTOR.level(selectedWorld, nextLevel);
+    el.campaignStatus.textContent = completeCount === CAMPAIGN.LEVELS_PER_WORLD
+      ? '10 / 10 LEVELS SEALED · SCROLL COMPLETE'
+      : `${completeCount} / 10 COMPLETE · NEXT: ${nextChapter.title}`;
     el.campaignLevels.innerHTML = Array.from({ length: CAMPAIGN.LEVELS_PER_WORLD }, (_, i) => {
       const level = i + 1;
       const cleared = level <= completeCount;
       const available = CAMPAIGN.canPlay(selectedWorld, level, progress);
       const state = cleared ? 'SEALED' : available ? 'PLAY' : 'LOCKED';
+      const stage = WAVE_DIRECTOR.level(selectedWorld, level);
       return `<button type="button" class="campaign-level${cleared ? ' cleared' : ''}" data-level="${level}"
-        ${available ? '' : 'disabled'} aria-label="Level ${level}, ${state.toLowerCase()}">
+        ${available ? '' : 'disabled'} aria-label="Level ${level}, ${stage.title}, ${state.toLowerCase()}" title="${stage.title} — ${stage.signature.toUpperCase()}">
         <span class="campaign-level-no">${pad2(level)}</span><span class="campaign-level-state">${state}</span>
         ${level === CAMPAIGN.LEVELS_PER_WORLD ? '<span class="campaign-boss-label">守</span>' : ''}
       </button>`;
@@ -178,8 +183,11 @@ const UI = (() => {
     if (t !== lastTimeStr) { lastTimeStr = t; el.hudTime.textContent = t; }
   }
 
-  function banner(n, surge, isElite, worldBoss = false) {
-    el.bannerKicker.textContent = worldBoss && isElite ? 'THE WORLD GUARDIAN WAKES' : isElite ? 'THE GUARDIAN WAKES' : surge ? 'THE SURGE' : 'INCOMING';
+  function banner(n, surge, isElite, worldBoss = false, cue = null) {
+    el.bannerKicker.textContent = worldBoss && isElite ? 'THE WORLD GUARDIAN WAKES'
+      : isElite ? 'THE GUARDIAN WAKES'
+      : surge ? 'THE SURGE'
+      : cue || 'INCOMING';
     el.bannerTitle.innerHTML =
       `<span class="ban-kanji">${toKanji(n)}</span><span class="ban-lat">WAVE ${pad2(n)}${isElite ? ' — GUARDIAN' : ''}</span>`;
     el.banner.classList.toggle('surge', !!surge || !!isElite);
