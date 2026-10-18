@@ -258,14 +258,14 @@ const UI = (() => {
       const lv = levels[u.id] || 0;
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'up-card' + (u.weapon ? ' is-weapon' : '');
+      card.className = 'up-card' + (u.weapon ? ' is-weapon' : '') + (u.seal ? ' is-seal' : '');
       const pips = u.patch ? '' : Array.from({ length: u.max }, (_, k) =>
         `<i class="pip${k < lv ? ' on' : ''}"></i>`).join('');
-      const isNew = !u.patch && lv === 0 ? '<span class="up-new">NEW</span>' : '';
-      const isWpn = u.weapon ? '<span class="up-wpn">武</span>' : '';
+      const isNew = u.seal ? '<span class="up-new">VERMILION</span>' : !u.patch && lv === 0 ? '<span class="up-new">NEW</span>' : '';
+      const isWpn = u.seal ? '<span class="up-wpn">朱</span>' : u.weapon ? '<span class="up-wpn">武</span>' : '';
       card.innerHTML =
         `<div class="up-top"><span class="up-no">之${toKanji(i + 1)}</span><span class="up-top-right">${isWpn}${isNew}<span class="up-pips">${pips}</span></span></div>` +
-        `<svg class="up-glyph" viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.id] || GLYPHS.patch}</svg>` +
+        `<svg class="up-glyph" viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.redSealOf || u.id] || GLYPHS.patch}</svg>` +
         `<h3 class="up-name">${u.name}</h3>` +
         `<p class="up-desc">${u.desc}</p>` +
         `<span class="up-check" aria-hidden="true"></span>`;
@@ -350,9 +350,9 @@ const UI = (() => {
   /* the brush's current loadout, worn on the wrist */
   function setLoadout(levels) {
     if (!el.hudLoadout) return;
-    el.hudLoadout.innerHTML = UPGRADES
+    el.hudLoadout.innerHTML = [...UPGRADES, ...RED_SEALS]
       .filter(u => (levels[u.id] || 0) > 0)
-      .map(u => `<span class="load-item" title="${u.name}"><svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.id] || GLYPHS.patch}</svg><b>${levels[u.id]}</b></span>`)
+      .map(u => `<span class="load-item${u.seal?' is-seal':''}" title="${u.name}"><svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.redSealOf || u.id] || GLYPHS.patch}</svg><b>${u.seal?'朱':levels[u.id]}</b></span>`)
       .join('');
   }
 
