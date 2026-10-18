@@ -13,6 +13,8 @@ The ink remembers every stroke.</p>
 
 **Development milestone 01 / Combat Foundations:** Swept bullet/needle/Spirit Scribe collision eliminates frame-skipping hits; piercing shots hit each enemy once; joystick and keyboard state resets when changing screens. These fixes are on **development only**, not merged into the cinematic release in `main`. Automated coverage: [`tests/combat.test.cjs`](tests/combat.test.cjs).
 
+**Development milestone 02 / Wave Director 2.0:** Every Journey level now has an authored stage identity, featured enemy pairing and choreographed spawn formation. Across the 30 levels and 300 waves, encounters vary in group spacing, flanking direction, momentum and roster emphasis instead of simply adding health. Existing Guardian and world-special waves remain, and Endless retains its original random generation. This is **on `development` only**. See [`js/wave-director.js`](js/wave-director.js), [all 30 stages in the Game Bible](docs/GAME_BIBLE.md#wave-director-20--authored-encounter-design-phase-2), and [`tests/wave-director.test.cjs`](tests/wave-director.test.cjs).
+
 ## A story hidden beneath the paper
 
 Before the world had a name, there was paper. The Painter imagined mountains, rivers, and living things in a single breath. But ink seeped through the other side, and abandoned marks learned to move. Afraid of these mistakes, the Painter tried to wash everything away. One unfinished brushstroke survived.
@@ -166,7 +168,8 @@ one-more/
 │   ├── campaign.js             # persistent world/level unlocks
 │   ├── audio.js                # synthesized ink sound kit (splats, taiko, gong)
 │   ├── ui.js                   # DOM screens, HUD, kanji numerals, upgrade cards
-│   ├── game.js                 # camera, areas, waves, entities, weapons, flow
+│   ├── game.js                 # camera, combat, encounters, weapons, flow
+│   ├── wave-director.js        # authored campaign encounters and spawn formations
 │   ├── render.js               # original gameplay renderer
 │   ├── film.js                 # procedural actors, ink animations and live-drawn short film
 │   ├── intro.js                # film timeline, captions, sound + Chronicle
@@ -179,7 +182,8 @@ one-more/
 ├── tests/
 │   ├── progression.test.cjs    # existing campaign regression tests
 │   ├── story.test.cjs          # seven-shot film and archive regression tests
-│   └── film-browser.cjs        # CI-only real Chromium animation QA
+│   ├── film-browser.cjs        # CI-only real Chromium animation QA
+│   └── wave-director.test.cjs  # 300 encounter legality and pacing checks
 ├── docs/
 │   ├── GAME_BIBLE.md           # canon lore, technical atlas, roadmap checklist
 │   ├── RESEARCH.md             # art, accessibility, hosting choices
