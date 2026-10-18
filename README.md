@@ -25,6 +25,15 @@ Your **BRUSH rank** now fills a compact horizontal cinnabar-red ink gauge **at t
 
 Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
 
+## Paper II readability and opening-stage pacing (development)
+
+- **The Eraser is no longer oversized at rank one.** Clearing radius is 65px, then 100px, and finally 135px, which used to be its initial radius. Its damage/cooldown remain unchanged.
+- **Paper I levels 01–03 are substantially longer without tougher opening enemies.** Spawn groups are smaller and spaced farther apart, while enemy budget, HP, damage and the first Guardian are not changed.
+- **Paper II / Night Scroll has become dyed indigo washi.** Blue-charcoal hand-textured paper, warm ivory creature ink, faint material fibers, a properly inverted HUD, and delicate tracking accents for intentionally semi-transparent phantoms prevent visually invisible attackers. Night Scroll also has stronger HP/speed/encounter budget multipliers than Paper I, without rewriting existing enemy silhouettes.
+- **New Night Scroll powers are proposals, not code.** Crescent Return, Ink Lantern, Mirror Fold and Shroud Step are detailed in the [Game Bible](docs/GAME_BIBLE.md), awaiting approval before implementation. The first-paper boss is likewise reserved for its separate design pass.
+
+Material reference: [Awagami Factory's indigo-dyed Awa Washi](https://www.awagami.or.jp/indigo/en/about/). No external artwork is copied; the paper grain remains procedural Canvas2D.
+
 ## The Eraser and the living paper (development)
 
 **Visual references:** [Ōkami's Celestial Brush](https://en.wikipedia.org/wiki/%C5%8Ckami) for distinct techniques that change the world, [The Unfinished Swan](https://store.steampowered.com/app/1206430/The_Unfinished_Swan/) for readable black paint that transforms a blank landscape, and traditional [haboku ink painting](https://en.wikipedia.org/wiki/Haboku) for wet-to-dry splatters. These are design references, not reused sprites.
@@ -33,7 +42,7 @@ Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and 
 
 **Terrain effects are earned in two stages.** Acquired weapons work normally at first but leave **no lasting map ink until their ordinary skill reaches its maximum rank**. That unlocks deep **black** marks: Echo and Folded Fan paint flight paths, Spirit Scribes trace movement, Ink Knots print their threads, and Black Tide paints its impact boundary. After mastery, the next XP choice can offer a distinct **Vermilion Seal** card for that particular skill. Choosing it upgrades only that technique's terrain signature to rich lacquer-crimson `#ac1538`. The post-max red upgrade is never automatic, appears at most once per skill, and preserves the three-card choice system. Basic auto-fire shots never paint the map, even when fully upgraded.
 
-**Ink Orbit is now The Eraser**, a round negative-space field that does not have orbiting projectiles. It damages nearby creatures for **1 HP per eligible target every 0.82 seconds** and physically removes enemy blood and weapon marks from the paper every quarter-second. Its radius grows from **135px → 170px → 205px** across three ranks, and at max rank it gains a black boundary. Only after selecting its separate **Vermilion Seal** upgrade does that boundary turn crimson. It does not alter the player's movement, collision size or XP mathematics.
+**Ink Orbit is now The Eraser**, a round negative-space field that does not have orbiting projectiles. It damages nearby creatures for **1 HP per eligible target every 0.82 seconds** and physically removes enemy blood and weapon marks from the paper every quarter-second. Its radius grows from **65px → 100px → 135px** across three ranks, and at max rank it gains a black boundary. Only after selecting its separate **Vermilion Seal** upgrade does that boundary turn crimson. It does not alter the player's movement, collision size or XP mathematics.
 
 **The protagonist is now a separate flowing ink-soul**, not a paintbrush with bristles: an asymmetric soft hood, two gently moving lower folds and one expressive paper eye. The existing attack effects still paint the map; the enemy animation atlas is preserved.
 
