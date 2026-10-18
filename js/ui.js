@@ -229,7 +229,7 @@ const UI = (() => {
     const safeRank=Math.max(1,Math.floor(rank));
     const pct=Math.max(0,Math.min(100,100*current/Math.max(1,needed)));
     el.inkRank.textContent='BRUSH '+pad2(safeRank);
-    el.inkFill.style.height=pct.toFixed(1)+'%';
+    el.inkFill.style.width=pct.toFixed(1)+'%';
     el.inkMeter.setAttribute('aria-valuemax',String(Math.max(1,needed)));
     el.inkMeter.setAttribute('aria-valuenow',String(Math.max(0,Math.floor(current))));
     el.inkMeter.setAttribute('aria-valuetext',
