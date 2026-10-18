@@ -42,19 +42,33 @@
     G.S.inputVec.x = x; G.S.inputVec.y = y;
   }
 
+  function clearInput() {
+    for (const key of Object.keys(keys)) delete keys[key];
+    const pointer = G.S.joy;
+    G.S.joy = null;
+    G.S.inputVec.x = 0;
+    G.S.inputVec.y = 0;
+    if (pointer && canvas.hasPointerCapture?.(pointer.id)) {
+      try { canvas.releasePointerCapture(pointer.id); } catch (_) {}
+    }
+  }
+
   function pause() {
     if (G.mode !== 'playing') return;
+    clearInput();
     G.mode = 'paused';
     UI.show('pause');
   }
 
   function resume() {
     if (G.mode !== 'paused') return;
+    clearInput();
     G.mode = 'playing';
     UI.show(null);
   }
 
   function start(mode = 'journey', worldIndex, level) {
+    clearInput();
     SFX.ensure();
     if (mode === 'journey' && worldIndex == null) {
       G.openCampaign();
@@ -66,6 +80,7 @@
   }
 
   function goMenu() {
+    clearInput();
     SFX.ensure();
     R.resetStains();
     G.abandon();
@@ -81,7 +96,12 @@
     if (INTRO.handleKey(k)) { e.preventDefault(); return; }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(k)) e.preventDefault();
     SFX.ensure();
-    if (e.repeat) { keys[k] = true; return; }
+    if (e.repeat) {
+      if (G.mode === 'playing' && /^(?:Key[WASD]|Arrow(?:Up|Down|Left|Right))$/.test(k)) {
+        keys[k] = true; vec();
+      }
+      return;
+    }
     if (k === 'KeyM') { toggleMute(); return; }
     const m = G.mode;
     if (k === 'KeyP' || k === 'Escape') {
@@ -104,8 +124,10 @@
       G.pickAt(Number(k.slice(5)) - 1);
       return;
     }
-    keys[k] = true;
-    vec();
+    if (m === 'playing' && /^(?:Key[WASD]|Arrow(?:Up|Down|Left|Right))$/.test(k)) {
+      keys[k] = true;
+      vec();
+    }
   });
 
   window.addEventListener('keyup', e => {
@@ -133,11 +155,12 @@
   const endJoy = e => {
     if (G.S.joy && e.pointerId === G.S.joy.id) {
       G.S.joy = null;
-      G.S.inputVec.x = 0; G.S.inputVec.y = 0;
+      vec(); /* Preserve keyboard movement if both inputs were in use. */
     }
   };
   canvas.addEventListener('pointerup', endJoy);
   canvas.addEventListener('pointercancel', endJoy);
+  canvas.addEventListener('lostpointercapture', endJoy);
 
   /* ---------------- buttons ---------------- */
   document.getElementById('playBtn').addEventListener('click', () => start('journey'));
@@ -170,7 +193,7 @@
   document.getElementById('deployBtn').addEventListener('click', () => G.deploy());
   document.getElementById('muteBtn').addEventListener('click', toggleMute);
 
-  window.addEventListener('blur', pause);
+  window.addEventListener('blur', () => { clearInput(); pause(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
   /* ---------------- init ---------------- */
@@ -186,14 +209,17 @@
 
   /* ---------------- main loop ---------------- */
   let last = performance.now();
+  let lastMode = G.mode;
   function frame(now) {
     requestAnimationFrame(frame);
     let dt = (now - last) / 1000;
     last = now;
     if (dt > 0.05) dt = 0.05;
 
-    vec();
     const m = G.mode;
+    if (lastMode === 'playing' && m !== 'playing') clearInput();
+    lastMode = m;
+    vec();
     /* Film has its own canvas: don't spend battery painting hidden gameplay. */
     if (m === 'intro' || m === 'chronicle') return;
     if (m === 'playing') G.update(dt);
