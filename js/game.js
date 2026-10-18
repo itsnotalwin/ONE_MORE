@@ -588,6 +588,7 @@ const G = (() => {
         kind: 'blade', spin: (i % 2 ? 1 : -1) * rand(9, 14),
       });
     }
+    markWeapon('fan',p.x,p.y,{r:11,alpha:.9,angle:p.aim});
     SFX.fan();
   }
 
@@ -599,7 +600,7 @@ const G = (() => {
       tickT: 0.1, seed: (Math.random() * 1e9) | 0,
     });
     markWeapon('trail', S.puddles[S.puddles.length - 1].x,
-      S.puddles[S.puddles.length - 1].y, { r: 9, alpha: .22 });
+      S.puddles[S.puddles.length - 1].y, { r: 12, alpha: .9 });
     if (S.puddles.length > 26) S.puddles.shift();
   }
 
@@ -613,6 +614,7 @@ const G = (() => {
         age: 0, life: CFG.spirit.life, seed: (Math.random() * 1e9) | 0,
       });
     }
+    markWeapon('spirit',S.player.x,S.player.y,{r:9,alpha:.9});
     SFX.spirit();
   }
 
@@ -636,6 +638,7 @@ const G = (() => {
       pulsed: false, seed: (Math.random() * 1e9) | 0,
     });
     S.knotT = CFG.knot.period(S.stats.knot);
+    markWeapon('knot',anchor.x,anchor.y,{r:12,alpha:.9});
     SFX.knot();
   }
 
@@ -837,12 +840,30 @@ const G = (() => {
 
   /* A projectile can cover 28+ pixels in one 50ms phone frame.
      Store its true traveled segment instead of sampling the endpoint. */
+  /* A traveling weapon continuously paints its path on the washi.
+     Sample every ~38px, at most four marks in one long phone frame.
+     These marks use the same stage-long cached sprite layer as blood. */
+  function paintFlight(b,x0,y0,x1,y1){
+    const dist=Math.hypot(x1-x0,y1-y0);
+    const prior=b.terrainCarry||0;
+    const due=prior+dist;
+    const n=Math.min(4,Math.floor(due/38));
+    const kind=b.kind==='blade'?'fan':b.kind==='echo'?'echo':'shot';
+    for(let j=0;j<n;j++){
+      const t=Math.min(1,(38*(j+1)-prior)/Math.max(.001,dist));
+      markWeapon(kind,x0+(x1-x0)*t,y0+(y1-y0)*t,
+        {r:kind==='fan'?6:4,alpha:.86,angle:b.ang});
+    }
+    b.terrainCarry=Math.max(0,due-n*38)%38;
+  }
+
   function moveBullets(dt, expire = true) {
     for (let i = S.bullets.length - 1; i >= 0; i--) {
       const b = S.bullets[i];
       b.prevX = b.x; b.prevY = b.y;
       const travel = Math.max(0, Math.min(dt, b.life - b.age));
       b.x += b.vx * travel; b.y += b.vy * travel; b.age += dt;
+      if(travel>0)paintFlight(b,b.prevX,b.prevY,b.x,b.y);
       if (expire && b.age > b.life) {
         markWeapon(b.kind === 'blade' ? 'fan' : b.kind === 'echo' ? 'echo' : 'shot',
           b.x, b.y, { r: 4.5, alpha: .26, angle: b.ang });
@@ -988,6 +1009,11 @@ const G = (() => {
       const x0 = sp.x, y0 = sp.y;
       sp.x += Math.cos(sp.ang) * sp.speed * dt;
       sp.y += Math.sin(sp.ang) * sp.speed * dt;
+      sp.terrainCarry=(sp.terrainCarry||0)+Math.hypot(sp.x-x0,sp.y-y0);
+      if(sp.terrainCarry>=38){
+        sp.terrainCarry%=38;
+        markWeapon('spirit',sp.x,sp.y,{r:5,alpha:.88,angle:sp.ang});
+      }
       if (sp.age < 0.12) continue; /* grace period after leaving the brush */
       let closest = null, firstT = Infinity;
       for (const e of S.enemies) {
