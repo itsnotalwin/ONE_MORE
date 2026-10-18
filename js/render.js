@@ -1160,7 +1160,52 @@ const R = (() => {
     c.closePath();
   }
 
-  function drawPlayer(c, t) {
+  /* Our protagonist is no longer the brush: a small sentient ink-soul
+     with an asymmetrical floating cloak, a lifted forehead and two
+     living folds instead of a tool handle or attached bristles.
+     Its recognizable face and silhouette stay coherent as it moves. */
+  function inkSoulPath(c,r,t,seed,reduced,motion){
+    const wave=reduced?0:Math.sin(t*3.0+seed*.003);
+    const fold=reduced?0:Math.sin(t*3.9+seed*.007);
+    const lean=motion*.035;
+    c.beginPath();
+    c.moveTo(-r*.34,-r*1.12);
+    c.bezierCurveTo(r*.05,-r*1.38,r*.83,-r*1.04,r*.97,-r*.42);
+    c.bezierCurveTo(r*1.18,r*.09,r*.89,r*.64,r*.55,r*.7);
+    c.quadraticCurveTo(r*.70,r*(1.10+wave*.08),
+      r*.23,r*(1.01+wave*.12));
+    c.quadraticCurveTo(-r*.03,r*.65,-r*.28,r*(1.08-fold*.09));
+    c.quadraticCurveTo(-r*.62,r*(1.26+fold*.07),
+      -r*.70,r*.68);
+    c.bezierCurveTo(-r*(1.12+lean),r*.42,
+      -r*(1.12-lean),-r*.42,-r*.34,-r*1.12);
+    c.closePath();
+  }
+
+  function drawEraserField(c,S,t){
+    const level=S.stats?.orb||0;if(!level)return;
+    const p=S.player,r=CFG.eraser.radius(level);
+    const mastered=(S.stats?.levels?.orbit||0)>=3;
+    c.save();c.translate(p.x,p.y);
+    /* Wash the paper into a faint clearing without an opaque magic aura. */
+    c.globalAlpha=mastered?.055:.034;c.fillStyle=PAPER;
+    c.beginPath();c.arc(0,0,r,0,TAU);c.fill();
+    c.strokeStyle=mastered?AWAKEN_RED:INK;
+    c.lineCap='round';c.lineWidth=mastered?2.1:1.65;
+    c.globalAlpha=mastered?.72:.40;
+    for(let k=0;k<3;k++){
+      const turn=(S.reduced?0:Math.sin(t*.63+k)*.03);
+      c.beginPath();c.arc(0,0,r+(k-1)*2.4,
+        .18+k*2.14+turn,1.70+k*2.14+turn);c.stroke();
+    }
+    /* A feather-thin edge of absence; no rotating projectiles. */
+    c.globalAlpha=mastered?.17:.12;
+    c.lineWidth=.7;c.beginPath();
+    c.arc(0,0,r-6,.25,TAU-.25);c.stroke();
+    c.restore();
+  }
+
+  function drawPlayer(c,t){
     const S=G.S,p=S.player,st=S.stats;
     const seed=p.visualSeed||0x51a7;
     const aim=p.visualAim==null?p.aim:p.visualAim;
@@ -1168,70 +1213,31 @@ const R = (() => {
     const motion=Math.min(1,Math.hypot(mvx,mvy));
     const size=p.displayScale||1;
     const reduced=!!S.reduced;
-    /* One ink-born spirit: a round, weighted living spot with a trailing
-       stroke that physically springs from the silhouette. No added brush
-       icon, no exposed bristle stick and never a vermilion body. */
     c.save();c.translate(p.x,p.y);
-    const dir=motion>.12?Math.atan2(mvy,mvx):aim;
-    const breathe=reduced?0:Math.sin(t*2.6+seed*.001)*.014;
-    const recoil=Math.max(0,Math.min(.7,p.recoil*.38));
+    const recoil=Math.min(.55,Math.max(0,p.recoil)*.24);
     c.translate(-Math.cos(aim)*recoil,-Math.sin(aim)*recoil);
-    const r=p.r;
-    /* The tail is rooted behind the blob, not drawn as a loose object. */
-    if(motion>.10&&!reduced){
-      c.save();c.rotate(dir);
-      const len=6+motion*8;
-      inkStroke(c,[
-        {x:-r*.50,y:0},
-        {x:-r*.88-len*.36,y:.48},
-        {x:-r-len,y:-.42}
-      ],3.7+motion*.7,{color:INK,alpha:.75,taper:1.25,seed,jit:.035});
-      c.restore();
-    }
-    /* Same temporal ink-boil mechanism as the enemies, softened by smooth
-       interpolation. Subtle vertical mass shift suggests wet liquid. */
-    c.save();
     c.rotate((p.visualTilt||0)*.65);
-    c.scale(size*(1+motion*.045),size*(1-motion*.035));
-    c.translate(0,breathe*r*.55);
-    const pulse=reduced?1:1+.016*Math.sin(t*3.4+seed*.003);
-    c.scale(pulse,2-pulse);
-    c.globalAlpha=1;c.fillStyle=INK;
-    livingBlobPath(c,r*1.06,seed,t,reduced);
+    c.scale(size*(1+motion*.018),size*(1-motion*.026));
+    /* Incredibly slight flotation; the face never hops or jitters. */
+    if(!reduced)c.translate(0,Math.sin(t*2.3+seed*.001)*.28);
+    c.fillStyle=INK;c.globalAlpha=1;
+    inkSoulPath(c,p.r,t,seed,reduced,motion);
     c.fill();
-    /* A single carved paper eye makes the spirit instantly recognizable.
-       It follows aim without creating a second, disconnected shape. */
-    const ex=Math.cos(aim)*r*.34,ey=Math.sin(aim)*r*.34;
-    const tx=-Math.sin(aim),ty=Math.cos(aim);
-    c.lineWidth=1.65;c.strokeStyle=PAPER;c.lineCap='round';
-    c.beginPath();
-    c.moveTo(ex-tx*2.25,ey-ty*2.25);
-    c.quadraticCurveTo(ex+Math.cos(aim)*.45,ey+Math.sin(aim)*.45,
-      ex+tx*2.25,ey+ty*2.25);
-    c.stroke();c.restore();
-
-    /* Combat readability stays separate from the ink body's identity. */
+    /* Curved single paper-eye: watchful and curious, not an angry
+       two-slit monster. Its gaze eases with the game's existing aim. */
+    const eyeX=Math.cos(aim)*p.r*.28,eyeY=-p.r*.13+Math.sin(aim)*p.r*.12;
+    c.strokeStyle=PAPER;c.lineWidth=1.9;c.lineCap='round';
+    c.beginPath();c.moveTo(eyeX-2.1,eyeY-.8);
+    c.quadraticCurveTo(eyeX,eyeY+1.1,eyeX+2.5,eyeY-.55);c.stroke();
     if(S.invulnT>0){
-      c.save();c.globalAlpha=reduced?.36:.29+Math.sin(t*3)*.055;
-      c.strokeStyle=INK;c.lineWidth=1;
-      c.beginPath();c.arc(0,0,r*size+4,0,TAU);c.stroke();c.restore();
-    }
-    if(st&&st.orb>0){
-      const orbR=CFG.orbit.radius(st.orb);
-      const base=S.clockT||t;
-      c.save();c.globalAlpha=.10;c.strokeStyle=INK;c.lineWidth=1;
-      c.beginPath();c.arc(0,0,orbR,0,TAU);c.stroke();c.restore();
-      for(let i=0;i<st.orb;i++){
-        const a=base*CFG.orbit.speed+i*TAU/st.orb;
-        c.save();c.translate(Math.cos(a)*orbR,Math.sin(a)*orbR);
-        c.rotate(a+Math.PI/2);
-        c.globalAlpha=.91;c.fillStyle=INK;
-        teardrop(c,3.6);c.fill();c.restore();
-      }
+      c.save();c.globalAlpha=reduced?.35:.28+Math.sin(t*3)*.05;
+      c.lineWidth=1;c.strokeStyle=INK;
+      c.beginPath();c.arc(0,0,p.r*size+4,0,TAU);c.stroke();
+      c.restore();
     }
     if(st&&st.ward){
       const ready=st.wardCd<=0,wa=aim+Math.PI;
-      c.save();c.translate(Math.cos(wa)*(r+12),Math.sin(wa)*(r+12)-2);
+      c.save();c.translate(Math.cos(wa)*(p.r+12),Math.sin(wa)*(p.r+12)-2);
       c.rotate((reduced?0:Math.sin(t*1.7)*.07)-.35);
       c.globalAlpha=ready?.9:.2;c.strokeStyle=INK;c.lineWidth=1.4;
       c.strokeRect(-4,-6.5,8,13);
@@ -1682,6 +1688,7 @@ const R = (() => {
     }
     ctx.globalAlpha=1;
 
+    if (playing) drawEraserField(ctx,S,t);
     for (const pd of S.puddles) drawPuddle(ctx, pd);
     if (!S.reduced) updateAmbient(dt, S);
 
