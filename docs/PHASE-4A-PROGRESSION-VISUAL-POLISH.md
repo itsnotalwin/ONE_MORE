@@ -1,7 +1,7 @@
 # ONE MORE — Phase 4A / Living Ink Visual Refinement
 
 **Status:** implementation specification, ready for a focused code pass. **Not implemented yet.**
-**Working branch:** \`development\` only. Never create another branch or merge into \`main\` as part of this pass.
+**Working branch:** `development` only. Never create another branch or merge into `main` as part of this pass.
 **Art direction:** the existing original sumi-e ink on washi with restrained cinnabar accent. Preserve existing procedural enemies, painterly paper, combat mechanics, and cinematic.
 
 ## Objective and visual principle
@@ -12,14 +12,14 @@ The core XP system, its later-level reward progression, 10-wave runs, full enemy
 
 ## 1. Verified current-state diagnosis
 
-Source inspected directly on \`development\`:
+Source inspected directly on `development`:
 
-- \`js/render.js / drawPlayer()\`: \`sd = ((p.x * 31 + p.y * 17) | 0) ^ (tick * 7919)\`. **The current procedural player outline depends on its live world position** as well as the line-boil tick. Moving the character changes its drawing seed, often on consecutive rendered frames. This is the first thing to fix.
-- \`js/render.js / drawPlayer()\`: the trailing ink stroke adds \`Math.sin(t * 9) * 2.2\` sway; damage invulnerability deliberately blinks via \`Math.floor(t * 18)\`; recoil translates the drawing by \`p.recoil * 2.4\`. These are independent sources of high-frequency visual movement. Retain combat feedback but separate it from the silhouette's identity.
-- \`js/render.js / draw()\`: the entire existing player (body, eye, defensive orbit, trail, recoil and ward) is enclosed in an immediate \`ctx.scale(INK_XP.visualScale(S.stats))\` transform. That instantly changes size when a rank rises and amplifies existing motion.
-- \`js/ink-xp.js / visualScale()\`: growth is driven by \`0.035\` per rank and \`0.018\` per bonus max HP, capped at **1.55×**. Too dramatic for this brush and potentially visually noisy with recoil and attached weapon effects.
-- \`js/ink-xp.js / draw()\`: loot cores use regular \`c.arc()\` circles, concentric rings and a little red dot, with \`Math.sin(t * 4 + d.pulse)\` pulsing. This is why they look like generic pickup orbs rather than living ink.
-- \`js/ink-xp.js / update()\`: homing uses exponential attraction and \`d.homing\` latches permanently, which is good for gameplay and can largely stay. The visual is currently a short line behind the orb; the redesign should instead feel like a tapered reabsorbed brushstroke.
+- `js/render.js / drawPlayer()`: `sd = ((p.x * 31 + p.y * 17) | 0) ^ (tick * 7919)`. **The current procedural player outline depends on its live world position** as well as the line-boil tick. Moving the character changes its drawing seed, often on consecutive rendered frames. This is the first thing to fix.
+- `js/render.js / drawPlayer()`: the trailing ink stroke adds `Math.sin(t * 9) * 2.2` sway; damage invulnerability deliberately blinks via `Math.floor(t * 18)`; recoil translates the drawing by `p.recoil * 2.4`. These are independent sources of high-frequency visual movement. Retain combat feedback but separate it from the silhouette's identity.
+- `js/render.js / draw()`: the entire existing player (body, eye, defensive orbit, trail, recoil and ward) is enclosed in an immediate `ctx.scale(INK_XP.visualScale(S.stats))` transform. That instantly changes size when a rank rises and amplifies existing motion.
+- `js/ink-xp.js / visualScale()`: growth is driven by `0.035` per rank and `0.018` per bonus max HP, capped at **1.55×**. Too dramatic for this brush and potentially visually noisy with recoil and attached weapon effects.
+- `js/ink-xp.js / draw()`: loot cores use regular `c.arc()` circles, concentric rings and a little red dot, with `Math.sin(t * 4 + d.pulse)` pulsing. This is why they look like generic pickup orbs rather than living ink.
+- `js/ink-xp.js / update()`: homing uses exponential attraction and `d.homing` latches permanently, which is good for gameplay and can largely stay. The visual is currently a short line behind the orb; the redesign should instead feel like a tapered reabsorbed brushstroke.
 
 These are code-level findings. The precise subjective contribution of each to *juggling* needs visual review on the user's iPhone after implementation. Do not claim device verification merely from unit tests.
 
@@ -27,10 +27,10 @@ These are code-level findings. The precise subjective contribution of each to *j
 
 **Required behaviors:**
 
-1. Give the player a **stable visual seed** independent of \`p.x\` and \`p.y\`; initialize it once per run. Use that seed to produce a consistent base silhouette.
+1. Give the player a **stable visual seed** independent of `p.x` and `p.y`; initialize it once per run. Use that seed to produce a consistent base silhouette.
 2. Preserve the project's line-boil tradition, but use low-amplitude, deliberate fluctuations around that base at **3–5 distinct hand-drawn states per second**, not entirely unrelated geometry every 0.115 seconds. Implement interpolated silhouette/noise or a deterministic blended jitter field if feasible with Canvas2D and no heavy per-frame allocations. Boil amplitude target: **2–4% of the brush radius** rather than a full contour redraw.
-3. Keep the **world-space anchor stable**. The center of the character must stay at \`S.player.x/y\`; movement uses existing actual physics unchanged. Camera follow remains unchanged unless clear camera instability is independently reproduced.
-4. Replace moving-tail \`9 rad/s\` oscillation with low-amplitude brush drag: **~1–1.6 px** drift, **~1–2.5 Hz** movement-driven damping. Inactive/idle tail should settle, not dance.
+3. Keep the **world-space anchor stable**. The center of the character must stay at `S.player.x/y`; movement uses existing actual physics unchanged. Camera follow remains unchanged unless clear camera instability is independently reproduced.
+4. Replace moving-tail `9 rad/s` oscillation with low-amplitude brush drag: **~1–1.6 px** drift, **~1–2.5 Hz** movement-driven damping. Inactive/idle tail should settle, not dance.
 5. Decouple appearance from weapon firing: use an optional **0–1.5 px** recoil in rendering, smoothly damping within ~100–180 ms; leave firing cadence, projectile spawn and hitboxes alone.
 6. Damage protection must remain readable, but consider swapping full-body 18 Hz blink for a calmer ink-outline/low-contrast ring or a slow opacity breath while keeping the invulnerability duration **exactly** as before.
 7. Set an explicit motion-cap on attached decoration. Wards/orbits must not inherit a sudden global progression-scale snap or become visually giant.
@@ -54,12 +54,12 @@ Treat extra **maximum HP** as nib fullness/pigment density (slightly darker, thi
 
 **Animation rules:** keep idle movement nearly imperceptible (0.5–1.2 px), eye/head aim smooth (no instantly flipping visual direction across the screen), lean at most 2–3° into sustained direction changes, and avoid flashy idle glow or radial fantasy auras. On rank-up, display an authored ~0.4–0.7 s ink-settling flourish, then return to stillness. If rank changes in a menu, keep the animation consistent when returning to gameplay.
 
-**Implementation:** remove the immediate uniform \`ctx.scale(INk_XP.visualScale(...))\` pattern from \`draw()\` (actual symbol casing to use is \`INK_XP\`). Keep a **separate** \`displayScale\` easing toward a cosmetic \`targetScale\`, or preferably adjust only the brush body/tail geometry. Use frame-time-independent exponential damping:
-\`display += (target - display) * (1 - exp(-dt / tau))\` with \`tau\` around **0.25–0.40 s**, and no overshoot. Do **not** scale the defensive orbit radius, collision markers or pickups when changing only the brush's apparent size.
+**Implementation:** remove the immediate uniform `ctx.scale(INk_XP.visualScale(...))` pattern from `draw()` (actual symbol casing to use is `INK_XP`). Keep a **separate** `displayScale` easing toward a cosmetic `targetScale`, or preferably adjust only the brush body/tail geometry. Use frame-time-independent exponential damping:
+`display += (target - display) * (1 - exp(-dt / tau))` with `tau` around **0.25–0.40 s**, and no overshoot. Do **not** scale the defensive orbit radius, collision markers or pickups when changing only the brush's apparent size.
 
 ## 4. Replace XP orbs with living ink seeds
 
-**Name in code and UX:** \`inkSeed\` / \`livingInk\`. Keep the existing \`inkDrops\` data array or migrate safely without changing serialized campaign state. These are **ink hearts escaping a dried stain**, not coins, bubbles or gems.
+**Name in code and UX:** `inkSeed` / `livingInk`. Keep the existing `inkDrops` data array or migrate safely without changing serialized campaign state. These are **ink hearts escaping a dried stain**, not coins, bubbles or gems.
 
 **Visual shape:**
 
@@ -78,12 +78,12 @@ Treat extra **maximum HP** as nib fullness/pigment density (slightly darker, thi
 
 **Wave-end ink recall:** keep the existing no-loss banking guarantee. Animate visible seeds streaming inward with light staggering/curved paths and finish within the existing ~1.1 s wave clear beat. If a distant seed cannot reach the brush in time, award its value silently without forcing an extra pause. NO sweeping screen-wide beams.
 
-**Performance:** preserve the 350-drop logical cap and merged-value guarantee. Target **at most ~80 detailed visible animated seeds** at once; farther/denser seeds may use simplified strokes, batched groups or cached paint variants. Avoid \`Math.random()\`, large canvas allocations, or heavy gradients for each seed every frame.
+**Performance:** preserve the 350-drop logical cap and merged-value guarantee. Target **at most ~80 detailed visible animated seeds** at once; farther/denser seeds may use simplified strokes, batched groups or cached paint variants. Avoid `Math.random()`, large canvas allocations, or heavy gradients for each seed every frame.
 
 ## 5. UX, balance and hitbox preservation
 
 - **Do not change XP rewards or the tuned rank threshold curve** in this visual pass.
-- **Do not change player movement speed, collision radius (\`CFG.player.r = 10\`), HP, existing fire rate, contact damage, invulnerability duration, boss telegraphs, pickup attraction logic or campaign completion.**
+- **Do not change player movement speed, collision radius (`CFG.player.r = 10`), HP, existing fire rate, contact damage, invulnerability duration, boss telegraphs, pickup attraction logic or campaign completion.**
 - Retain XP overflow and the rule that pending choices resume the **same wave**.
 - Preserve usable XP meter readability. Its vermilion progress bar stays on-screen; reserve more elaborate motion for the collected ink itself. Do not crowd the top UI or obscure 3-card upgrades.
 - Do not repeatedly add effects when a large pack dies. Prefer a few legible seeds and automatic visual-value aggregation.
@@ -92,27 +92,27 @@ Treat extra **maximum HP** as nib fullness/pigment density (slightly darker, thi
 ## 6. Exact engineering map and work order
 
 **Commit 1: isolate and eliminate player jitter**
-- \`js/render.js\`: eliminate position-dependent \`sd\`; separate stable silhouette from time-varying micro-boil; damp tail/recoil; keep player anchoring and aim readable.
-- \`js/game.js\`: if state is needed, initialize stable \`player.visualSeed\` and \`player.displayScale\` on new run and update cosmetic state with simulation dt.
-- \`tests/player-visual.test.cjs\`: test deterministic/stable seeds, bounded growth, and unaltered hitbox. Ensure no switch to generic sprites.
+- `js/render.js`: eliminate position-dependent `sd`; separate stable silhouette from time-varying micro-boil; damp tail/recoil; keep player anchoring and aim readable.
+- `js/game.js`: if state is needed, initialize stable `player.visualSeed` and `player.displayScale` on new run and update cosmetic state with simulation dt.
+- `tests/player-visual.test.cjs`: test deterministic/stable seeds, bounded growth, and unaltered hitbox. Ensure no switch to generic sprites.
 
 **Commit 2: evolve the brush**
-- \`js/render.js\`: define the procedural tapered-head / dry-brush-tail silhouette and rank tiers. Adjust only player geometry, not orbit or other weapon radius. Optional micro-ink settling upon level up.
-- \`js/ink-xp.js\`: reduce \`visualScale()\` to the subtle cosmetic ceiling (~1.18) or introduce a tier-based \`visualForm()\`; \`js/game.js\` supplies cosmetic state.
+- `js/render.js`: define the procedural tapered-head / dry-brush-tail silhouette and rank tiers. Adjust only player geometry, not orbit or other weapon radius. Optional micro-ink settling upon level up.
+- `js/ink-xp.js`: reduce `visualScale()` to the subtle cosmetic ceiling (~1.18) or introduce a tier-based `visualForm()`; `js/game.js` supplies cosmetic state.
 - Use the current washi textures, drawing helpers and single paper-eye slit; **do not rewrite the rest of the procedural art renderer**.
 
 **Commit 3: living ink seed pickups**
-- \`js/ink-xp.js\`: retain correct \`drop()\`, \`grant()\` and homing math. Replace only the appearance code / optionally tiny \`seedShape\` data and curve-drawing logic.
-- \`tests/ink-xp.test.cjs\`: preserve cumulative XP, attraction, wave-end recall, multi-level rewards and no-loss drop pooling. Add tests for new visual state and tier styles.
+- `js/ink-xp.js`: retain correct `drop()`, `grant()` and homing math. Replace only the appearance code / optionally tiny `seedShape` data and curve-drawing logic.
+- `tests/ink-xp.test.cjs`: preserve cumulative XP, attraction, wave-end recall, multi-level rewards and no-loss drop pooling. Add tests for new visual state and tier styles.
 
 **Commit 4: real screenshot review and refinement**
-- \`tests/film-browser.cjs\` and \`.github/workflows/film-visual-qa.yml\`: capture early brush idle, sustained movement, rank 10+, clusters of loot, XP suction, Night Scroll and Cinnabar. Verify browser console stays clean and links/screens still work.
+- `tests/film-browser.cjs` and `.github/workflows/film-visual-qa.yml`: capture early brush idle, sustained movement, rank 10+, clusters of loot, XP suction, Night Scroll and Cinnabar. Verify browser console stays clean and links/screens still work.
 - **Do not mark iPhone physical-device acceptance as complete** from headless Chromium. Confirm the 393×852 portrait and compact landscape layout; then play-test actual iPhone Safari.
 - Tune the size and motion numbers before adding extra visual details. Confirm first that it looks still, intentional and elegant.
 
 **Commit 5: documentation and release gate**
-- Update \`README.md\` and \`docs/GAME_BIBLE.md\` with the final shipped appearance and browser QA artifacts, distinguishing completed tests from pending physical-device checks.
-- Commit directly to \`development\`; do not merge \`main\` without explicit request.
+- Update `README.md` and `docs/GAME_BIBLE.md` with the final shipped appearance and browser QA artifacts, distinguishing completed tests from pending physical-device checks.
+- Commit directly to `development`; do not merge `main` without explicit request.
 
 ## 7. Acceptance checklist (Definition of Done)
 
@@ -127,7 +127,7 @@ Treat extra **maximum HP** as nib fullness/pigment density (slightly darker, thi
 - [ ] Automated combat, progression, Guardian, XP and cinematic tests pass.
 - [ ] Desktop and phone-sized real Chromium captures reviewed, especially Night Scroll contrast.
 - [ ] Physical iPhone Safari test performed or explicitly recorded as pending.
-- [ ] Only \`development\` changed; \`main\` untouched.
+- [ ] Only `development` changed; `main` untouched.
 
 ### Taste checkpoint
 
