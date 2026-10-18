@@ -201,6 +201,6 @@ test('mobile HUD and the original sumi-e renderer use the new XP independently',
   assert.ok(render.includes('p.displayScale || 1'));
   assert.ok(!render.includes('ctx.scale(scale,scale)'));
   assert.ok(!render.includes('p.x * 31 + p.y * 17'));
-  assert.ok(css.includes('env(safe-area-inset-bottom)'));
+  assert.ok(css.includes('env(safe-area-inset-left)'), 'left-mounted meter respects notches and landscape safe areas');
   assert.ok(src('js/render.js').includes('function drawEnemy('));
 });
