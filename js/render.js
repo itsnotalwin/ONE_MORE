@@ -996,9 +996,9 @@ const R = (() => {
        visual velocity so rapid thumb movement never snaps the ink shape. */
     if (motion > 0.08) {
       const a = Math.atan2(-vy, -vx);
-      const len = 9 + 7 * motion + form.tier * 1.8;
-      const sway = S.reduced ? 0 : Math.sin(t * 1.9 + sd * .001) * .65;
-      const root = p.r * .55;
+      const len = 6 + 5 * motion + form.tier * .55;
+      const sway = S.reduced ? 0 : Math.sin(t * 1.9 + sd * .001) * .38;
+      const root = p.r * .35;
       const x0 = p.x + Math.cos(a) * root;
       const y0 = p.y + Math.sin(a) * root;
       inkStroke(c, [
@@ -1006,9 +1006,8 @@ const R = (() => {
         { x: x0 + Math.cos(a) * len * .53 - Math.sin(a) * sway,
           y: y0 + Math.sin(a) * len * .53 + Math.cos(a) * sway },
         { x: x0 + Math.cos(a) * len, y: y0 + Math.sin(a) * len },
-      ], 5.5 + form.tier * .7, {
-        alpha: .75, taper: 1.22, seed: sd, jit: .08,
-        dry: form.tier > 0, dryColor: PAPER,
+      ], 4.5 + form.tier * .15, {
+        alpha: .78, taper: .82, seed: sd, jit: .04, color: INK,
       });
     }
 
@@ -1038,7 +1037,7 @@ const R = (() => {
     c.save();
     c.scale(scale, scale);
     c.rotate(p.visualTilt || 0);
-    const r = p.r, tier = form.tier;
+    const r = p.r;
     /* Exactly the enemy's active ink color on every scroll: never red.
        BLOT's gentle squash follows aim; only the animation, not the
        physical radius, changes. */
@@ -1051,23 +1050,8 @@ const R = (() => {
     livingBlobPath(c, r, sd, t, S.reduced);
     c.fill();
 
-    /* Rank adds workmanship rather than simple inflation: a dry edge,
-       extra restrained bristles and eventually one cinnabar seal fleck. */
-    if (tier > 0) {
-      c.strokeStyle = PAPER; c.lineWidth = .65;
-      c.globalAlpha = tier >= 2 ? .17 : .11;
-      c.beginPath(); c.moveTo(-r * .65, -r * .62);
-      c.quadraticCurveTo(-r * .83, -.5, -r * .62, r * .52); c.stroke();
-      c.globalAlpha = .50; c.strokeStyle = INK;
-      c.lineCap = 'round';
-      for (let i = 0; i < form.bristles; i++) {
-        const y = (i - (form.bristles - 1) * .5) * 2.1;
-        c.lineWidth = .95 - i * .08;
-        c.beginPath(); c.moveTo(-r * .75, y);
-        c.quadraticCurveTo(-r * 1.10, y + .45, -r * (1.26 + tier * .085), y + .30);
-        c.stroke();
-      }
-    }
+    /* The living blob is a single uninterrupted body. Higher ranks
+       grow the silhouette slightly without whiskers or attached brushes. */
     /* One quiet paper eye faces the smoothed target aim. */
     c.globalAlpha = 1;
     const ex = Math.cos(aim) * r * .42, ey = Math.sin(aim) * r * .42;
@@ -1381,11 +1365,11 @@ const R = (() => {
     c.save();
     c.globalAlpha = Math.max(0, p.life / p.max);
     c.translate(p.x, p.y);
-    c.fillStyle = p.red ? RED : INK;
+    c.fillStyle = INK;
     const vang = Math.atan2(p.vy, p.vx);
     if (p.shape === 'line') {
       c.rotate(vang);
-      inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1, color: p.red ? RED : INK });
+      inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1 });
     } else if (p.shape === 'dot') {
       c.rotate(vang);
       teardrop(c, p.size * 0.75);
