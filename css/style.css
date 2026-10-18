@@ -832,6 +832,19 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
   transform: rotate(-3deg);
 }
 
+/* The optional post-mastery red seal is a real upgrade choice, not an
+   automatic recolor at the weapon's final ordinary rank. Inks stay
+   restrained: scarlet typography and seal edging on washi paper. */
+.up-card.is-seal::before{
+  border-color:var(--red);
+  box-shadow:inset 0 0 0 1px rgba(178,58,43,.18);
+}
+.up-card.is-seal .up-glyph{color:#ac1538}
+.up-card.is-seal .up-name{color:#ac1538}
+.up-card.is-seal .up-wpn{background:#ac1538}
+.up-card.is-seal .up-new{border-color:#ac1538;color:#ac1538}
+.load-item.is-seal,.load-item.is-seal b{color:#ac1538}
+
 /* the endless call on the victory sheet */
 .block-btn.continue{ background: var(--red); color: var(--paper); }
 .block-btn.continue::before{ border-color: rgba(237,231,217,.55); }
