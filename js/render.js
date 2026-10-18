@@ -473,10 +473,19 @@ const R = (() => {
             Math.max(1,r*.09),{alpha:.29,color,seed:seed+i});
         }
         break;
-      case 'trail': /* pooled wet dragging along the sheet */
-        inkStroke(g,[{x:-r*1.5,y:r*.3},{x:0,y:0},{x:r*1.6,y:-r*.22}],
-          Math.max(2,r*.8),{alpha:.64,color,seed,dry:true,dryColor:PAPER});
+      case 'trail': { /* dried suiteki pool, not a footstep stripe */
+        blobPath(g,0,0,r*1.2,seed,.32,12);
+        g.globalAlpha=.98;g.fill();
+        blobPath(g,-r*.25,r*.21,r*.65,seed^71,.28,10);
+        g.globalAlpha=.74;g.fill();
+        for(let i=0;i<3;i++){
+          const a=(i*2.2)+(seed%9)*.09;
+          inkStroke(g,[{x:Math.cos(a)*r*.7,y:Math.sin(a)*r*.7},
+            {x:Math.cos(a+.11)*r*1.46,y:Math.sin(a+.11)*r*1.46}],
+            Math.max(1,r*.12),{alpha:.48,color,seed:seed+i,taper:.45,jit:.04});
+        }
         break;
+      }
       case 'spirit': /* little afterimage of a visiting lesser brush */
         inkStroke(g,[{x:-r*1.5,y:r*.5},{x:-r*.1,y:0},{x:r*1.65,y:-r*.6}],
           Math.max(1,r*.29),{alpha:.63,color,seed});
