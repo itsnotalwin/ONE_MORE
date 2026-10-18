@@ -89,6 +89,48 @@ test('all 300 planned encounters are deterministic, legal, bounded and readable'
   assert.equal(signatures.size, 30);
 });
 
+test('opening First Wash levels are longer through pacing, not enemy buffs',()=>{
+  const {G,CFG,AREAS}=harness();
+  assert.equal(CFG.wave.openingPace(0,1),1.65);
+  assert.equal(CFG.wave.openingPace(0,2),1.40);
+  assert.equal(CFG.wave.openingPace(0,3),1.20);
+  assert.equal(CFG.wave.openingPace(0,4),1);
+  assert.equal(CFG.wave.openingPace(1,1),1);
+  assert.ok(CFG.wave.openingGroup(0,1)<CFG.wave.openingGroup(0,2));
+  assert.equal(AREAS[0].mult.hp,1,'First Wash HP stays unchanged');
+  assert.equal(AREAS[0].mult.budget,1,'First Wash wave population is not inflated');
+  G.startLevel(0,1);
+  const p=G.S.player;
+  p.fireT=99999;
+  G.S.queue=Array(15).fill('pulse');
+  G.S.enemies=[];G.S.markers=[];G.S.spawnTimer=0;
+  G.update(.05);
+  const earlyTimer=G.S.spawnTimer,earlyGroup=G.S.markers.length;
+  G.S.level=4;
+  G.S.markers=[];G.S.queue=Array(15).fill('pulse');
+  G.S.spawnTimer=0;
+  G.update(.05);
+  assert.ok(G.S.spawnTimer<earlyTimer,
+    'first stage uses wider gaps between existing enemy arrivals');
+  assert.ok(G.S.markers.length>=earlyGroup,
+    'later levels use larger spawn groups rather than inflated starting-wave HP');
+});
+
+test('Night Scroll remains materially harder than First Wash without redesigning enemies',()=>{
+  const {AREAS,CFG}=harness();
+  assert.ok(AREAS[1].mult.hp>AREAS[0].mult.hp*1.5);
+  assert.ok(AREAS[1].mult.sp>AREAS[0].mult.sp*1.07);
+  assert.ok(AREAS[1].mult.budget>AREAS[0].mult.budget*1.4);
+  assert.equal(CFG.wave.wavesPerArea,10);
+  assert.ok(AREAS[1].roster.includes('shade')&&AREAS[1].roster.includes('stilt'));
+  const render=file('js/render.js');
+  const ui=file('js/ui.js');
+  assert.ok(render.includes("paper: '#242b39', ink: '#fff1da'"));
+  assert.ok(render.includes('function drawNightSighting('));
+  assert.ok(render.includes("if(themeKey==='dark')drawNightSighting(ctx,e)"));
+  assert.ok(ui.includes("el.hud.classList.toggle('is-night'"));
+  assert.ok(file('css/style.css').includes('#hud.is-night .hp-cell.on'));
+});
 test('original world signatures still feature on their established waves', () => {
   const x = harness();
   for (let level = 1; level <= 10; level++) {
