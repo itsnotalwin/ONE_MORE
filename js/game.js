@@ -1507,15 +1507,9 @@ const G = (() => {
             life: .38, maxLife: .38, red: true,
           });
         } else if(mark.kind==='heavenlyStroke'){
-          /* Dry the god's stroke onto the same permanent ink paper.
-             No active hazard remains after the recovery window. */
-          const points=mark.points;
-          for(let j=2;j<points.length-2;j+=3){
-            const a=points[j-1],b=points[j+1],mid=points[j];
-            S.stainQueue.push({kind:'weapon',weapon:'heaven',red:false,
-              x:mid.x,y:mid.y,r:10+(mark.width*mid.width*.36),
-              angle:Math.atan2(b.y-a.y,b.x-a.x),alpha:.94});
-          }
+          /* Wet stroke paints progressively in drawGuardianHazard.
+             Dry terrain is stamped only AFTER its active sweep finishes,
+             never ahead of the visible impact. */
         } else {
           const cx = (mark.x1 + mark.x2) * .5;
           const cy = (mark.y1 + mark.y2) * .5;
@@ -1523,6 +1517,19 @@ const G = (() => {
             red: mark.world === 2 });
         }
         SFX.glob();
+      }
+      /* Commit the finished calligraphy to world-space paper AFTER
+         the 220ms wet stroke reaches the end of its drawn curve. */
+      if(mark.kind==='heavenlyStroke'&&mark.fired&&
+         !mark.stamped&&mark.t<=-.22){
+        mark.stamped=true;
+        const points=mark.points;
+        for(let j=2;j<points.length-2;j+=3){
+          const a=points[j-1],b=points[j+1],mid=points[j];
+          S.stainQueue.push({kind:'weapon',weapon:'heaven',red:false,
+            x:mid.x,y:mid.y,r:10+(mark.width*mid.width*.36),
+            angle:Math.atan2(b.y-a.y,b.x-a.x),alpha:.94});
+        }
       }
       /* The warning is harmless; only the brief solid impact can hurt.
          takeHit() provides regular integrity / Ward / invulnerability. */
