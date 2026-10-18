@@ -7,7 +7,7 @@ The ink remembers every stroke.</p>
 
 > **Experimental story branch:** [experiment/the-last-stroke](https://github.com/itsnotalwin/ONE_MORE/tree/experiment/the-last-stroke). This is a creative preview, **not the live production release**. The current original game remains on [main](https://github.com/itsnotalwin/ONE_MORE/tree/main).
 
-**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. Production still lives at [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/).
+**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. The public [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/) URL is explicitly approved for testing from the `development` publishing branch. The publishing configuration and deployment must be confirmed independently.
 
 ## A story hidden beneath the paper
 
@@ -15,7 +15,7 @@ Before the world had a name, there was paper. The Painter imagined mountains, ri
 
 **You are that stroke.**
 
-The prologue is a **61-second, seven-frame playable cinematic** rendered by the browser: ink-wash mountains, inverted night scrolls, water erasure, a final vermilion mark, and a surviving brush spirit. It uses no stock video, no remote animation model, and no MP4 download. The player can skip it, advance frames, enable subtle synthesized sound, or replay from the title. A **Chronicle** unlocks the complete fiction as your campaign progresses.
+The prologue **automatically starts on every page load, without requiring a tap**. It is a **61-second, seven-frame playable cinematic** rendered by the browser: ink-wash mountains, inverted night scrolls, water erasure, a final vermilion mark, and a surviving brush spirit. It uses no stock video, no remote animation model, and no MP4 download. The player can skip it, advance frames, enable subtle synthesized sound, or replay from the title. The cinematic now features brushstroke reveals, living ink motes, scene dissolves, and correct inverted-ink Night Scroll contrast. Audio remains off until explicitly enabled, as required by mobile autoplay restrictions. A **Chronicle** unlocks the complete fiction as your campaign progresses.
 
 ![Seven-frame prologue storyboard, authored SVG illustration, not live gameplay captures](docs/images/seven-frames.svg)
 
