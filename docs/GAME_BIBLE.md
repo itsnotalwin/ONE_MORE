@@ -278,6 +278,18 @@ The director chooses:
 
 **Testing backlog:** Real iPhone Safari play-testing of attack readability, telegraph contrast on all three paper themes, Guardian time-to-kill, and device frame pacing is still required. Desktop and phone-sized headless Chromium smoke runs confirm the mechanics and Canvas rendering but do not substitute for physical device feel.
 
+## Home and onboarding polish — mobile-first ink experience
+
+**Status: implemented on `development`, not merged to `main`.** This cleanup removes the cluttered title's decorative encyclopedia and long mode instructions from the starting screen without changing the actual sumi-e artwork. The original enso, brush swash, vermilion seal and Zen Antique / Plex Mono typography are retained.
+
+**Start flow:** The Last Stroke film still autoplays on page load. Scene-to-scene transitions now crossfade the **actual outgoing canvas image**, rather than repainting an unrelated final still. The final image dissolves into a calmer ONE MORE home over roughly 0.8 seconds. Replay and Skip work immediately, including during an outgoing transition. Motion-reduction settings bypass crossfade effects.
+
+**Main menu:** A clear `BEGIN JOURNEY` button is the primary action; `ENDLESS MODE` is secondary. Compact `HOW TO PLAY`, `WATCH FILM` and `CHRONICLE` links preserve all previous routes. Run/best information stays available. The original enemy roster can still be accessed from the game's systems, but no longer crowds the menu. On mobile the buttons have large touch targets, respect safe-area insets, and group within the thumb-friendly center/bottom portion of the viewport.
+
+**First-play education:** An optional native, keyboard-accessible How to Play sheet covers move, auto-fire and upgrade choices, including desktop keys. Its final action opens the campaign picker. A small hint appears on the player's first actual run and disappears without blocking touch controls. The hint's seen flag is separate from story play and does not suppress the film. The mode selection, 30 stage tiles, 10-wave progression and combat are unchanged.
+
+**Verification:** `tests/story.test.cjs` covers the film/replay while the full Node test suite protects combat and progression. Real Chromium at desktop and mobile dimensions screenshots the new home, onboarding, campaign and in-game sequences. Physical iPhone Safari review of touch spacing and transitions remains an acceptance step.
+
 ## 8. Roadmap board
 
 A source-controlled checklist, not a claim of a live GitHub Projects integration. Mark a box complete **only after verified**. Keep product delivery, technical debt, visual art and narrative tasks separate.
@@ -328,6 +340,8 @@ These are sequential implementation phases, not five changes to deploy at once.
 - [x] **Phase 1 — Combat Foundations:** Correct swept collision detection for droplets, blades, needles, ink globs and Spirit Scribes; piercing hit order and one-hit-per-enemy protection; reset keyboard and touch input on focus changes, retries and wave screens.
 - [x] **Phase 2 — Wave Director:** Authored 30 level compositions, 8 wave-arrival patterns, bounded tempo changes, named wave cues, maintained all 3 world signatures. Tests cover all 300 wave plans.
 - [x] **Phase 3 — Guardians:** Introduced different attack geometry, phase shifts, and boss HP ticks on development.
+- [x] **Menu and onboarding polish:** Mobile-first title hierarchy, optional how-to sheet, gentle first-play hint and exact-frame cinematic-to-home transitions (development only).
+- [ ] Physical iPhone verification of home screen fit, How to Play interactions and Skip/Replay fading.
 - [ ] Physically play-test Guardians on iPhone and adjust unfair or ineffective patterns before releasing to main.
 - [x] Automated regression coverage: 11 targeted tests in `tests/combat.test.cjs`, plus the existing campaign/cinematic suite. GitHub Actions passed for this development milestone.
 - [ ] Test Phase 1 manually on iPhone Safari and desktop during real ten-wave runs.
