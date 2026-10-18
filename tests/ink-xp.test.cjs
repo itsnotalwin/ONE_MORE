@@ -106,7 +106,9 @@ test('ink rank earned at wave clear does not stall the next wave',()=>{
   const {G,INK_XP}=setup();G.startLevel(0,1);
   G.S.enemies=[];G.S.queue=[];G.S.markers=[];
   addDrop(G,INK_XP.needed(1),1500,1800);
-  tick(G,40);
+  G.update(.05); /* trigger wave clearance and recall */
+  G.S.clearedT=.01; /* force remaining ink to be banked on last frame */
+  G.update(.05);
   assert.equal(G.mode,'upgrade');
   assert.equal(G.S.clearedT<=0,true);
   G.pickAt(0);G.deploy();
