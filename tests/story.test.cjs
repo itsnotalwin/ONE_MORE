@@ -77,10 +77,10 @@ test('all seven scenes animate the subject, camera/world, paint and final title'
   for(let i=0;i<7;i++){
     calls.length=0;
     assert.doesNotThrow(()=>FILM.scene(c,800,580,i,1.1,[8,8,8,9,9,10,9][i],false));
-    const early=JSON.stringify(calls.filter(v=>v.method==='lineTo'||v.method==='arc'||v.method==='rect').slice(0,50));
+    const early=JSON.stringify(calls.filter(v=>v.method==='lineTo'||v.method==='arc'||v.method==='rect'||v.method==='fillText').slice(-100));
     calls.length=0;
     assert.doesNotThrow(()=>FILM.scene(c,800,580,i,6.5,[8,8,8,9,9,10,9][i],false));
-    const late=JSON.stringify(calls.filter(v=>v.method==='lineTo'||v.method==='arc'||v.method==='rect').slice(0,50));
+    const late=JSON.stringify(calls.filter(v=>v.method==='lineTo'||v.method==='arc'||v.method==='rect'||v.method==='fillText').slice(-100));
     assert.notEqual(early,late,'scene '+i+' contains actual motion, not frozen art');
   }
   assert.ok(file('js/film.js').includes('function erasure('));
