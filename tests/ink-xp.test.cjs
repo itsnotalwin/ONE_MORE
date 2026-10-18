@@ -171,25 +171,19 @@ test('ink pickups render as small breathing rounded black blobs, never spearhead
   assert.ok(!drawing.includes('c.moveTo(body*1.35'),'old sharp nib is removed');
   assert.ok(!drawing.includes('createRadialGradient('),'no fantasy orb glow');
 });
-test('original animated round blob is restored without movement-based re-seeding',()=>{
-  const r=src('js/render.js');
-  const player=r.slice(r.indexOf('  /* ---------------- player:'),
-    r.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */'));
-  assert.ok(player.includes('function livingBlobPath('),'animated blob painter is present');
-  assert.ok(player.includes('livingBlobPath(c, r, sd, t, S.reduced)'),'the rounded living contour is used as the body');
-  assert.ok(player.includes('c.quadraticCurveTo('),'outline uses the original curved ink technique');
-  assert.ok(player.includes('t / CFG.ink.boilRate'),'player uses enemy line-boil animation cadence');
-  assert.ok(player.includes('Math.imul(tick, 7919)'),'player uses tick-seeded enemy-style contour motion');
-  assert.ok(player.includes('blend'),'shape changes interpolate smoothly between ink animation frames');
-  assert.ok(player.includes('c.fillStyle = INK;'),'player and enemies use the same living ink body color');
-  assert.ok(!player.includes('c.fillStyle = RED;'),'red is reserved for enemy bleed and progression');
-  assert.ok(!player.includes('p.x * 31 + p.y * 17'),'walking cannot randomly redraw the character');
-  assert.ok(!player.includes('c.bezierCurveTo(r * .88'),'the flattened nib shape was removed');
-  assert.ok(r.includes('if (playing) drawPlayer(ctx, t);'),'no giant whole-character scaling');
-  assert.ok(player.includes('const len = 6 + 5 * motion + form.tier * .55;'),
-    'player has a short organic brush tail');
-  assert.ok(!player.includes('for (let i = 0; i < form.bristles; i++)'),
-    'unwanted bristle whiskers removed from the rounded body');
+test('redesigned player stays one living organic ink spirit with its original hitbox',()=>{
+  const render=src('js/render.js');
+  const body=render.slice(render.indexOf('  function drawPlayer(c, t) {'),
+    render.indexOf('  /* ---------------- projectiles, zones, fx ---------------- */'));
+  assert.ok(body.includes('livingBlobPath(c,r*1.06,seed,t,reduced)'));
+  assert.ok(body.includes('c.fillStyle=INK'));
+  assert.ok(body.includes('c.strokeStyle=PAPER'));
+  assert.ok(body.includes('const len=6+motion*8'),'tail remains attached and restrained');
+  assert.ok(!body.includes('form.bristles'));
+  assert.ok(!body.includes('c.fillStyle=RED'));
+  assert.ok(render.includes('function livingBlobPath('));
+  assert.ok(!render.includes('p.x * 31 + p.y * 17'));
+  assert.ok(render.includes('if (playing) drawPlayer(ctx, t);'));
 });
 test('enemy blood and moving XP blobs stay black; only thick progression ink is red',()=>{
   const game=src('js/game.js'),render=src('js/render.js'),drops=src('js/ink-xp.js');
@@ -204,25 +198,23 @@ test('enemy blood and moving XP blobs stay black; only thick progression ink is 
   assert.ok(particles.includes('c.fillStyle = INK;'),'enemy particles take palette ink');
   assert.ok(!particles.includes('p.red ? RED : INK'),'never red enemy blood');
   assert.ok(drops.includes('c.fillStyle=ink;'),'black XP blobs are not red splinters');
-  assert.ok(css.includes('background:linear-gradient(90deg,var(--red-deep)'),
-    'thick UI fill stays in original cinnabar palette');
-  assert.ok(css.includes('animation:inkMeniscus'),'red fill has restrained liquid motion');
+  assert.ok(css.includes('background:linear-gradient(180deg,'),
+    'red liquid fills sideways beside the wave bar');
+  assert.ok(css.includes('animation:horizontalInkSurface'));
   assert.ok(palette.includes('--red: #b23a2b;'));
 });
-test('XP meter is left mounted, vertical, fills bottom to top and keeps real ARIA progress',()=>{
-  const css=src('css/ink-xp.css');
-  const ui=src('js/ui.js');
-  const html=src('index.html');
-  assert.match(css,/\.ink-meter\s*\{[^}]*left:/);
-  assert.match(css,/\.ink-meter-track\s*\{[^}]*flex-direction:column;justify-content:flex-end;/);
-  assert.match(css,/\.ink-meter-fill\s*\{[^}]*height:0%/);
-  assert.ok(css.includes('flex:0 0 21px'),'desktop liquid column is wide enough');
-  assert.ok(css.includes('flex-basis:17px'),'phone ink column stays thick');
-  assert.ok(css.includes('border-radius:11px 11px 7px 7px'),'ink is held in a soft-edged paper trough');
-  assert.ok(css.includes('.ink-meter-fill::before'),'liquid surface has a meniscus');
-  assert.ok(ui.includes("el.inkFill.style.height=pct.toFixed(1)+'%'"));
-  assert.ok(!ui.includes("el.inkFill.style.width=pct.toFixed(1)+'%'"));
-  assert.ok(html.includes('aria-orientation="vertical"'));
+test('ink XP is horizontal beside the wave progress in the top HUD',()=>{
+  const css=src('css/ink-xp.css'),ui=src('js/ui.js'),html=src('index.html');
+  assert.match(css,/\.hud-progress-row\{display:flex/);
+  assert.match(css,/\.ink-meter-fill\{[\s\S]*?width:0%/);
+  assert.ok(css.includes('transition:width .53s'));
+  assert.ok(css.includes('background:linear-gradient(180deg,'));
+  assert.ok(ui.includes("el.inkFill.style.width=pct.toFixed(1)+'%'"));
+  assert.ok(!ui.includes("el.inkFill.style.height=pct.toFixed(1)+'%'"));
+  assert.ok(!html.includes('aria-orientation="vertical"'));
+  const meta=html.indexOf('class="hud-progress-row"');
+  assert.ok(meta>0&&html.indexOf('class="wave-progress"',meta)>meta);
+  assert.ok(html.indexOf('id="inkMeter"',meta)>meta);
 });
 test('mobile HUD and the original sumi-e renderer use the new XP independently',()=>{
   const html=src('index.html'),render=src('js/render.js'),css=src('css/ink-xp.css');
@@ -231,10 +223,10 @@ test('mobile HUD and the original sumi-e renderer use the new XP independently',
   assert.ok(html.includes('<script src="./js/ink-xp.js"></script>'));
   assert.ok(html.indexOf('/js/ink-xp.js')<html.indexOf('/js/game.js'));
   assert.ok(render.includes('INK_XP.draw(ctx, S, t, INK, PAPER, RED)'));
-  assert.ok(render.includes('INK_XP.visualForm(st)'));
-  assert.ok(render.includes('p.displayScale || 1'));
+  assert.ok(render.includes('livingBlobPath(c,r*1.06,seed,t,reduced)'));
+  assert.ok(render.includes('p.displayScale||1'));
   assert.ok(!render.includes('ctx.scale(scale,scale)'));
   assert.ok(!render.includes('p.x * 31 + p.y * 17'));
-  assert.ok(css.includes('env(safe-area-inset-left)'), 'left-mounted meter respects notches and landscape safe areas');
+  assert.ok(css.includes('.hud-progress-row'),'progress remains grouped at the top of the screen');
   assert.ok(src('js/render.js').includes('function drawEnemy('));
 });
