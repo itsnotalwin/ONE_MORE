@@ -158,14 +158,18 @@ test('cosmetic growth eases toward its target without overshooting or altering m
   G.startLevel(0,1);
   assert.equal(G.S.player.displayScale,1);
 });
-test('ink seeds remain irregular procedural nibs without perfect orb shapes',()=>{
+test('ink pickups render as small breathing rounded black blobs, never spearheads or red orbs',()=>{
   const code=src('js/ink-xp.js');
-  const drawing=code.slice(code.indexOf('  /* Each living seed'));
-  assert.ok(drawing.includes('c.bezierCurveTo('));
-  assert.ok(drawing.includes('trailLen'));
-  assert.ok(drawing.includes('variant='));
-  assert.ok(!drawing.includes('c.arc('),'perfect-circle loot orbs should not return');
-  assert.ok(!drawing.includes('createRadialGradient('));
+  const drawing=code.slice(code.indexOf('  /* Small fragments'));
+  assert.ok(drawing.includes('function drawLivingDrop('));
+  assert.ok(drawing.includes('c.quadraticCurveTo('),'blobs use the same curved ink vocabulary as enemies');
+  assert.ok(drawing.includes('Math.sin(t * 3.2'),'blob shape lives and breathes over time');
+  assert.ok(drawing.includes('c.fillStyle=ink'),'pickups share themed enemy black ink');
+  assert.ok(drawing.includes('const tail=Math.min(6,'),'suction trail is subordinate to the blob');
+  assert.ok(!drawing.includes('c.fillStyle=red'),'red is exclusively a UI progression accent');
+  assert.ok(!drawing.includes('c.arc('),'no static circular coin pickup');
+  assert.ok(!drawing.includes('c.moveTo(body*1.35'),'old sharp nib is removed');
+  assert.ok(!drawing.includes('createRadialGradient('),'no fantasy orb glow');
 });
 test('original animated round blob is restored without movement-based re-seeding',()=>{
   const r=src('js/render.js');
@@ -182,23 +186,28 @@ test('original animated round blob is restored without movement-based re-seeding
   assert.ok(!player.includes('p.x * 31 + p.y * 17'),'walking cannot randomly redraw the character');
   assert.ok(!player.includes('c.bezierCurveTo(r * .88'),'the flattened nib shape was removed');
   assert.ok(r.includes('if (playing) drawPlayer(ctx, t);'),'no giant whole-character scaling');
+  assert.ok(player.includes('const len = 6 + 5 * motion + form.tier * .55;'),
+    'player has a short organic brush tail');
+  assert.ok(!player.includes('for (let i = 0; i < form.bristles; i++)'),
+    'unwanted bristle whiskers removed from the rounded body');
 });
-test('bleeding enemies, recovered ink and the XP channel share vermilion',()=>{
+test('enemy blood and moving XP blobs stay black; only thick progression ink is red',()=>{
   const game=src('js/game.js'),render=src('js/render.js'),drops=src('js/ink-xp.js');
   const css=src('css/ink-xp.css'),palette=src('css/style.css');
-  assert.ok(game.includes('burst(e.x, e.y, e.r, e.type === \'titan\' || e.elite, true)'));
-  assert.ok(game.includes('red: true,'),'every enemy death creates a red permanent ink stain');
-  assert.ok(game.includes('red: !!p.red'),'enemy blood droplets stay red as they land');
-  assert.ok(render.includes('c.fillStyle = p.red ? RED : INK;'),
-    'enemy blood particles use cinnabar while ordinary particles stay themed ink');
-  assert.ok(drops.includes('c.fillStyle=red;'),
-    'living XP seeds are made from the same enemy blood');
+  assert.ok(game.includes("burst(e.x, e.y, e.r, e.type === 'titan' || e.elite);"),
+    'enemy death emits only original black particles');
+  const death=game.slice(game.indexOf('  function killEnemy(e) {'),game.indexOf("    if (e.type === 'split')",game.indexOf('  function killEnemy(e) {')));
+  assert.ok(death.includes('red: false,'),'even guardian blood stains stay black');
+  assert.ok(!death.includes('burst(e.x, e.y, e.r, e.type === \'titan\' || e.elite, true)'));
+  assert.ok(!game.includes('red: !!p.red'),'landing blood remains black');
+  const particles=render.slice(render.indexOf('  function drawParticle(c, p) {'),render.indexOf('  function drawPopup(',render.indexOf('  function drawParticle(c, p) {')));
+  assert.ok(particles.includes('c.fillStyle = INK;'),'enemy particles take palette ink');
+  assert.ok(!particles.includes('p.red ? RED : INK'),'never red enemy blood');
+  assert.ok(drops.includes('c.fillStyle=ink;'),'black XP blobs are not red splinters');
   assert.ok(css.includes('background:linear-gradient(90deg,var(--red-deep)'),
-    'vertical XP fill has a layered wet vermilion wash');
-  assert.ok(css.includes('.ink-meter-fill::before'),
-    'level meter has an irregular liquid ink surface');
-  assert.ok(palette.includes('--red: #b23a2b;'),
-    'blood, XP and UI share the original art palette');
+    'thick UI fill stays in original cinnabar palette');
+  assert.ok(css.includes('animation:inkMeniscus'),'red fill has restrained liquid motion');
+  assert.ok(palette.includes('--red: #b23a2b;'));
 });
 test('XP meter is left mounted, vertical, fills bottom to top and keeps real ARIA progress',()=>{
   const css=src('css/ink-xp.css');
@@ -207,6 +216,10 @@ test('XP meter is left mounted, vertical, fills bottom to top and keeps real ARI
   assert.match(css,/\.ink-meter\s*\{[^}]*left:/);
   assert.match(css,/\.ink-meter-track\s*\{[^}]*flex-direction:column;justify-content:flex-end;/);
   assert.match(css,/\.ink-meter-fill\s*\{[^}]*height:0%/);
+  assert.ok(css.includes('flex:0 0 21px'),'desktop liquid column is wide enough');
+  assert.ok(css.includes('flex-basis:17px'),'phone ink column stays thick');
+  assert.ok(css.includes('border-radius:11px 11px 7px 7px'),'ink is held in a soft-edged paper trough');
+  assert.ok(css.includes('.ink-meter-fill::before'),'liquid surface has a meniscus');
   assert.ok(ui.includes("el.inkFill.style.height=pct.toFixed(1)+'%'"));
   assert.ok(!ui.includes("el.inkFill.style.width=pct.toFixed(1)+'%'"));
   assert.ok(html.includes('aria-orientation="vertical"'));
