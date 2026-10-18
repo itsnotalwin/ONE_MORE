@@ -227,12 +227,10 @@ const G = (() => {
 
   /* Persistent brush impressions join the enemy blood on the washi.
      Stamped weapon marks survive wave changes, but not a stage reset. */
-  /* Mastered techniques sign the landscape in deep vermilion. A
-     base-volley modifier can awaken ordinary shots as well. */
+  /* Mastered techniques sign the landscape in deep vermilion.
+     The starting ink shot never paints the ground, even at mastery. */
   function awakenedWeapon(weapon){
     const levels=S.stats?.levels||{};
-    if(weapon==='shot')return ['rapid','heavy','split','pierce','velo']
-      .some(k=>levels[k]>=(UPGRADES.find(u=>u.id===k)?.max||999));
     const caps={echo:2,fan:4,nova:3,trail:3,spirit:3,
       knot:3,ward:1,shock:1,eraser:3};
     const key=weapon==='eraser'?'orbit':weapon;
@@ -873,15 +871,19 @@ const G = (() => {
 
   /* A projectile can cover 28+ pixels in one 50ms phone frame.
      Store its true traveled segment instead of sampling the endpoint. */
-  /* A traveling weapon continuously paints its path on the washi.
-     Sample every ~38px, at most four marks in one long phone frame.
-     These marks use the same stage-long cached sprite layer as blood. */
+  /* Only acquired weapons sign the paper: Echo Stroke and Folded Fan.
+     Ordinary auto-fire droplets (kind:'drop') remain purely projectiles
+     throughout flight, hits, piercing and expiry, including maxed stats. */
+  function projectileMarkKind(b){
+    return b.kind==='blade'?'fan':b.kind==='echo'?'echo':null;
+  }
   function paintFlight(b,x0,y0,x1,y1){
+    const kind=projectileMarkKind(b);
+    if(!kind)return; // starter weapon: no terrain ink whatsoever
     const dist=Math.hypot(x1-x0,y1-y0);
     const prior=b.terrainCarry||0;
     const due=prior+dist;
     const n=Math.min(4,Math.floor(due/38));
-    const kind=b.kind==='blade'?'fan':b.kind==='echo'?'echo':'shot';
     for(let j=0;j<n;j++){
       const t=Math.min(1,(38*(j+1)-prior)/Math.max(.001,dist));
       markWeapon(kind,x0+(x1-x0)*t,y0+(y1-y0)*t,
@@ -898,8 +900,8 @@ const G = (() => {
       b.x += b.vx * travel; b.y += b.vy * travel; b.age += dt;
       if(travel>0)paintFlight(b,b.prevX,b.prevY,b.x,b.y);
       if (expire && b.age > b.life) {
-        markWeapon(b.kind === 'blade' ? 'fan' : b.kind === 'echo' ? 'echo' : 'shot',
-          b.x, b.y, { r: 4.5, alpha: .26, angle: b.ang });
+        const kind=projectileMarkKind(b);
+        if(kind)markWeapon(kind,b.x,b.y,{r:4.5,alpha:.85,angle:b.ang});
         S.bullets.splice(i, 1);
       }
     }
@@ -976,8 +978,8 @@ const G = (() => {
         SFX.hit();
         b.hits--;
         const wx = x0 + (b.x - x0) * time, wy = y0 + (b.y - y0) * time;
-        markWeapon(b.kind === 'blade' ? 'fan' : b.kind === 'echo' ? 'echo' : 'shot',
-          wx, wy, { r: b.kind === 'blade' ? 7 : 4.5, alpha: .34, angle: b.ang });
+        const kind=projectileMarkKind(b);
+        if(kind)markWeapon(kind,wx,wy,{r:kind==='fan'?7:4.5,alpha:.9,angle:b.ang});
         damageEnemy(e, index, b.dmg, true, Math.atan2(b.vy, b.vx));
         if (b.hits <= 0) {
           const hx = x0 + (b.x - x0) * time;
@@ -989,8 +991,8 @@ const G = (() => {
         }
       }
       if (!spent && b.age > b.life) {
-        markWeapon(b.kind === 'blade' ? 'fan' : b.kind === 'echo' ? 'echo' : 'shot',
-          b.x, b.y, { r: 4, alpha: .25, angle: b.ang });
+        const kind=projectileMarkKind(b);
+        if(kind)markWeapon(kind,b.x,b.y,{r:4,alpha:.85,angle:b.ang});
         S.bullets.splice(i, 1);
       }
     }
