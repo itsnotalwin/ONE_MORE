@@ -276,7 +276,7 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 
 ## 9. Preview, release and rollback
 
-The story lives on the experimental and `development` branches. On 2026-10-18, the owner explicitly approved testing this build on the existing public GitHub Pages URL and changing its configured source branch to `development`. This temporarily replaces the public build. Restore `main` as the publishing source to roll back.
+The story lives on the experimental and `development` branches. On 2026-10-18, the owner approved testing this build on the existing public GitHub Pages URL. **Publishing-source change still pending:** GitHub rejected the automatic attempt with HTTP 403 (repository settings permission). To serve development, open [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages), select Deploy from a branch → `development` → `/ (root)` → Save. Restore `main` at the same menu to roll back.
 
 A safe non-Pages third-party branch preview for personal evaluation uses the `story-preview` branch alias via raw.githack, which can render files straight from a GitHub branch but may show a safety confirmation screen and has no uptime guarantees. A workflow on the experimental branch can additionally package a downloadable offline preview artifact. Long-term isolated first-party staging requires a distinct Pages repository or Pages deployment architecture intentionally set up for previews.
 
