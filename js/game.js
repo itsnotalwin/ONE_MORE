@@ -151,7 +151,7 @@ const G = (() => {
       hp = Math.round(hp * CFG.wave.eliteHpMult);
       r = Math.round(r * CFG.wave.eliteR);
       speed *= 0.86;
-      if (opts.boss) { hp *= 1.8; r = Math.round(r * 1.2); }
+      if (opts.boss) { hp *= (S.runMode==='journey'&&S.worldIndex===0?2.75:1.8); r = Math.round(r * 1.2); }
     }
     hp = Math.max(1, Math.round(hp));
     const e = {
@@ -164,7 +164,7 @@ const G = (() => {
       px: 0, py: 0, // kage perch / crane pass target
       guardian: opts.elite ? {
         world: st.themeIdx, boss: !!opts.boss, phase: 1,
-        cast: 0, cooldown: opts.boss ? 2.6 : 3.0,
+        cast: 0, cooldown: opts.boss ? (st.themeIdx===0?1.9:2.6) : 3.0,
       } : null,
     };
     S.enemies.push(e);
@@ -1622,9 +1622,22 @@ const G = (() => {
     for (const e of S.enemies) {
       const g = e.guardian;
       if (!g) continue;
-      const nextPhase = GUARDIANS.phases(e.hp, e.maxHp, g.boss);
+      const nextPhase = GUARDIANS.phases(e.hp, e.maxHp, g.boss, g.world);
       if (nextPhase > g.phase) {
         g.phase = nextPhase;
+        /* The First Seal rallies two tiny blips when ink pressure
+           breaks into another phase. Summons appear away from the
+           player's feet and never exceed normal enemy cap. */
+        if(g.boss&&g.world===0){
+          for(let j=0;j<2;j++){
+            const angle=(j*2+g.phase*.57)*Math.PI*.5;
+            const x=e.x+Math.cos(angle)*(e.r+84);
+            const y=e.y+Math.sin(angle)*(e.r+84);
+            if(Math.hypot(x-S.player.x,y-S.player.y)<68)continue;
+            if(S.enemies.length>=CFG.wave.concurrentCap(S.stats.wave,S.areaIdx))break;
+            spawnEnemy('pulseling',x,y);
+          }
+        }
         g.cooldown = Math.max(g.cooldown, 1.15);
         S.guardianMarks = S.guardianMarks.filter(m => m.owner !== e);
         S.popups.push({
@@ -1652,7 +1665,7 @@ const G = (() => {
       }
       /* Start the next pattern only after a dodge and a short recovery.
          Even the final boss never fires hazards continuously. */
-      g.cooldown = (g.boss ? 3.9 : 4.6) - (g.phase - 1) * .36;
+      g.cooldown = (g.boss&&g.world===0?2.9:g.boss?3.9:4.6) - (g.phase - 1) * (g.world===0?.46:.36);
       SFX.wind();
     }
   }
