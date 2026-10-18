@@ -422,6 +422,12 @@ const G = (() => {
     /* XP choices resume the same fight rather than skipping waves.
        A burst of absorbed ink can queue more than one choice. */
     if(S.stats.inkPending > 0) openUpgrade();
+    else if(!S.waveActive && S.clearedT <= 0) {
+      /* Last ink was absorbed after the victory pause. Continue exactly
+         once after the player has accepted every earned upgrade. */
+      if(S.runMode === 'journey' && S.stats.wave >= CAMPAIGN.WAVES_PER_LEVEL) showOver(true);
+      else startWave(S.stats.wave + 1);
+    }
   }
 
   function pickAt(i) {
