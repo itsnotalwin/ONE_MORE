@@ -904,6 +904,23 @@ const R = (() => {
       c.fill();
       c.restore();
     }
+    /* Minimal ink-seal integrity line: phase changes stay legible even
+       with dense enemy crowds. It belongs to the existing enemy drawing. */
+    if (e.guardian) {
+      const width = e.guardian.boss ? 86 : 64;
+      const top = -r - 33;
+      const frac = Math.max(0, Math.min(1, e.hp / e.maxHp));
+      c.save();
+      c.fillStyle = INK;c.globalAlpha = .25;
+      c.fillRect(-width / 2, top, width, 3);
+      c.fillStyle = RED;c.globalAlpha = .95;
+      c.fillRect(-width / 2, top, width * frac, 3);
+      for (let k = 1; k < (e.guardian.boss ? 3 : 2); k++) {
+        c.fillStyle = PAPER;c.globalAlpha = .9;
+        c.fillRect(-width / 2 + width * k / (e.guardian.boss ? 3 : 2) - .6, top, 1.2, 3);
+      }
+      c.restore();
+    }
     c.restore();
   }
 
@@ -1203,6 +1220,61 @@ const R = (() => {
     c.restore();
   }
 
+  /* Phase 3 additions reuse the existing paper/ink brush palette.
+     The original 14 enemy silhouettes and boil animation are unchanged. */
+  function drawGuardianHazard(c, mark, t) {
+    const warning = mark.t > 0;
+    const remain = warning ? Math.max(0, mark.t / mark.maxWarn) : 0;
+    const ink = mark.world === 1 ? INK : INK;
+    const color = mark.world === 2 ? RED : ink;
+    c.save();
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    if (mark.kind === 'seal') {
+      const r = mark.radius;
+      const pulse = 1 + Math.sin(t * 6.5) * .023;
+      c.translate(mark.x, mark.y);
+      c.scale(pulse, pulse);
+      c.beginPath();
+      c.arc(0, 0, r, 0, TAU);
+      c.fillStyle = warning ? color : RED;
+      c.globalAlpha = warning ? .09 + (1 - remain) * .14 : .38;
+      c.fill();
+      c.globalAlpha = warning ? .64 + .20 * (1 - remain) : .88;
+      c.lineWidth = warning ? 2 : 3;
+      c.strokeStyle = warning ? color : RED;
+      c.stroke();
+      c.beginPath();
+      c.arc(0, 0, r * (warning ? 1 - (1 - remain) * .22 : .65), 0, TAU);
+      c.lineWidth = 1.2;
+      c.globalAlpha = warning ? .44 : .65;
+      c.stroke();
+      c.beginPath();c.moveTo(-r * .15, 0);c.lineTo(r * .15, 0);
+      c.moveTo(0, -r * .15);c.lineTo(0, r * .15);c.stroke();
+    } else {
+      const dx = mark.x2 - mark.x1, dy = mark.y2 - mark.y1;
+      const d = Math.hypot(dx, dy) || 1;
+      const nx = -dy / d, ny = dx / d, h = mark.width * .5;
+      c.beginPath();c.moveTo(mark.x1, mark.y1);c.lineTo(mark.x2, mark.y2);
+      c.lineWidth = mark.width;
+      c.strokeStyle = warning ? color : RED;
+      c.globalAlpha = warning ? .075 + (1 - remain) * .11 : .35;
+      c.stroke();
+      c.globalAlpha = warning ? .58 + (1 - remain) * .16 : .92;
+      c.lineWidth = warning ? 1.6 : 2.4;
+      for (const sign of [-1, 1]) {
+        c.beginPath();
+        c.moveTo(mark.x1 + nx * h * sign, mark.y1 + ny * h * sign);
+        c.lineTo(mark.x2 + nx * h * sign, mark.y2 + ny * h * sign);
+        c.stroke();
+      }
+      c.beginPath();c.moveTo(mark.x1, mark.y1);c.lineTo(mark.x2, mark.y2);
+      c.globalAlpha = warning ? .18 + (1 - remain) * .4 : .8;
+      c.setLineDash([7, 12]);c.stroke();c.setLineDash([]);
+    }
+    c.restore();
+  }
+
   function drawRing(c, r) {
     const prog = 1 - r.life / r.maxLife;
     const ease = 1 - Math.pow(1 - prog, 2.2);
@@ -1413,6 +1485,7 @@ const R = (() => {
     for (const pd of S.puddles) drawPuddle(ctx, pd);
     if (!S.reduced) updateAmbient(dt, S);
 
+    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);
     for (const m of S.markers) drawMarker(ctx, m);
     for (const r of S.rings) drawRing(ctx, r);
     for (const b of S.bullets) drawBullet(ctx, b);
