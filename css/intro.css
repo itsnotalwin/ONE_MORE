@@ -194,3 +194,19 @@
   .story-title-actions{animation:none!important}
   .intro-frame::before,.intro-next,.intro-progress{transition:none}
 }
+
+/* Film-accurate night polarity: white ink against the second scroll. */
+.screen-intro.is-night{color:#e9e2d2;background:#17130f}
+.screen-intro.is-night .intro-shade{
+  background:linear-gradient(to bottom,rgba(23,19,15,.35),transparent 22%,transparent 52%,rgba(23,19,15,.88) 90%,#17130f)
+}
+.screen-intro.is-night .intro-content{
+  text-shadow:0 1px 20px rgba(23,19,15,.94),0 1px 30px rgba(23,19,15,.9)
+}
+.screen-intro.is-night .intro-second,
+.screen-intro.is-night .intro-bottomrow span{color:#c5bcaa}
+.screen-intro.is-night .intro-frame::before{background:rgba(233,226,210,.32)}
+.screen-intro.is-night .intro-frame.active::before{background:#b23a2b}
+.screen-intro.is-night .intro-frame.visited::before{background:rgba(233,226,210,.75)}
+.screen-intro.is-night .intro-timeline{background:rgba(233,226,210,.35)}
+.screen-intro.is-night .intro-next{background:#e9e2d2;color:#17130f}
