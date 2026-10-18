@@ -1492,8 +1492,20 @@ const R = (() => {
     for (const b of S.ebullets) drawEBullet(ctx, b);
     for (const e of S.enemies) drawEnemy(ctx, e, t);
     for (const d of S.idle) drawEnemy(ctx, d, t);
+    /* Living splat cores are drawn above dried ink, below the brush.
+       No original creature or player sprite functions are modified. */
+    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);
     for (const sp of S.spirits) drawSpirit(ctx, sp);
-    if (playing) drawPlayer(ctx, t);
+    if (playing) {
+      /* Growth is visual ONLY: player.r stays the original collision size. */
+      const scale=INK_XP.visualScale(S.stats);
+      ctx.save();
+      ctx.translate(S.player.x,S.player.y);
+      ctx.scale(scale,scale);
+      ctx.translate(-S.player.x,-S.player.y);
+      drawPlayer(ctx,t);
+      ctx.restore();
+    }
     for (const knot of S.knots) drawKnot(ctx, knot, t);
     for (const p of S.particles) drawParticle(ctx, p);
     for (const p of S.popups) drawPopup(ctx, p);
