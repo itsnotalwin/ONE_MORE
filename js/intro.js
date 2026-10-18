@@ -319,6 +319,7 @@ const INTRO = (() => {
   function start() {
     $('introStart').classList.add('hidden');
     running=true;lastTime=performance.now();
+    if(soundOn && audio) audio.ctx.resume().catch(()=>{});
     if(soundOn)cue(index);
   }
   function next() {
@@ -359,6 +360,7 @@ const INTRO = (() => {
   }
   $('introStartBtn').addEventListener('click',start);
   $('introSkip').addEventListener('click',finish);
+  $('introCoverSkip').addEventListener('click',finish);
   $('introNext').addEventListener('click',next);
   soundButton.addEventListener('click',toggleSound);
   $('replayIntroBtn').addEventListener('click',()=>play(true));
