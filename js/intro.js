@@ -98,7 +98,10 @@ const INTRO = (() => {
     stage.classList.toggle('is-finale',index===SCENES.length-1);
     overlay.classList.remove('intro-text-in','intro-text-main','intro-text-end');
     /* For screen readers, the scene narration is one self-contained beat. */
-    if(soundOn&&audio)cue(index);
+    if(soundOn&&audio){
+      if(audio.drone) audio.drone.frequency.setTargetAtTime([55,58,49,40,65,73,82][index],audio.ctx.currentTime,.7);
+      cue(index);
+    }
   }
   function sizeCanvas(){
     const rect=canvas.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width)),h=Math.max(1,Math.round(rect.height));
@@ -179,10 +182,17 @@ const INTRO = (() => {
       try{
         if(!audio){
           const ctx=new AC(),master=ctx.createGain();
-          master.gain.value=.21;master.connect(ctx.destination);
-          audio={ctx,master};
+          master.gain.value=.19;master.connect(ctx.destination);
+          const drone=ctx.createOscillator(),bed=ctx.createGain();
+          drone.type='sine';drone.frequency.value=55;
+          bed.gain.value=.05;drone.connect(bed);bed.connect(master);
+          drone.start();
+          audio={ctx,master,drone};
         }
-        audio.ctx.resume().then(()=>cue(index)).catch(()=>{});
+        audio.ctx.resume().then(()=>{
+          if(audio.drone)audio.drone.frequency.setTargetAtTime([55,58,49,40,65,73,82][index],audio.ctx.currentTime,.7);
+          cue(index);
+        }).catch(()=>{});
         soundOn=true;
       }catch(_){soundOn=false;}
     }
