@@ -119,8 +119,9 @@ test('Endless Guardian scaling and run progression remain unaffected',()=>{
   assert.equal(x.G.S.guardianMarks.length,0);
   assert.ok(x.G.S.stats.wave===1);
   x.G.S.queue=[];x.G.S.markers=[];x.G.S.enemies=[];
-  x.G.update(.05);x.G.update(.60);
-  assert.equal(x.G.mode,'upgrade');
+  x.G.update(.05);x.G.update(.60);x.G.update(.60);
+  assert.equal(x.G.mode,'playing');
+  assert.equal(x.G.S.stats.wave,2);
 });
 test('only phase-specific ink visuals changed and original renderer is byte-identical otherwise',()=>{
   const renderer=file('js/render.js');
@@ -134,6 +135,14 @@ test('only phase-specific ink visuals changed and original renderer is byte-iden
   assert.ok(c>0&&d>c);
   source=source.slice(0,c)+source.slice(d);
   source=source.replace('    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);\n','');
+  source=source.replace(
+    '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
+    '       No original creature or player sprite functions are modified. */\n' +
+    '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
+  const xpStart=source.indexOf('    if (playing) {\n      /* Growth is visual ONLY');
+  const xpEnd=source.indexOf('    for (const knot of S.knots)',xpStart);
+  assert.ok(xpStart>0&&xpEnd>xpStart);
+  source=source.slice(0,xpStart)+'    if (playing) drawPlayer(ctx, t);\n'+source.slice(xpEnd);
   let h=0x811c9dc5;
   for(let i=0;i<source.length;i++){h^=source.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}
   assert.equal(h.toString(16).padStart(8,'0'),'84b72d7e');
