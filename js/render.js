@@ -432,6 +432,17 @@ const R = (() => {
     g.save();
     g.strokeStyle = color;g.fillStyle=color;g.lineCap='round';
     switch (weapon) {
+      case 'heaven': { /* the abandoned mark of the Painter's enormous hand */
+        inkStroke(g,[{x:-r*1.8,y:r*.08},{x:-r*.25,y:-r*.12},
+          {x:r*1.75,y:r*.14}],r*.76,
+          {color,alpha:.93,seed,taper:.68,jit:.07});
+        g.globalAlpha=.40;
+        for(let i=0;i<3;i++){
+          const x=r*(rnd()*2-1),y=r*(rnd()-.5);
+          blobPath(g,x,y,r*(.08+rnd()*.09),seed+i,.22,8);g.fill();
+        }
+        break;
+      }
       case 'shot': /* a pointed drop ends in a light calligraphic fleck */
         splatPaint(g,0,0,r*.72,seed,.8,color);
         inkStroke(g,[{x:-r*.5,y:r*.1},{x:r*.55,y:-r*.3},{x:r*1.7,y:-r*.5}],
@@ -1507,6 +1518,47 @@ const R = (() => {
     c.save();
     c.lineCap = 'round';
     c.lineJoin = 'round';
+    if(mark.kind==='heavenlyStroke'){
+      const pts=mark.points||[];
+      /* A visible promise on the page, then a rapid brushstroke reveal.
+         This very same sampled curve powers GUARDIANS.hits(). */
+      const reveal=warning?Math.min(1,(1-remain)*1.8):
+        Math.min(1,Math.max(0,(-mark.t)/.22));
+      const limit=warning?pts.length:Math.max(2,Math.ceil(reveal*(pts.length-1)));
+      const pigment=INK;
+      for(let j=1;j<Math.min(pts.length,limit+1);j++){
+        const a=pts[j-1],b=pts[j],frac=j/(pts.length-1);
+        if(!warning&&frac>reveal)break;
+        c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);
+        const weight=mark.width*(a.width+b.width)*.5;
+        if(warning){
+          c.strokeStyle=pigment;
+          c.lineWidth=1.2+weight*.07;
+          c.globalAlpha=.22+.37*(1-remain);
+        }else{
+          c.strokeStyle=pigment;
+          c.lineWidth=weight;
+          c.globalAlpha=.93;
+        }
+        c.stroke();
+      }
+      if(!warning&&reveal>.12){
+        /* Split wet/dry edge without making a rectangular highway. */
+        c.globalAlpha=.24;c.strokeStyle=PAPER;c.lineWidth=1.1;
+        c.beginPath();
+        for(let j=1;j<Math.max(2,Math.floor(reveal*pts.length));j+=3){
+          const p=pts[j];
+          j===1?c.moveTo(p.x+1.7,p.y):c.lineTo(p.x+1.7,p.y);
+        }
+        c.stroke();
+      }
+      if(warning&&pts.length){
+        const head=pts[Math.max(0,Math.min(pts.length-1,Math.floor(reveal*(pts.length-1))))];
+        c.globalAlpha=.56;c.fillStyle=pigment;
+        c.beginPath();c.arc(head.x,head.y,2.1+2*(1-remain),0,TAU);c.fill();
+      }
+      c.restore();return;
+    }
     if (mark.kind === 'seal') {
       const r = mark.radius;
       const pulse = 1 + Math.sin(t * 6.5) * .023;
