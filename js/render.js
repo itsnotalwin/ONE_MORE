@@ -1112,29 +1112,50 @@ const R = (() => {
     c.restore();
   }
 
-  /* the crimson hanko, slamming down */
-  function drawStamp(c, st) {
-    const t = 1 - st.life / st.max;
-    const punch = t < 0.16 ? 1.65 - 0.65 * (t / 0.16) : 1;
-    const alpha = st.life < 0.2 ? st.life / 0.2 : 1;
-    const s = st.r * 0.3 * punch;
+  /* Ink Knots — thin, breathing brush threads between bound beasts.
+     Uses existing inkStroke primitive; no new sprites or visual system. */
+  function drawKnot(c, knot, t) {
+    const members = knot.members.filter(e => G.S.enemies.includes(e));
+    if (!members.length) return;
+    const fade = Math.min(1, knot.life / 0.32, (knot.max - knot.life) / 0.16);
+    const root = members[0];
     c.save();
-    c.translate(st.x, st.y);
-    c.rotate(-0.12);
-    c.globalAlpha = alpha * 0.85;
+    c.globalAlpha = fade;
+    if (members.length === 1) {
+      /* A loop of ink catches a lone beast. */
+      c.strokeStyle = INK;
+      c.lineWidth = 1.3;
+      c.globalAlpha = 0.5 * fade;
+      c.beginPath();
+      c.ellipse(root.x, root.y, root.r + 8, root.r + 6, t * 0.15, 0.1, TAU * 0.93);
+      c.stroke();
+    } else {
+      for (let i = 1; i < members.length; i++) {
+        const other = members[i];
+        const dx = other.x - root.x, dy = other.y - root.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const wobble = Math.sin(t * 8 + knot.seed + i) * 5;
+        inkStroke(c, [
+          { x: root.x, y: root.y },
+          { x: (root.x + other.x) / 2 - dy / dist * wobble,
+            y: (root.y + other.y) / 2 + dx / dist * wobble },
+          { x: other.x, y: other.y },
+        ], 2, { color: INK, alpha: fade * 0.72, seed: knot.seed + i, jit: 0.1 });
+      }
+    }
+    /* A restrained vermilion tie seals each knot, not a giant stamp. */
     c.strokeStyle = RED;
-    c.lineWidth = 3;
-    c.beginPath();
-    c.arc(0, 0, st.r * punch, 0, TAU);
-    c.stroke();
-    c.fillStyle = RED;
-    c.fillRect(-s, -s, s * 2, s * 2);
-    c.fillStyle = PAPER;
-    c.font = `${Math.round(s * 1.5)}px "Zen Antique", serif`;
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.globalAlpha = alpha;
-    c.fillText('一', 0, s * 0.08);
+    c.lineWidth = 1.7;
+    for (const e of members) {
+      c.globalAlpha = fade * 0.65;
+      c.beginPath();
+      c.arc(e.x, e.y, e.r + 3.5, -0.2, Math.PI * 1.45);
+      c.stroke();
+      c.beginPath();
+      c.moveTo(e.x - 4, e.y - e.r - 5);
+      c.lineTo(e.x + 2, e.y - e.r - 8);
+      c.stroke();
+    }
     c.restore();
   }
 
@@ -1400,7 +1421,7 @@ const R = (() => {
     for (const d of S.idle) drawEnemy(ctx, d, t);
     for (const sp of S.spirits) drawSpirit(ctx, sp);
     if (playing) drawPlayer(ctx, t);
-    for (const s of S.stamps) drawStamp(ctx, s);
+    for (const knot of S.knots) drawKnot(ctx, knot, t);
     for (const p of S.particles) drawParticle(ctx, p);
     for (const p of S.popups) drawPopup(ctx, p);
 
