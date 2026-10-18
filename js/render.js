@@ -939,33 +939,34 @@ const R = (() => {
   }
 
   /* ---------------- player: the awakened brush spirit ---------------- */
-  /* A living version of the original blobPath's midpoint brush contour.
-     Fixed seeded lobes give the character an identity, while continuous
-     small deformations give it that breathing hand-drawn ink personality.
-     Neither world coordinates nor random frame seeds affect the outline. */
+  /* Player and BLOT enemies share the same midpoint blob vocabulary and
+     CFG.ink.boilRate. Two deterministic enemy-style contours are blended
+     between ticks so the living body stays animated without the old jump. */
   function livingBlobPath(c, r, seed, t, reduced) {
-    const n = 13, rnd = mulberry(seed), pts = [];
-    const breath = reduced ? 1 : 1 + Math.sin(t * 3.1 + seed * .001) * .028;
+    const n = 10;
+    const phase = reduced ? 0 : t / CFG.ink.boilRate;
+    const tick = Math.floor(phase), blend = reduced ? 0
+      : (phase - tick) ** 2 * (3 - 2 * (phase - tick));
+    const first = mulberry(seed ^ Math.imul(tick, 7919));
+    const next = reduced ? null : mulberry(seed ^ Math.imul(tick + 1, 7919));
+    const pts = [];
     for (let i = 0; i < n; i++) {
-      const a = i * TAU / n;
-      const stable = (rnd() * 2 - 1) * .125;
-      const flow = reduced ? 0
-        : .045 * Math.sin(t * 4.6 + a * 2 + i * .41 + seed * .004)
-        + .018 * Math.sin(t * 2.3 - a * 3 + i * .73);
-      const rr = r * breath * (1 + stable + flow);
-      pts.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+      const ang = i * TAU / n;
+      const r0 = 1 + (first() * 2 - 1) * .17;
+      const r1 = reduced ? r0 : 1 + (next() * 2 - 1) * .17;
+      const rr = r * (r0 + (r1 - r0) * blend);
+      pts.push([Math.cos(ang) * rr, Math.sin(ang) * rr]);
     }
     c.beginPath();
-    const first = pts[n-1], firstNext = pts[0];
-    c.moveTo((first[0]+firstNext[0])*.5,(first[1]+firstNext[1])*.5);
-    for(let i=0;i<n;i++){
-      const q=pts[(i+1)%n];
+    const last = pts[n-1], initial = pts[0];
+    c.moveTo((last[0]+initial[0])*.5,(last[1]+initial[1])*.5);
+    for (let i = 0; i < n; i++) {
+      const q = pts[(i+1)%n];
       c.quadraticCurveTo(pts[i][0],pts[i][1],
         (pts[i][0]+q[0])*.5,(pts[i][1]+q[1])*.5);
     }
     c.closePath();
   }
-
 
   function drawPlayer(c, t) {
     const S = G.S, p = S.player, st = S.stats;
@@ -1038,7 +1039,14 @@ const R = (() => {
     c.scale(scale, scale);
     c.rotate(p.visualTilt || 0);
     const r = p.r, tier = form.tier;
-    c.globalAlpha = .99;
+    /* Exactly the enemy's active ink color on every scroll: never red.
+       BLOT's gentle squash follows aim; only the animation, not the
+       physical radius, changes. */
+    const squash = S.reduced ? 1 : 1 + Math.sin(t * 6 + sd * .001) * .035;
+    c.rotate(aim);
+    c.scale(squash, 2 - squash);
+    c.rotate(-aim);
+    c.globalAlpha = 1;
     c.fillStyle = INK;
     livingBlobPath(c, r, sd, t, S.reduced);
     c.fill();
@@ -1060,11 +1068,6 @@ const R = (() => {
         c.stroke();
       }
     }
-    if (tier === 3) {
-      c.globalAlpha = .52; c.fillStyle = RED;
-      c.fillRect(-r * .45, r * .42, 1.15, 1.15);
-    }
-
     /* One quiet paper eye faces the smoothed target aim. */
     c.globalAlpha = 1;
     const ex = Math.cos(aim) * r * .42, ey = Math.sin(aim) * r * .42;
@@ -1117,7 +1120,7 @@ const R = (() => {
       c.globalAlpha = ready ? .9 : .2;
       c.strokeStyle = INK; c.lineWidth = 1.4;
       c.strokeRect(-4, -6.5, 8, 13);
-      if (ready) { c.fillStyle = RED; c.fillRect(-1.6, -1.6, 3.2, 3.2); }
+      if (ready) { c.fillStyle = INK; c.fillRect(-1.6, -1.6, 3.2, 3.2); }
       c.restore();
     }
     c.restore();
@@ -1378,7 +1381,7 @@ const R = (() => {
     c.save();
     c.globalAlpha = Math.max(0, p.life / p.max);
     c.translate(p.x, p.y);
-    c.fillStyle = INK;
+    c.fillStyle = p.red ? RED : INK;
     const vang = Math.atan2(p.vy, p.vx);
     if (p.shape === 'line') {
       c.rotate(vang);
