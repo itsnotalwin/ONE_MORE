@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="410" viewBox="0 0 1200 410" role="img" aria-label="Original illustrated triptych of ONE MORE's three playable scrolls, not screenshots">
+<defs><filter id="edge"><feTurbulence type="fractalNoise" baseFrequency=".028" numOctaves="2" seed="14" result="grain"/><feDisplacementMap in="SourceGraphic" in2="grain" scale="4"/></filter>
+<pattern id="fibers" width="65" height="65" patternUnits="userSpaceOnUse"><path d="M4 10h24 M15 34h46 M0 56h14 M38 4h22" stroke="#736657" stroke-opacity=".07"/></pattern></defs>
+<rect width="1200" height="410" fill="#ede7d9"/>
+<g transform="translate(12 12)">
+<rect width="376" height="386" fill="#ede7d9"/><rect width="376" height="386" fill="url(#fibers)"/>
+<g filter="url(#edge)" fill="#1a1714"><path opacity=".11" d="M0 243 41 181 93 215 155 111 198 182 253 136 305 203 376 114V335H0Z"/><path opacity=".32" d="M0 308 41 251 105 276 163 205 226 287 299 227 376 277V352H0Z"/></g>
+<g stroke="#1a1714" fill="none"><path d="M27 330Q128 319 216 326T357 319" opacity=".4" stroke-width="7"/><path d="M95 278c4 18 12 20 18 30" stroke-width="2"/></g>
+<text x="25" y="48" fill="#b23a2b" font-family="Georgia,serif" font-size="42">一</text><text x="77" y="44" fill="#1a1714" font-family="Georgia,serif" font-size="23">FIRST WASH</text>
+<text x="25" y="363" font-family="monospace" letter-spacing="2" font-size="13" fill="#1a1714">THE PAGE AWAKENS</text>
+</g>
+<g transform="translate(412 12)">
+<rect width="376" height="386" fill="#17130f"/><rect width="376" height="386" fill="url(#fibers)"/>
+<g filter="url(#edge)" fill="#e9e2d2"><path opacity=".12" d="M0 229 52 150 120 218 184 109 265 199 318 141 376 215V339H0Z"/><path opacity=".27" d="M0 298 53 222 130 278 193 193 270 289 320 226 376 265V360H0Z"/></g>
+<g fill="#e9e2d2"><circle cx="292" cy="102" r="28" opacity=".12"/><circle cx="164" cy="253" r="21" opacity=".58"/><circle cx="187" cy="261" r="11" opacity=".39"/><circle cx="103" cy="215" r="9" opacity=".3"/></g>
+<text x="25" y="48" fill="#b23a2b" font-family="Georgia,serif" font-size="42">夜</text><text x="77" y="44" fill="#e9e2d2" font-family="Georgia,serif" font-size="23">NIGHT SCROLL</text>
+<text x="25" y="363" font-family="monospace" letter-spacing="2" font-size="13" fill="#e9e2d2">THE OTHER SIDE</text>
+</g>
+<g transform="translate(812 12)">
+<rect width="376" height="386" fill="#eadbc4"/><rect width="376" height="386" fill="url(#fibers)"/>
+<g filter="url(#edge)" fill="#1a1714"><path opacity=".13" d="M0 246 58 190 112 229 196 113 268 217 328 157 376 204V328H0Z"/><path opacity=".26" d="M0 317 52 243 123 271 199 220 283 288 344 232 376 266V360H0Z"/></g>
+<path d="M17 236Q108 186 212 244T364 199" fill="none" stroke="#b23a2b" stroke-width="12" opacity=".5"/>
+<g transform="translate(284 247) rotate(-5)" stroke="#b23a2b" fill="none" stroke-width="4"><rect width="66" height="66"/><text x="33" y="49" font-size="44" fill="#b23a2b" text-anchor="middle" stroke="none" font-family="serif">紅</text></g>
+<text x="25" y="48" fill="#b23a2b" font-family="Georgia,serif" font-size="42">紅</text><text x="77" y="44" fill="#1a1714" font-family="Georgia,serif" font-size="23">CINNABAR FIELD</text>
+<text x="25" y="363" font-family="monospace" letter-spacing="2" font-size="13" fill="#1a1714">THE BROKEN SEAL</text>
+</g>
+</svg>
