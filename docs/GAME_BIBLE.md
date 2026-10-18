@@ -278,7 +278,7 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 
 The story exists on \`experiment/the-last-stroke\`. GitHub Pages has **one configured site per repository**; changing the source branch to the experiment would replace production temporarily. Do not do that without approval.
 
-A safe non-Pages third-party branch preview for personal evaluation may use raw.githack, which can render files straight from a GitHub branch but may show a safety confirmation screen and has no uptime guarantees. A workflow on the experimental branch can additionally package a downloadable offline preview artifact. Long-term isolated first-party staging requires a distinct Pages repository or Pages deployment architecture intentionally set up for previews.
+A safe non-Pages third-party branch preview for personal evaluation uses the `story-preview` branch alias via raw.githack, which can render files straight from a GitHub branch but may show a safety confirmation screen and has no uptime guarantees. A workflow on the experimental branch can additionally package a downloadable offline preview artifact. Long-term isolated first-party staging requires a distinct Pages repository or Pages deployment architecture intentionally set up for previews.
 
 After acceptance: open a PR, compare artwork, run checks, merge, let the existing \`main\` Pages deployment publish the accepted story, then retain this branch as an exploration archive or delete it after screenshots.
 
