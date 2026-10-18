@@ -26,7 +26,7 @@ const UI = (() => {
     campaignWorlds: $('campaignWorlds'), campaignLevels: $('campaignLevels'),
     campaignWorldName: $('campaignWorldName'), campaignMechanic: $('campaignMechanic'),
     campaignStatus: $('campaignStatus'),
-    statWaves: $('statWaves'), statKills: $('statKills'), statTime: $('statTime'), statScore: $('statScore'),
+    statWaves: $('statWaves'), statKills: $('statKills'), statInkRank: $('statInkRank'), statTime: $('statTime'), statScore: $('statScore'),
     newBestBadge: $('newBestBadge'), flash: $('flash'),
   };
 
