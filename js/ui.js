@@ -9,6 +9,7 @@ const UI = (() => {
   const el = {
     hud: $('hud'), hudWave: $('hudWave'), waveFill: $('waveFill'), hudHp: $('hudHp'),
     hudScore: $('hudScore'), hudTime: $('hudTime'), muteBtn: $('muteBtn'),
+    inkMeter: $('inkMeter'), inkRank: $('inkRank'), inkFill: $('inkFill'),
     hudArea: $('hudArea'), hudAreaKanji: $('hudAreaKanji'), hudAreaName: $('hudAreaName'),
     hudWaveTotal: $('hudWaveTotal'), hudMode: $('hudMode'),
     banner: $('waveBanner'), bannerKicker: $('bannerKicker'), bannerTitle: $('bannerTitle'),
@@ -223,6 +224,22 @@ const UI = (() => {
     flashTimer = setTimeout(() => el.flash.classList.remove('on'), 130);
   }
 
+  function setInkProgress(rank, current, needed, leveled=false) {
+    const safeRank=Math.max(1,Math.floor(rank));
+    const pct=Math.max(0,Math.min(100,100*current/Math.max(1,needed)));
+    el.inkRank.textContent='BRUSH '+pad2(safeRank);
+    el.inkFill.style.width=pct.toFixed(1)+'%';
+    el.inkMeter.setAttribute('aria-valuemax',String(Math.max(1,needed)));
+    el.inkMeter.setAttribute('aria-valuenow',String(Math.max(0,Math.floor(current))));
+    el.inkMeter.setAttribute('aria-valuetext',
+      'Brush rank '+safeRank+', '+Math.floor(current)+' of '+needed+' ink');
+    if(leveled) {
+      el.inkMeter.classList.remove('is-ranking');
+      void el.inkMeter.offsetWidth;
+      el.inkMeter.classList.add('is-ranking');
+    }
+  }
+
   function setRunNo(n) { el.runNo.textContent = 'RUN ' + pad3(n); }
 
   function setBest(b) {
@@ -263,10 +280,12 @@ const UI = (() => {
     });
   }
 
-  function setDeploy(on, nextArea, waveInArea, cycle) {
+  function setDeploy(on, nextArea, waveInArea, cycle, sameWave=false) {
     el.deployBtn.classList.toggle('is-disabled', !on);
     el.deployBtn.disabled = !on;
-    el.deployBtn.innerHTML = on
+    el.deployBtn.innerHTML = sameWave
+      ? (on ? 'RETURN TO THE INK ↗' : 'SELECT A NEW STROKE')
+      : on
       ? (nextArea
         ? `UNROLL — <span class="kanji-inline">${nextArea.kanji}</span> ${nextArea.name}`
         : `DEPLOY — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span>`)
@@ -275,11 +294,14 @@ const UI = (() => {
         : `DEPLOY — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span>`);
   }
 
-  function setUpgradeHeader(waveInArea, area, globalNext) {
+  function setUpgradeHeader(waveInArea, area, globalNext, source='wave', rank=1) {
     const lastWave = waveInArea >= CFG.wave.wavesPerArea;
-    el.upKicker.innerHTML =
-      `SHEET <span class="kanji-inline">${area.kanji}</span> ${area.name} — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span> CLEARED`;
-    el.upNext.innerHTML = lastWave
+    el.upKicker.innerHTML = source==='ink'
+      ? `INK ABSORBED · BRUSH RANK <span class="kanji-inline">${toKanji(rank)}</span>`
+      : `SHEET <span class="kanji-inline">${area.kanji}</span> ${area.name} — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span> CLEARED`;
+    el.upNext.innerHTML = source==='ink'
+      ? '<span class="kanji-inline">'+toKanji(rank)+'</span>'
+      : lastWave
       ? '<span class="kanji-inline">?</span>'
       : '<span class="kanji-inline">' + toKanji(waveInArea + 1) + '</span>';
   }
@@ -334,7 +356,7 @@ const UI = (() => {
 
   return {
     show, renderCampaign, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
-    setRunNo, setBest, buildLegend, buildTicker, fillUpgrades, markSelected,
+    setRunNo, setBest, setInkProgress, buildLegend, buildTicker, fillUpgrades, markSelected,
     setDeploy, setUpgradeHeader, showOver, muteVisual, setLoadout, setArea, setMode, el, toKanji,
   };
 })();
