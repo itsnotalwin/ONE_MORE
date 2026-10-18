@@ -2,13 +2,16 @@
 
 ![ONE MORE: The Last Stroke, original illustrated story title card (not a screenshot)](docs/images/last-stroke-hero.svg)
 
-<p align="center"><strong>THE LAST STROKE</strong> · AN EXPERIMENTAL FULL-MOTION INK SHORT FILM<br/>
+<p align="center"><strong>THE LAST STROKE</strong> · AN ORIGINAL FULL-MOTION INK SHORT FILM<br/>
 The ink remembers every stroke.</p>
 
-> **Active live test build:** [development](https://github.com/itsnotalwin/ONE_MORE/tree/development). The main branch remains unchanged and the short film is under review in [draft PR #5](https://github.com/itsnotalwin/ONE_MORE/pull/5).
+> **Released cinematic:** [PR #7](https://github.com/itsnotalwin/ONE_MORE/pull/7) merged the complete seven-shot animated film and Chronicle into `main`. It plays automatically and remains skippable. The previous combined draft PR #5 has been closed.
 
-**Watch the animated short film:** [Play ONE MORE on the live development Pages site](https://itsnotalwin.github.io/ONE_MORE/). GitHub's [Pages build and deployment succeeded on the development commit](https://github.com/itsnotalwin/ONE_MORE/actions/runs/39126685811). The film starts automatically. Alternative: [third-party branch preview](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html). To switch back to the original release, set GitHub Pages publishing source to `main` in [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages).
+**Play ONE MORE:** [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/). The Pages test site currently deploys `development`, which includes the same cinematic plus in-progress combat improvements. `main` is the preserved cinematic release baseline; `development` is for all new gameplay work. [Browse the development branch](https://github.com/itsnotalwin/ONE_MORE/tree/development).
 
+
+
+**Development milestone 01 / Combat Foundations:** Swept bullet/needle/Spirit Scribe collision eliminates frame-skipping hits; piercing shots hit each enemy once; joystick and keyboard state resets when changing screens. These fixes are on **development only**, not merged into the cinematic release in `main`. Automated coverage: [`tests/combat.test.cjs`](tests/combat.test.cjs).
 
 ## A story hidden beneath the paper
 
