@@ -158,7 +158,11 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
     '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
     '       No original creature or player sprite functions are modified. */\n' +
     '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
-  assert.equal(fnv(renderer),'70a61c56','non-player combat artwork remains byte-identical');
+  /* Enemy death particles alone now use red ink. Revert that precise
+     one-line color allowance for the historic non-player renderer hash. */
+  renderer=renderer.replace('    c.fillStyle = p.red ? RED : INK;\n    const vang = Math.atan2(p.vy, p.vx);',
+    '    c.fillStyle = INK;\n    const vang = Math.atan2(p.vy, p.vx);');
+  assert.equal(fnv(renderer),'70a61c56','all other non-player artwork remains byte-identical');
   const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
   const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
   const call = '    for (const knot of S.knots) drawKnot(ctx, knot, t);';
