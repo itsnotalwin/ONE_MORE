@@ -20,7 +20,7 @@
 ### Existing implementation
 
 - Browser stack: plain HTML5, CSS, JavaScript, Canvas2D and synthesized WebAudio. Zero build step and no third-party runtime packages.
-- Static hosting: GitHub Pages on \`main\`; independent experimental branch has no guaranteed Pages URL without configuring the publishing source.
+- Static hosting: the existing GitHub Pages URL is the agreed test environment; the desired publishing source is `development`, not the experimental draft PR. Confirm GitHub Pages Settings and a successful deployment rather than assuming changing branches published.
 - Movement: WASD, arrow keys or touch joystick. Player auto-targets and shoots. Pause with P/Escape, mute with M. Pick one of three cards between waves; deploy using 1/2/3 and Enter/click.
 - World architecture: **3 worlds × 10 separate levels × 10 waves each = 30 levels / 300 authored wave slots**. Wave 10 has a Guardian, with a stronger world boss at level 10.
 - Waves 1–9 end with a three-upgrade choice. There is **no XP-based leveling yet**: do not advertise XP pickups as existing.
@@ -31,7 +31,7 @@
 ### What Story Experiment 01 adds
 
 - An optional **seven-frame animated prologue**, built procedurally in \`js/intro.js\` (Canvas2D, no exported MP4). It lasts **61 seconds** if allowed to play, with tap/click-to-advance, chapter scrub controls, Enter/right-arrow advance and Escape/Skip.
-- It appears on the first visit of a browser *session* and can always be replayed from the title. The "seen" flag is only \`sessionStorage\`, not campaign progress. It is safe to skip.
+- The film **autoplays on every page launch** without a start cover or session-based suppression. It remains skippable and replayable from the title; audio is opt-in.
 - Optional synthesized tonal cues, **off by default** and activated only by player gesture.
 - The Chronicle, a readable five-part story archive, with later chapters gated by existing campaign completion: 0, 10, 20, 30 levels.
 - CSS and original SVG illustrations matching the original paper/ink palette. No gameplay weapon balance, sprites or enemy behavior changed in the experiment.
@@ -276,11 +276,11 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 
 ## 9. Preview, release and rollback
 
-The story exists on \`experiment/the-last-stroke\`. GitHub Pages has **one configured site per repository**; changing the source branch to the experiment would replace production temporarily. Do not do that without approval.
+The story lives on the experimental and `development` branches. On 2026-10-18, the owner explicitly approved testing this build on the existing public GitHub Pages URL and changing its configured source branch to `development`. This temporarily replaces the public build. Restore `main` as the publishing source to roll back.
 
 A safe non-Pages third-party branch preview for personal evaluation uses the `story-preview` branch alias via raw.githack, which can render files straight from a GitHub branch but may show a safety confirmation screen and has no uptime guarantees. A workflow on the experimental branch can additionally package a downloadable offline preview artifact. Long-term isolated first-party staging requires a distinct Pages repository or Pages deployment architecture intentionally set up for previews.
 
-After acceptance: open a PR, compare artwork, run checks, merge, let the existing \`main\` Pages deployment publish the accepted story, then retain this branch as an exploration archive or delete it after screenshots.
+After acceptance, selectively merge the tested work into `main`. Restore production Pages source to `main` when the experiment is complete. Keep the draft PR for review until then.
 
 ## 10. Research and references
 
