@@ -30,7 +30,8 @@ function harness(reduced=false) {
   });
   const document={
     hidden:false,
-    getElementById(id){if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id);}
+    getElementById(id){if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id);},
+    createElement(tag){return node(tag);}
   };
   const G={mode:'title'};
   const UI={show(name){lastScreen=name;}};
