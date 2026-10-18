@@ -90,47 +90,56 @@ test('divine Guardian uses the same tapered Bezier for collision and illustratio
   const render=read('js/render.js');
   assert.ok(render.includes("mark.kind==='heavenlyStroke'"));
 });
-test('Suiteki Leak is infrequent, has a pool cap and only dries into lasting ink at mastery',()=>{
+test('Suiteki makes one connected snail trail, not stationary circular puddles',()=>{
   const {G,CFG}=boot();safeStage(G);
   G.S.stats.trailW=1;G.S.stats.levels.trail=1;
-  G.S.enemies.push(enem(120,0));
+  G.S.enemies.push(enem(250,80));
   G.S.inputVec.x=1;
-  G.update(.05);
-  assert.equal(G.S.puddles.length,1);
-  assert.equal(G.S.puddles[0].isSuiteki,true);
-  assert.equal(G.S.puddles[0].r,30);
-  G.S.trailT=0;
-  G.update(.05);
-  assert.equal(G.S.puddles.length,1,'rank one may not spam pools');
-  G.S.puddles[0].life=.01;
+  for(let i=0;i<9;i++)G.update(.05);
+  assert.ok(G.S.puddles.length>=5,'wet trail accumulates behind sustained movement');
+  assert.equal(G.S.puddles[0].r,5.5,'thin at first rank');
+  for(let i=0;i<G.S.puddles.length;i++){
+    const pd=G.S.puddles[i];
+    assert.equal(pd.isSuiteki,true);
+    assert.ok(pd.x>pd.x0,'segments follow movement rather than spawn a blob');
+    if(i>0)assert.ok(Math.abs(pd.x0-G.S.puddles[i-1].x)<.001,
+      'neighboring brush segments join seamlessly');
+  }
+  G.S.inputVec.x=0;
+  for(const pd of G.S.puddles)pd.life=.01;
   G.update(.05);
   assert.equal(G.S.puddles.length,0);
   assert.ok(!G.S.stainQueue.some(q=>q.weapon==='trail'),
-    'rank one leaves no lasting terrain mark');
+    'nonmastered wet ink dries without permanent terrain marks');
   G.S.stats.trailW=3;G.S.stats.levels.trail=3;
-  G.S.trailT=0;
-  G.update(.05);
-  assert.equal(G.S.puddles[0].r,46);
-  G.S.puddles[0].life=.01;
+  G.S.inputVec.x=1;
+  for(let i=0;i<7;i++)G.update(.05);
+  assert.ok(G.S.puddles.length>2);
+  assert.equal(G.S.puddles[0].r,8.5);
+  G.S.inputVec.x=0;
+  for(const pd of G.S.puddles)pd.life=.01;
   G.update(.05);
   assert.ok(G.S.stainQueue.some(q=>q.weapon==='trail'&&!q.red),
-    'mastery leaves black pigment');
-  G.S.stats.levels.seal_trail=1;G.S.trailT=0;
-  G.update(.05);
-  G.S.puddles[0].life=.01;
+    'mastered snail trail leaves black connected marks');
+  G.S.stats.levels.seal_trail=1;
+  G.S.inputVec.x=1;
+  for(let i=0;i<6;i++)G.update(.05);
+  G.S.inputVec.x=0;
+  for(const pd of G.S.puddles)pd.life=.01;
   G.update(.05);
   assert.ok(G.S.stainQueue.some(q=>q.weapon==='trail'&&q.red),
-    'selected optional seal recolors ONLY dry residue');
+    'a selected post-max seal changes only the dried trail pigment');
+  assert.equal(CFG.trail.gap(1),12);
+  assert.equal(CFG.trail.maxPools(3),112);
   assert.equal(CFG.trail.tick,.55);
-  assert.equal(CFG.trail.maxPools(3),2);
 });
 test('overlapping Suiteki spills share one global damage timer',()=>{
   const {G}=boot();safeStage(G);
   const e=enem(130,0);
   G.S.enemies.push(e);
   for(let i=0;i<2;i++)G.S.puddles.push({
-    x:130,y:0,r:38,life:1,max:3,tickT:0,seed:i,
-    variant:i,vesselT:0,isSuiteki:true});
+    x0:122,y0:0,x:136,y:0,r:8.5,life:1,max:3,
+    sequence:i,seed:i,isSuiteki:true});
   G.update(.05);
   assert.equal(e.hp,17);
   G.update(.05);
