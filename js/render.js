@@ -1342,6 +1342,41 @@ const R = (() => {
     c.restore();
   }
 
+  function drawSuiteki(c,pd,t){
+    const age=pd.max-pd.life,spread=Math.min(1,age/.68);
+    const fade=Math.min(1,pd.life/.38);
+    const radius=pd.r*spread,variant=pd.variant||0;
+    if(radius<.5)return;
+    c.save();c.translate(pd.x,pd.y);
+    c.rotate(variant*Math.PI/2);c.scale(1.12,.74);
+    c.fillStyle=INK;c.globalAlpha=.72*fade;
+    blobPath(c,0,0,radius,pd.seed,.26,12);c.fill();
+    c.globalAlpha=.48*fade;
+    blobPath(c,radius*.13,-radius*.07,radius*.72,pd.seed^1009,.23,11);c.fill();
+    if(spread>.3){
+      for(let j=0;j<3;j++){
+        const angle=variant*1.2+j*2.09;
+        inkStroke(c,[
+          {x:Math.cos(angle)*radius*.64,y:Math.sin(angle)*radius*.64},
+          {x:Math.cos(angle+.12)*radius*1.05,y:Math.sin(angle+.12)*radius*1.05},
+          {x:Math.cos(angle-.11)*radius*1.45,y:Math.sin(angle-.11)*radius*1.45}
+        ],1.7,{color:INK,alpha:.42*fade,seed:pd.seed+j,taper:.5,jit:.02});
+      }
+    }
+    c.restore();
+    if(pd.vesselT>0){
+      c.save();c.translate(pd.x+9,pd.y-10);
+      c.rotate(-.35+variant*.13);
+      c.globalAlpha=Math.min(.8,pd.vesselT/.18);
+      c.strokeStyle=INK;c.lineWidth=1.2;
+      c.beginPath();c.moveTo(-6,-2);c.lineTo(5,-2);
+      c.lineTo(4,3);c.quadraticCurveTo(0,6,-5,3);c.closePath();c.stroke();
+      c.beginPath();c.arc(5,-4,2.2,0,TAU);c.stroke();
+      c.fillStyle=INK;c.beginPath();c.arc(7,0,1.5,0,TAU);c.fill();
+      c.restore();
+    }
+  }
+
   /* ---------------- projectiles, zones, fx ---------------- */
   function drawBullet(c, b) {
     c.save();
@@ -1825,7 +1860,7 @@ const R = (() => {
     ctx.globalAlpha=1;
 
     if (playing) drawEraserField(ctx,S,t);
-    for (const pd of S.puddles) drawPuddle(ctx, pd);
+    for (const pd of S.puddles) drawSuiteki(ctx,pd,t);
     if (!S.reduced) updateAmbient(dt, S);
 
     for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);
