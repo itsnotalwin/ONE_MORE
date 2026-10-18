@@ -193,7 +193,7 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 | Player | `drawPlayer` | Brush-tip/soul silhouette, recoil and movement marks | Done |
 | 14 enemies | `drawEnemy` and shape helpers | Irregular paths, line-boil animation, eyes/weapon tells | Done |
 | Projectiles | `drawBullet`, `drawEBullet` | Droplets, paper blades, needle arcs | Done |
-| Ink trails and stains | `drawPuddle`, `stampStains` | Transient puddles and world-space cached ink stains | Done |
+| Suiteki spills and stains | `drawSuiteki`, `stampStains` | Temporary spills and max-rank world-space dried ink | Done |
 | Shock/ring effects | `drawRing`, particle functions | Circular ink washes, directional dust and bursts | Done |
 | Guardian cues | HUD + render marker | Red off-screen arrow and elite telegraph | Done |
 | Upgrade glyphs | `js/ui.js` `GLYPHS` | Inline 24×24 SVG strokes, not sprite sheets | Done |
@@ -309,9 +309,9 @@ The director chooses:
 
 **Verification:** `tests/story.test.cjs` covers the film/replay while the full Node test suite protects combat and progression. Real Chromium at desktop and mobile dimensions screenshots the new home, onboarding, campaign and in-game sequences. Physical iPhone Safari review of touch spacing and transitions remains an acceptance step.
 
-## Phase 6 / locked visual and combat design (not implemented)
+## Phase 6 / Living Ink and Suiteki overhaul (implemented on development)
 
-The agreed next-pass blueprint is [**Living Ink, Untouched Paper, Divine Brushstroke & Suiteki Leak**](PHASE-6-LIVING-INK-DESIGN-SPEC.md). It specifies the ink-soul's RUN/start/stop/turn/hit/pickup animation state machine; flat almost-unmarked Paper I ivory washi; Paper I Guardian's authored Heaven Stroke/Crossing/Hook hazard geometry and matched collision/telegraph; and replacing the current Ink Trail with an inkstone/suiteki spill while preserving `trail`, `trailW`, `seal_trail` and two-step terrain-color progression. It also documents the deferred Paper II Ink Lantern concept and strict art/performance/regression acceptance tests. **This is documentation only. No Phase 6 gameplay/rendering changes have been committed yet; Paper I Guardian difficulty and Paper II abilities remain outside this approved blueprint implementation.**
+The agreed next-pass blueprint is [**Living Ink, Untouched Paper, Divine Brushstroke & Suiteki Leak**](PHASE-6-LIVING-INK-DESIGN-SPEC.md). It specifies the ink-soul's RUN/start/stop/turn/hit/pickup animation state machine; flat almost-unmarked Paper I ivory washi; Paper I Guardian's authored Heaven Stroke/Crossing/Hook hazard geometry and matched collision/telegraph; and replacing the current Ink Trail with an inkstone/suiteki spill while preserving `trail`, `trailW`, `seal_trail` and two-step terrain-color progression. It also documents the deferred Paper II Ink Lantern concept and strict art/performance/regression acceptance tests. **Implemented on `development`:** four-part visual/gameplay overhaul, with deterministic RUN animation and reactions, sparse warm Paper-I washi, the Guardian's shared-geometry Heaven Stroke/Crossing/Hook, and Suiteki Leak replacing the old trail. New Paper II abilities and the First Guardian HP/damage rebalance are intentionally deferred. Browser QA and physical iPhone Safari remain separate acceptance gates.
 
 ## First Wash pacing and Night Scroll clarity (development)
 
@@ -361,7 +361,7 @@ These are proposals for the owner's approval. **No new Paper II weapon/power beh
 | Folded Fan | Long dry-brush slash |
 | The Eraser | Clears enemy blood and weapon marks from a wide damage field; max rank begins black boundary; separate Vermilion upgrade makes it lacquer crimson |
 | Black Tide (nova) | Fractured wash ring |
-| Ink Trail | Pooled dragging wash |
+| Suiteki Leak | Pooling inkstone spills that dry into lasting stains at rank 3 |
 | Spirit Scribes | Thin wispy brush traces |
 | Ink Knots | Several crossed tied fibers |
 | Paper Ward | Rectangular stamped border |
