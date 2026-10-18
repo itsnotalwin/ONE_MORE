@@ -325,9 +325,67 @@ async function inspect(browser,name,viewport){
   assert.ok(chosen,name+' post-max red upgrade must be selectable through gameplay');
   assert.ok(await page.locator('.load-item.is-seal').count()>=1,
     name+' selected red seal must remain visible in the loadout');
+  /* Phase 7: actually draw all four Night Scroll arts on the live
+     Canvas and walk long enough to create a continuous Suiteki ribbon. */
+  await page.evaluate(()=>{
+    G.startLevel(0,1);
+    G.S.areaIdx=1;UI.setArea(AREAS[1],3,false);
+    const S=G.S,p=S.player;
+    S.queue=['pulse'];S.spawnTimer=99999;S.markers=[];p.fireT=99999;
+    S.stats.lantern=2;S.stats.crescent=3;
+    S.stats.mirror=3;S.stats.shroud=2;S.stats.trailW=3;
+    for(const [k,v] of [['lantern',2],['crescent',3],['mirror',3],
+      ['shroud',2],['trail',3]])S.stats.levels[k]=v;
+    S.lanternT=0;S.crescentT=0;S.mirrorT=0;
+    S.shroudT=0;S.shroudMotion=1.05;S.invulnT=30;
+    S.enemies=[{
+      type:'shade',x:p.x+225,y:p.y,r:12,hp:350,maxHp:350,
+      t:1,seed:.32,state:'tele',stateT:0,ang:0,hitFlash:0,
+      slowT:0,elite:false,orbCd:0,kbx:0,kby:0,
+      px:0,py:0,stun:0,dirT:0,spawnT:0,speed:0,
+    }];
+    S.ebullets=[{
+      kind:'glob',x:p.x+26,y:p.y,vx:-80,vy:0,
+      age:0,life:2,ang:Math.PI,
+    }];
+  });
+  await page.keyboard.down('d');
+  await page.waitForTimeout(420);
+  await page.keyboard.up('d');
+  const nightArts=await page.evaluate(()=>({
+    mirrorT:G.S.mirrorT,wet:G.S.puddles.length,
+    lantern:G.S.stats.lantern,crescent:G.S.stats.crescent,
+    shroud:G.S.stats.shroud,moon:G.S.crescents.length,
+    mode:G.mode,
+  }));
+  assert.ok(nightArts.wet>=3,name+' Suiteki trails behind walking spirit');
+  assert.ok(nightArts.mirrorT>0,name+' Mirror catches a real enemy shot');
+  assert.ok(nightArts.moon>=1,name+' Crescent Return exists in world space');
+  assert.ok(nightArts.lantern===2&&nightArts.shroud===2);
+  assert.equal(nightArts.mode,'playing');
+  await page.screenshot({path:path.join(out,name+'-17-night-arts-and-snail-trail.png')});
+  await page.evaluate(()=>{
+    G.startLevel(0,1);
+    G.S.queue=['pulse'];G.S.spawnTimer=99999;
+    G.S.markers=[];G.S.player.fireT=99999;
+    G.S.stats.trailW=3;G.S.stats.levels.trail=3;
+  });
+  await page.keyboard.down('d');
+  await page.waitForTimeout(420);
+  await page.keyboard.up('d');
+  const snail=await page.evaluate(()=>({
+    wet:G.S.puddles.length,
+    joined:G.S.puddles.slice(1).every((v,i)=>
+      Math.hypot(v.x0-G.S.puddles[i].x,
+        v.y0-G.S.puddles[i].y)<.002),
+    width:G.S.puddles[0]?.r,
+  }));
+  assert.ok(snail.wet>=3&&snail.joined&&snail.width===8.5,
+    name+' actual moving Suiteki ribbon joins seamlessly without blobs');
+  await page.screenshot({path:path.join(out,name+'-18-joined-ivory-washi-trail.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
-  return {name,shots:19,redSealVerified:true,eraserVerified:true,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
+  return {name,shots:21,phase7Verified:true,redSealVerified:true,eraserVerified:true,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
 (async()=>{
   const browser=await chromium.launch({headless:true});
