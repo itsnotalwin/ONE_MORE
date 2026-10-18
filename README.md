@@ -2,12 +2,12 @@
 
 ![ONE MORE: The Last Stroke, original illustrated story title card (not a screenshot)](docs/images/last-stroke-hero.svg)
 
-<p align="center"><strong>THE LAST STROKE</strong> · AN EXPERIMENTAL SEVEN-FRAME CINEMATIC PROLOGUE<br/>
+<p align="center"><strong>THE LAST STROKE</strong> · AN EXPERIMENTAL FULL-MOTION INK SHORT FILM<br/>
 The ink remembers every stroke.</p>
 
 > **Experimental story branch:** [experiment/the-last-stroke](https://github.com/itsnotalwin/ONE_MORE/tree/experiment/the-last-stroke). This is a creative preview, **not the live production release**. The current original game remains on [main](https://github.com/itsnotalwin/ONE_MORE/tree/main).
 
-**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. The owner approved using the public [ONE MORE Pages URL](https://itsnotalwin.github.io/ONE_MORE/) to test the `development` branch. **Action still required:** an automated source-switch attempt was rejected by GitHub (HTTP 403: insufficient settings privileges). In [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages), set **Deploy from a branch → development → / (root) → Save**. Do not interpret successful branch checks as proof the live source was switched.
+**Watch the animated build:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/story-preview/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. The owner approved using the public [ONE MORE Pages URL](https://itsnotalwin.github.io/ONE_MORE/) to test the `development` branch. **Action still required:** an automated source-switch attempt was rejected by GitHub (HTTP 403: insufficient settings privileges). In [Settings → Pages](https://github.com/itsnotalwin/ONE_MORE/settings/pages), set **Deploy from a branch → development → / (root) → Save**. Do not interpret successful branch checks as proof the live source was switched.
 
 ## A story hidden beneath the paper
 
@@ -15,7 +15,7 @@ Before the world had a name, there was paper. The Painter imagined mountains, ri
 
 **You are that stroke.**
 
-The prologue **automatically starts on every page load, without requiring a tap**. It is a **61-second, seven-frame playable cinematic** rendered by the browser: ink-wash mountains, inverted night scrolls, water erasure, a final vermilion mark, and a surviving brush spirit. It uses no stock video, no remote animation model, and no MP4 download. The player can skip it, advance frames, enable subtle synthesized sound, or replay from the title. The cinematic now features brushstroke reveals, living ink motes, scene dissolves, and correct inverted-ink Night Scroll contrast. Audio remains off until explicitly enabled, as required by mobile autoplay restrictions. A **Chronicle** unlocks the complete fiction as your campaign progresses.
+The prologue **automatically starts on every page load, without requiring a tap**. It is a **61-second, seven-shot animated short film** rendered by the browser: a droplet falling into blank paper, a moving painter drawing mountains, animated ink creatures rising from the reverse side, a water-front wiping the landscape away, a surviving brush-spirit reforming and moving, three scrolls opening, and a dramatic ONE MORE seal reveal. It uses no stock video, no remote animation model, and no MP4 download. The movie plays on its own, with seven timed shots and captions appearing only after the action begins. You can skip it immediately or replay it from the title. Optional synthesized ambient music is activated by tap, because Safari restricts sound autoplay. Slow camera moves, actual animated actors, wash effects and shot dissolves are all rendered live. Audio remains off until explicitly enabled, as required by mobile autoplay restrictions. A **Chronicle** unlocks the complete fiction as your campaign progresses.
 
 ![Seven-frame prologue storyboard, authored SVG illustration, not live gameplay captures](docs/images/seven-frames.svg)
 
@@ -23,7 +23,7 @@ The prologue **automatically starts on every page load, without requiring a tap*
 
 ![The three existing environments in an original editorial SVG triptych, not screenshots](docs/images/three-scrolls.svg)
 
-The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, upgrade picks follow each cleared wave, and permanent campaign unlocks survive failed runs. The experimental cinematic never alters game physics or enemy balance.
+The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, upgrade picks follow each cleared wave, and permanent campaign unlocks survive failed runs. The short film is entirely separate from gameplay; it does not alter game physics, enemy balance, upgrades, or the protected combat renderer.
 
 **Living project documents:** [Full GAME BIBLE, story, art/sprite/animation atlas and Kanban roadmap](docs/GAME_BIBLE.md) · [Original style protection contract](DESIGN.md) · [Research notes](docs/RESEARCH.md).
 
@@ -164,7 +164,8 @@ one-more/
 │   ├── ui.js                   # DOM screens, HUD, kanji numerals, upgrade cards
 │   ├── game.js                 # camera, areas, waves, entities, weapons, flow
 │   ├── render.js               # original gameplay renderer
-│   ├── intro.js                # optional seven-scene canvas film + Chronicle
+│   ├── film.js                 # procedural actors, ink animations and live-drawn short film
+│   ├── intro.js                # film timeline, captions, sound + Chronicle
 │   └── main.js                 # bootstrap, input, game loop, wiring
 ├── .github/
 │   └── workflows/
@@ -210,12 +211,9 @@ checks on mobile and desktop are still required before deploying.
 
 For exact original appearance, consult [DESIGN.md](DESIGN.md) and its
 commit-pinned references. Existing enemy illustrations, combat ink effects and
-animations are preserved. Story scenes use additional **separate, cached Canvas painting**.
+animations are preserved. The short film uses its own Canvas2D engine to animate painting, characters, water, camera moves and title reveals. Only dissolve snapshots are cached; the scenes are not static slide backgrounds.
 
-**Preview hosting:** GitHub Pages supports one configured publishing source per
-repository. We intentionally **have not changed Pages away from `main`**. This
-branch's third-party raw.githack preview is for testing, not a substitute for
-a separately configured first-party staging deployment.
+**Live test site:** this repository's GitHub Pages workflow now builds on `development`. The owner explicitly approved using the live URL for previews. The separate third-party raw.githack branch preview remains an alternative. The `main` branch is not merged or modified.
 
 ## Tech
 
