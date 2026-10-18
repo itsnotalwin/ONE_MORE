@@ -612,16 +612,18 @@ const G = (() => {
     SFX.fan();
   }
 
-  function dropTrail() {
-    const st = S.stats;
+  /* Suiteki Leak replaces automatic footprints. Water meets the
+     inkstone and a single slow spill blooms BEHIND the traveling soul. */
+  function dropTrail(){
+    const st=S.stats,p=S.player,lv=st.trailW;
+    if(S.puddles.length>=CFG.trail.maxPools(lv))return;
+    const facing=p.visualFacing||0,seed=(Math.random()*1e9)|0;
     S.puddles.push({
-      x: S.player.x + rand(-4, 4), y: S.player.y + rand(-4, 4),
-      r: CFG.trail.radius(st.trailW), life: CFG.trail.life, max: CFG.trail.life,
-      tickT: 0.1, seed: (Math.random() * 1e9) | 0,
+      x:p.x-Math.cos(facing)*29,y:p.y-Math.sin(facing)*29,
+      r:CFG.trail.radius(lv),life:CFG.trail.life(lv),
+      max:CFG.trail.life(lv),tickT:0,seed,variant:Math.abs(seed)%4,
+      vesselT:.18,level:lv,isSuiteki:true,
     });
-    markWeapon('trail', S.puddles[S.puddles.length - 1].x,
-      S.puddles[S.puddles.length - 1].y, { r: 12, alpha: .9 });
-    if (S.puddles.length > 26) S.puddles.shift();
   }
 
   function fireSpirits() {
@@ -760,10 +762,16 @@ const G = (() => {
       if (S.fanT <= 0) { S.fanT = CFG.fan.period(st.fan); if (nearestEnemy()) fireFan(); }
     }
 
-    /* ink trail: smears that bite */
-    if (st.trailW > 0) {
-      S.trailT -= dt;
-      if (S.trailT <= 0 && m > 0.25) { S.trailT = CFG.trail.gap(st.trailW); dropTrail(); }
+    /* Suiteki Leak: occasional controlled spills only near real threats,
+       not a continuous chain of footsteps across blank paper. */
+    if(st.trailW>0){
+      S.trailT-=dt;
+      const threat=nearestEnemy();
+      const near=threat&&Math.hypot(threat.x-p.x,threat.y-p.y)<340;
+      if(S.trailT<=0&&m>.25&&near&&
+         S.puddles.length<CFG.trail.maxPools(st.trailW)){
+        dropTrail();S.trailT=CFG.trail.gap(st.trailW);
+      }
     }
 
     /* spirit scribes: lesser brushes that hunt alone */
@@ -1037,33 +1045,32 @@ const G = (() => {
     }
   }
 
-  function updatePuddles(dt) {
-    for (let i = S.puddles.length - 1; i >= 0; i--) {
-      const pd = S.puddles[i];
-      pd.life -= dt;
-      pd.tickT -= dt;
-      if (pd.life <= 0) {
-        markWeapon('trail', pd.x, pd.y, { r: 12, alpha: .24 });
-        S.puddles.splice(i, 1);
-        continue;
+  function updatePuddles(dt){
+    for(let i=S.puddles.length-1;i>=0;i--){
+      const pd=S.puddles[i];
+      pd.life-=dt;pd.vesselT=Math.max(0,(pd.vesselT||0)-dt);
+      if(pd.life<=0){
+        /* Only a maxed spill leaves a permanent stage memory. The
+           selected red seal changes pigment, never damage. */
+        markWeapon('trail',pd.x,pd.y,{r:pd.r*.56,alpha:.94,
+          angle:(pd.variant||0)*Math.PI/2});
+        S.puddles.splice(i,1);continue;
       }
-      if (pd.tickT <= 0) {
-        pd.tickT = CFG.trail.tick;
-        let bit = false;
-        for (let j = S.enemies.length - 1; j >= 0; j--) {
-          const e = S.enemies[j];
-          const dx = e.x - pd.x, dy = e.y - pd.y;
-          const rr = e.r + pd.r * 0.85;
-          if (dx * dx + dy * dy <= rr * rr) {
-            e.slowT = Math.max(e.slowT, 0.55);
-            e.hp -= CFG.trail.dmg;
-            e.hitFlash = 0.07;
-            bit = true;
-            if (e.hp <= 0) { S.enemies.splice(j, 1); killEnemy(e); }
-          }
-        }
-        if (bit && Math.random() < 0.5) SFX.hit();
+      const grow=Math.min(1,(pd.max-pd.life)/.68);
+      const wetR=pd.r*grow;
+      let hit=false;
+      for(let j=S.enemies.length-1;j>=0;j--){
+        const e=S.enemies[j],dx=e.x-pd.x,dy=e.y-pd.y;
+        if(dx*dx+dy*dy>(e.r+wetR*.82)**2)continue;
+        e.suitekiT=Math.max(e.suitekiT||0,.55);
+        /* Global per-enemy cooldown shared across overlapping pools.
+           Never multiply damage by the number of active leaks. */
+        if(S.clockT<(e.suitekiNextT||0))continue;
+        e.suitekiNextT=S.clockT+CFG.trail.tick;
+        e.hp-=CFG.trail.dmg;e.hitFlash=.07;hit=true;
+        if(e.hp<=0){S.enemies.splice(j,1);killEnemy(e);}
       }
+      if(hit&&Math.random()<.27)SFX.hit();
     }
   }
 
@@ -1120,13 +1127,15 @@ const G = (() => {
       if (e.hitFlash > 0) e.hitFlash -= dt;
       if (e.orbCd > 0) e.orbCd -= dt;
       if (e.slowT > 0) e.slowT -= dt;
+      if((e.suitekiT||0)>0)e.suitekiT-=dt;
       if (e.stun > 0) {
         e.stun -= dt;
       } else {
         const dx = p.x - e.x, dy = p.y - e.y;
         const d = Math.hypot(dx, dy) || 1;
         const ux = dx / d, uy = dy / d;
-        const sm = e.slowT > 0 ? CFG.slow.mult : 1; /* soaked paper drags */
+        const sm=Math.min(e.slowT>0?CFG.slow.mult:1,
+          (e.suitekiT||0)>0?CFG.trail.slow:1); /* suiteki: 20% drag */
         let vx = 0, vy = 0;
         switch (e.type) {
           case 'pulse':
