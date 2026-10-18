@@ -260,6 +260,24 @@ The director chooses:
 
 **Verification:** \`tests/wave-director.test.cjs\` checks the full 30-level, 300-wave planning matrix, names, legal enemies, signature injections, budget bounds, safe spawn sides, off-screen markers, initial plan resets and untouched Endless selection. Existing progression and combat regression tests still run. CI passing does not replace actual iPhone play-testing or prove every encounter is fun.
 
+## Guardian encounters — Phase 3 (development)
+
+**Implemented directly on \`development\`**, following Phase 1 combat reliability and Phase 2 encounter choreography. **Not merged to \`main\`**. World bosses are still the three original Guardian silhouettes, now with authored phase behavior.
+
+| World | Guardian shape | 2-phase Level 1–9 encounter | 3-phase Level 10 world boss |
+|---|---|---|---|
+| **First Wash** | BRUTE / slate-like slab | The Broken Line: a long ink seam crosses the sheet, then the page splits with paired seams | The First Seal: three parallel fissures and a stronger final-phase tempo |
+| **Night Scroll** | SHADE / shadow ink cloud | The False Reflection: a narrow beam locks the player's position, progressing to twin shadows | The Night Seal: three angled ink rays at the last phase |
+| **Cinnabar Field** | ONI / horned charger | The Red Imprint: delayed seals appear under a previous player location, then a second seal | The Cinnabar Crown: three delayed red seals with exits on either side |
+
+**Rules and accessibility:** Every special attack uses a harmless **1.15-second warning for stage Guardians** or **1.25-second warning for world bosses**, followed by a brief 0.26–0.32-second impact and a multi-second recovery. Positions commit at warning time and **do not track the player**, so timely lateral movement is rewarded. The existing health, Ward protection and 1.1-second post-hit invulnerability govern damage. Boss HP is signaled with a thin world-space ink bar divided into two or three phases. Phase transitions announce themselves through the existing popup/ring system.
+
+**Technical architecture:** \`js/guardians.js\` is pure pattern/geometry logic. \`js/game.js\` schedules cast cooldowns, transitions and hazard damage and cleans up all outstanding attacks on Guardian defeat, run reset, wave transition or abandonment. The renderer gained **only** \`drawGuardianHazard\`, the small phase HP indicator, and one call-site, all in the existing ink/washi palette. Original sprites and animation code remain byte-for-byte identical after the additions are excluded. \`tests/guardians.test.cjs\` covers phase thresholds, windup geometry, player damage, attack cleanup, Endless compatibility, and the original renderer hash.
+
+**Balance restrictions:** New boss attacks do not increase player damage or directly multiply monster HP. The existing elite and world-boss HP multipliers remain. No giant unexplained area wipes, unavoidable radial damage, screen flashes or third-party assets. More elaborate 2D character transformations remain a possible future art exploration, not part of this phase.
+
+**Testing backlog:** Real iPhone Safari play-testing of attack readability, telegraph contrast on all three paper themes, Guardian time-to-kill, and device frame pacing is still required. Desktop and phone-sized headless Chromium smoke runs confirm the mechanics and Canvas rendering but do not substitute for physical device feel.
+
 ## 8. Roadmap board
 
 A source-controlled checklist, not a claim of a live GitHub Projects integration. Mark a box complete **only after verified**. Keep product delivery, technical debt, visual art and narrative tasks separate.
@@ -309,17 +327,19 @@ These are sequential implementation phases, not five changes to deploy at once.
 
 - [x] **Phase 1 — Combat Foundations:** Correct swept collision detection for droplets, blades, needles, ink globs and Spirit Scribes; piercing hit order and one-hit-per-enemy protection; reset keyboard and touch input on focus changes, retries and wave screens.
 - [x] **Phase 2 — Wave Director:** Authored 30 level compositions, 8 wave-arrival patterns, bounded tempo changes, named wave cues, maintained all 3 world signatures. Tests cover all 300 wave plans.
+- [x] **Phase 3 — Guardians:** Introduced different attack geometry, phase shifts, and boss HP ticks on development.
+- [ ] Physically play-test Guardians on iPhone and adjust unfair or ineffective patterns before releasing to main.
 - [x] Automated regression coverage: 11 targeted tests in `tests/combat.test.cjs`, plus the existing campaign/cinematic suite. GitHub Actions passed for this development milestone.
 - [ ] Test Phase 1 manually on iPhone Safari and desktop during real ten-wave runs.
 - [x] **Phase 2 — Wave Director 2.0:** 30 unique authored stage identities, eight spawn patterns, 300 legal encounter plans, wave choreography and UI cues. Dedicated regression tests passed. Manual feel-testing pending.
-- [ ] **Phase 3 — Guardians:** Unique multi-phase world boss behavior. Not implemented yet.
+- [x] **Phase 3 — Guardians:** Three world-specific attack styles with two normal Guardian phases, three final boss phases, ink warning graphics, readable recovery windows and boss health indication. Automated tests added; manual iPhone balance pending.
 - [ ] **Phase 4 — Upgrade synergies:** Build variety and restrained evolutions. Not implemented yet.
 - [ ] **Phase 5 — Story integration:** Gameplay narrative milestones. Not implemented yet.
 
 ### NEXT / GAMEPLAY & STORY
 
 - [x] World- and level-specific encounter pacing beyond simple scaling: Wave Director 2.0 on development. Further hand-tuning after play-testing remains.
-- [ ] More distinctive Guardian mechanics, avoiding unfair instant kills and unavoidable telegraphs.
+- [x] Distinct Guardian attack mechanics with 1.15–1.25-second harmless telegraphs; more boss depth may be revisited after testing.
 - [ ] Gameplay hooks for Act revelations at strategic world milestones.
 - [ ] Truly distinctive victory epilogue after World III, Level 10.
 - [ ] Optional in-game lore collectibles / fragments, avoiding intrusive popups mid-combat.
