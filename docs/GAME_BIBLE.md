@@ -129,7 +129,8 @@ Title → Journey → Scroll picker → Level (new 10-wave run)
 - \`js/audio.js\`: original WebAudio synthesis.
 - \`js/film.js\`: the procedural animated-film renderer: 7 independently choreographed shots, world creation, moving creatures, water wash, spirit, scroll unroll and title. \`js/intro.js\`: 61-second timeline, camera movement, subtitling, sound opt-in, skip/replay and Chronicle.
 - \`css/style.css\`: original global style and compact responsive upgrade cards.
-- \`css/intro.css\`: styles scoped to the two experimental screens.
+- \`css/intro.css\`: styles scoped to the film and Chronicle screens.
+- \`tests/film-browser.cjs\`: CI-only Playwright browser smoke test with stills, no browser library required by the game itself.
 
 ### All fourteen ink-born enemy types
 
@@ -229,17 +230,20 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 - [x] Endless mode, pause, basic scoring and result screens.
 - [x] Campaign regression suite and immutable style-source checks.
 - [x] Seven-shot continuous animation, original SVG docs illustrations and Chronicle source added on development.
+- [x] Real Chromium full-browser QA captured desktop 1440×900 and phone-sized 393×852 renders for opening, creation, erasure, survivor, and title; navigation, skip, replay and absence of JS exceptions verified by [GitHub Actions](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml).
 - [x] Living game document, story bible, and roadmap committed on branch.
 
 ### IN REVIEW / NEEDS REAL DEVICE ACCEPTANCE
 
 - [ ] Cinematic seven-shot pacing feels intentional on iPhone and desktop.
-- [ ] Intro scenes, controls and captions actually fit short/tall viewports without clipping.
+- [x] Intro controls and captions stay within simulated desktop and portrait-phone Chromium viewports.
+- [ ] Check short landscape and actual iPhone Safari devices for text clipping and touch accessibility.
 - [ ] Sound option respects Safari's user-gesture policy, mute behavior and audio interruption.
 - [ ] Prologue's **every-visit autoplay**, replay, skip, and return-to-title navigation tested manually.
 - [ ] Chronicle unlock gating verified with genuine gameplay progression and a cleared campaign.
 - [ ] Benchmark animated-film FPS, frame time, memory and battery usage on iPhone Safari.
-- [ ] Capture **actual** game screenshots from a browser and compare with pinned original art.
+- [x] Capture **actual browser screenshots** of the new film as GitHub Actions artifacts (not fabricated SVGs).
+- [ ] Compare captured film stills against pinned original gameplay art and review compositions on physical devices.
 - [ ] Owner decides whether to merge story experiment into \`main\`.
 
 ### NEXT / GAMEPLAY & STORY
