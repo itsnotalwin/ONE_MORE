@@ -42,11 +42,26 @@
   background:repeating-linear-gradient(to top, transparent 0 25px,
     rgba(237,231,217,.45) 25px 26px);
 }
+/* A narrow channel of the SAME cinnabar pigment as enemy blood.
+   It physically rises from the foot of the track rather than sliding
+   a rectangular progress indicator. The dark gradient gives pigment depth. */
 .ink-meter-fill{
+  position:relative;
   width:100%;height:0%;flex:0 0 auto;
-  background:var(--red);
+  background:linear-gradient(90deg,var(--red-deep) 0%,var(--red) 58%,#c44935 100%);
+  box-shadow:inset 1px 0 1px rgba(98,24,16,.35);
   transition:height .22s cubic-bezier(.16,.67,.28,1);
   will-change:height;
+}
+.ink-meter-fill::before{
+  content:'';position:absolute;
+  left:-1px;right:-1px;top:-3px;height:5px;
+  background:var(--red);
+  clip-path:polygon(0 90%,12% 36%,34% 67%,57% 12%,79% 55%,100% 24%,100% 100%,0 100%);
+}
+.ink-meter-fill::after{
+  content:'';position:absolute;inset:3px 1px 0 auto;width:1px;
+  background:rgba(244,153,115,.28);
 }
 .ink-meter.is-ranking .ink-meter-track{animation:inkVerticalPulse .56s ease-out}
 @keyframes inkVerticalPulse{
