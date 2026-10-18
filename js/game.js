@@ -727,7 +727,7 @@ const G = (() => {
     else p.visualStateT+=dt;
     p.visualState=nextState;
     const aK=S.reduced?1:1-Math.exp(-dt*13);
-    p.visualSpeed+=(active?Math.min(1,Math.hypot(vx,vy)):0-p.visualSpeed)*aK;
+    p.visualSpeed+=((active?Math.min(1,Math.hypot(vx,vy)):0)-p.visualSpeed)*aK;
     p.visualFacing+=turn*(S.reduced?1:1-Math.exp(-dt*14));
     if(active&&!S.reduced)p.flowPhase+=dt*2*Math.PI*(5.6+1.2*p.visualSpeed);
     for(const prop of ['hitPulse','absorbPulse','rankPulse'])
