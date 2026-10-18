@@ -36,12 +36,12 @@ test('Eraser is a far-reaching balanced damage field with expanding radius and r
   G.S.queue=['pulse'];G.S.spawnTimer=9999;G.S.markers=[];
   G.update(.05);
   assert.equal(paper.erases.length,1,'the field actually requests terrain erasure');
-  assert.equal(paper.erases[0].r,135,'initial field has a far larger range than old orbit');
+  assert.equal(paper.erases[0].r,65,'Eraser begins as a tightly controlled 65px field');
   G.update(.1);
   assert.equal(paper.erases.length,1,'erasure is throttled for mobile');
   G.S.stats.orb=3;G.S.stats.levels.orbit=3;
   G.update(.20);
-  assert.equal(paper.erases.at(-1).r,205,'upgrades expand the area substantially');
+  assert.equal(paper.erases.at(-1).r,135,'maximum rank is the previous oversized starting radius');
   assert.ok(G.S.stainQueue.some(m=>m.weapon==='eraser'&&!m.red),
     'maxed Eraser unlocks a black boundary, not free red mastery');
   G.S.stats.levels.seal_orbit=1;
@@ -49,6 +49,13 @@ test('Eraser is a far-reaching balanced damage field with expanding radius and r
   G.update(.05);
   assert.ok(G.S.stainQueue.some(m=>m.weapon==='eraser'&&m.red),
     'the separate post-max Vermilion upgrade paints the crimson boundary');
+});
+test('Eraser radius grows 65 > 100 > 135 without changing damage cadence',()=>{
+  const context=vm.createContext({});
+  vm.runInContext(file('js/config.js'),context);
+  const size=vm.runInContext('[1,2,3].map(l=>CFG.eraser.radius(l))',context);
+  assert.equal(JSON.stringify(size),JSON.stringify([65,100,135]));
+  assert.equal(vm.runInContext('CFG.eraser.dmgCd',context),.82);
 });
 test('all enemy sprites retain their style, with at least five splatter compositions each',()=>{
   const render=file('js/render.js');
