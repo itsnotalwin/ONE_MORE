@@ -15,7 +15,7 @@ const R = (() => {
   /* ---------------- paper themes ---------------- */
   const THEMES = {
     pale: { paper: '#ede7d9', ink: '#1a1714', vig: '58,52,40'  },
-    dark: { paper: '#17130f', ink: '#e9e2d2', vig: '0,0,0'     },
+    dark: { paper: '#242b39', ink: '#fff1da', vig: '8,13,27'    },
     red:  { paper: '#eadbc4', ink: '#1a1714', vig: '122,42,26' },
   };
   let INK = THEMES.pale.ink;
@@ -110,7 +110,7 @@ const R = (() => {
 
     /* laid lines — grain that tiles cleanly (8 divides 480) */
     p.lineWidth = 1;
-    p.strokeStyle = key === 'dark' ? 'rgba(237,231,217,0.03)' : 'rgba(96,88,70,0.03)';
+    p.strokeStyle = key === 'dark' ? 'rgba(247,231,207,0.065)' : 'rgba(96,88,70,0.03)';
     for (let y = 4; y < TILE; y += 8) {
       p.beginPath(); p.moveTo(0, y + (rnd() - 0.5)); p.lineTo(TILE, y + (rnd() - 0.5)); p.stroke();
     }
@@ -120,8 +120,8 @@ const R = (() => {
       const x = rnd() * TILE, y = rnd() * TILE;
       const a = (rnd() - 0.5) * 0.9 + (rnd() < 0.5 ? 0 : Math.PI / 2);
       const l = 1.5 + rnd() * 3.5;
-      const base = key === 'dark' ? [200, 194, 178] : [70 + rnd() * 40 | 0, 62 + rnd() * 36 | 0, 48 + rnd() * 28 | 0];
-      p.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},${0.03 + rnd() * 0.045})`;
+      const base = key === 'dark' ? [222, 212, 193] : [70 + rnd() * 40 | 0, 62 + rnd() * 36 | 0, 48 + rnd() * 28 | 0];
+      p.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},${key === 'dark' ? 0.075 + rnd() * 0.065 : 0.03 + rnd() * 0.045})`;
       p.lineWidth = 0.7;
       p.beginPath();
       p.moveTo(x, y);
@@ -132,7 +132,7 @@ const R = (() => {
     const dots = Math.round((TILE * TILE) / 2400);
     for (let i = 0; i < dots; i++) {
       p.fillStyle = key === 'dark'
-        ? `rgba(220,214,198,${0.02 + rnd() * 0.05})`
+        ? `rgba(249,234,207,${0.035 + rnd() * 0.055})`
         : `rgba(50,45,36,${0.02 + rnd() * 0.05})`;
       p.beginPath();
       p.arc(rnd() * TILE, rnd() * TILE, 0.3 + rnd() * 0.8, 0, TAU);
@@ -147,14 +147,36 @@ const R = (() => {
         g.addColorStop(0, `rgba(178,58,43,${0.028 + rnd() * 0.035})`);
         g.addColorStop(1, 'rgba(178,58,43,0)');
       } else if (key === 'dark') {
-        g.addColorStop(0, `rgba(237,231,217,${0.016 + rnd() * 0.02})`);
-        g.addColorStop(1, 'rgba(237,231,217,0)');
+        g.addColorStop(0, `rgba(106,127,165,${0.085 + rnd() * 0.045})`);
+        g.addColorStop(.55, 'rgba(67,84,118,0.035)');
+        g.addColorStop(1, 'rgba(67,84,118,0)');
       } else {
         g.addColorStop(0, `rgba(112,102,80,${0.02 + rnd() * 0.022})`);
         g.addColorStop(1, 'rgba(112,102,80,0)');
       }
       p.fillStyle = g;
       p.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    /* Indigo-dyed paper leaves barely-visible dye tide lines and a
+       few kozo fibers. All details are deterministic tile art, not
+       glowing scenery, and remain quieter than the living ivory ink. */
+    if(key==='dark'){
+      for(let i=0;i<5;i++){
+        const x=28+rnd()*(TILE-56),y=25+rnd()*(TILE-50);
+        const length=38+rnd()*106;
+        p.save();p.strokeStyle='rgba(172,192,218,.115)';
+        p.lineWidth=.55+rnd()*.45;p.lineCap='round';
+        p.beginPath();p.moveTo(x,y);
+        p.bezierCurveTo(x+length*.19,y-4,x+length*.68,y+7,
+          x+length,y+(rnd()-.5)*12);p.stroke();p.restore();
+      }
+      /* A tiny pale fiber fleck, seldom repeated across the sheet. */
+      p.save();p.globalAlpha=.16;p.fillStyle='#ded7c6';
+      for(let i=0;i<6;i++){
+        const x=rnd()*TILE,y=rnd()*TILE;
+        p.fillRect(x,y,1.2+rnd()*2,.5);
+      }
+      p.restore();
     }
     /* a couple of dried drips for the red field */
     if (key === 'red') {
@@ -637,6 +659,27 @@ const R = (() => {
     c.lineJoin = 'round';
     c.lineCap = 'round';
 
+    /* On the reverse sheet, spectral enemies must NEVER disappear
+       against their own night paper. Add a fine broken ivory
+       registration contour *behind* the existing creature art.
+       Nothing about their silhouettes or AI animations is changed. */
+    if(themeKey==='dark' && !S.idle?.includes(e)){
+      const spectral=['shade','wraith','kage','stilt','moth'].includes(e.type);
+      c.save();c.globalAlpha=spectral?.78:.32;
+      c.strokeStyle='#f9edce';c.lineCap='round';
+      c.lineWidth=spectral?1.6:1.15;
+      c.beginPath();
+      c.arc(0,0,r*(spectral?1.48:1.35),-.95,.46);
+      c.moveTo(Math.cos(2.25)*r*1.48,Math.sin(2.25)*r*1.48);
+      c.arc(0,0,r*(spectral?1.48:1.35),2.25,3.42);
+      c.stroke();
+      if(spectral){
+        c.fillStyle='#f9edce';c.globalAlpha=.85;
+        c.beginPath();c.arc(-r*1.34,-r*.12,1.25,0,TAU);c.fill();
+      }
+      c.restore();
+    }
+
     let silhouette = null; /* path fn for hit-flash overlay */
 
     switch (e.type) {
@@ -786,7 +829,7 @@ const R = (() => {
         let stretch = 1;
         if (st === 'dissolve') {
           const pr = Math.min(1, e.stateT / 0.55);
-          alpha = 0.72 * (1 - pr * 0.92);
+          alpha = themeKey==='dark' ? 0.45 + 0.25 * (1-pr) : 0.72 * (1 - pr * 0.92);
           stretch = 1 + pr * 0.3;
         } else if (st === 'pounce') {
           alpha = 1; stretch = 1.35;
