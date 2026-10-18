@@ -138,7 +138,20 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
     }
     return h.toString(16).padStart(8, '0');
   };
-  const renderer = file('js/render.js');
+  /* Phase 3 added only three guarded drawing fragments. Strip those
+     additions and hash the exact original combat renderer contract. */
+  let renderer = file('js/render.js');
+  const bossStart = renderer.indexOf('  /* Phase 3 additions reuse');
+  const bossEnd = renderer.indexOf('  function drawRing(c, r) {', bossStart);
+  assert.ok(bossStart > 0 && bossEnd > bossStart);
+  renderer = renderer.slice(0, bossStart) + renderer.slice(bossEnd);
+  const barStart = renderer.indexOf('    /* Minimal ink-seal integrity line');
+  const barEnd = renderer.indexOf('    c.restore();\n  }\n', barStart);
+  assert.ok(barStart > 0 && barEnd > barStart);
+  renderer = renderer.slice(0, barStart) + renderer.slice(barEnd);
+  renderer = renderer.replace(
+    '    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);\n','');
+  assert.equal(fnv(renderer), '84b72d7e', 'all original gameplay rendering remains byte-for-byte intact');
   const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
   const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
   const call = '    for (const knot of S.knots) drawKnot(ctx, knot, t);';
