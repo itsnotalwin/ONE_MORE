@@ -162,6 +162,7 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
      one-line color allowance for the historic non-player renderer hash. */
   renderer=renderer.replace('    c.fillStyle = p.red ? RED : INK;\n    const vang = Math.atan2(p.vy, p.vx);',
     '    c.fillStyle = INK;\n    const vang = Math.atan2(p.vy, p.vx);');
+  renderer=renderer.replace('inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1, color: p.red ? RED : INK });','inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1 });');
   assert.equal(fnv(renderer),'70a61c56','all other non-player artwork remains byte-identical');
   const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
   const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
