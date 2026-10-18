@@ -474,6 +474,8 @@ const G = (() => {
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = []; S.queue = [];
     S.inkDrops = []; S.inkRecall = false;
     S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
+    S.crescents=[];S.shroudEchoes=[];S.trailFrom=null;
+    S.lanternFlash=0;S.shroudMotion=0;
     UI.hud(false);
     UI.show('title');
     UI.setBest(getBest());
