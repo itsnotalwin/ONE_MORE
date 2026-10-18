@@ -144,6 +144,10 @@ test('only phase-specific ink visuals changed and original renderer is byte-iden
     '    /* Living splat cores are drawn above dried ink, below the brush.\n' +
     '       No original creature or player sprite functions are modified. */\n' +
     '    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);\n','');
+  /* Only red-blood particle color changed outside the player: keep the
+     former non-player baseline protected by undoing that one allowed line. */
+  source=source.replace('    c.fillStyle = p.red ? RED : INK;\n    const vang = Math.atan2(p.vy, p.vx);',
+    '    c.fillStyle = INK;\n    const vang = Math.atan2(p.vy, p.vx);');
   let h=0x811c9dc5;
   for(let i=0;i<source.length;i++){h^=source.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}
   assert.equal(h.toString(16).padStart(8,'0'),'70a61c56');
