@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="./css/style.css" />
 <link rel="stylesheet" href="./css/intro.css" />
 <link rel="stylesheet" href="./css/home.css" />
+<link rel="stylesheet" href="./css/ink-xp.css" />
 </head>
 <body>
 <!-- hand-wobble filter: gives every ink border a brushed edge -->
@@ -35,7 +36,7 @@
 <div id="stage">
   <div id="firstRunHint" class="first-run-hint hidden" role="status" aria-live="polite" aria-atomic="true">
     <span class="first-run-seal" aria-hidden="true">一</span>
-    <span><strong>YOUR FIRST STROKE</strong><small>DRAG TO MOVE · AUTO-FIRE · SURVIVE TEN WAVES</small></span>
+    <span><strong>YOUR FIRST STROKE</strong><small>DRAG TO MOVE · ABSORB INK · GROW STRONGER</small></span>
   </div>
   <canvas id="game"></canvas>
 
@@ -60,6 +61,10 @@
     <div class="hud-bl">
       <div class="hud-loadout" id="hudLoadout"></div>
       <span class="hud-time" id="hudTime">00:00</span>
+    </div>
+    <div id="inkMeter" class="ink-meter" role="progressbar" aria-label="Ink experience toward next brush rank" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+      <div class="ink-meter-label"><span class="ink-meter-title">吸 / INK ABSORBED</span><span id="inkRank">BRUSH 01</span></div>
+      <div class="ink-meter-track"><div class="ink-meter-fill" id="inkFill"></div></div>
     </div>
     <div class="hud-br">
       <button id="muteBtn" class="icon-btn" aria-label="Toggle sound" title="Toggle sound (M)">
@@ -178,7 +183,7 @@
       <div class="home-help-steps">
         <div><span>01</span><p><strong>MOVE</strong>Drag anywhere to guide the brush. On desktop, use WASD or arrows.</p></div>
         <div><span>02</span><p><strong>FIGHT</strong>The brush fires on its own. Dodge ink beasts and watch their warning marks.</p></div>
-        <div><span>03</span><p><strong>GROW</strong>Pick one upgrade between waves. Survive all ten to unseal the next level.</p></div>
+        <div><span>03</span><p><strong>GROW</strong>Absorb ink from fallen beasts to level up and choose upgrades. Survive ten waves to unseal the next level.</p></div>
       </div>
       <button id="helpDone" class="home-help-start" type="button">I'M READY <span aria-hidden="true">↗</span></button>
     </dialog>
@@ -278,6 +283,7 @@
 <script src="./js/ui.js"></script>
 <script src="./js/wave-director.js"></script>
 <script src="./js/guardians.js"></script>
+<script src="./js/ink-xp.js"></script>
 <script src="./js/game.js"></script>
 <script src="./js/render.js"></script>
 <script src="./js/film.js"></script>
