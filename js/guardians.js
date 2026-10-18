@@ -6,10 +6,13 @@
    have three phases. Every attack has a visible >1s windup and escape room.
 */
 const GUARDIANS = (() => {
-  const phases = (hp, maxHp, worldBoss) => {
+  const phases = (hp, maxHp, worldBoss, world = -1) => {
     const ratio = Math.max(0, hp) / Math.max(1, maxHp);
+    /* The first FINAL Guardian reaches its counterplay phases sooner,
+       not after its last few HP. Other scrolls retain old thresholds. */
     return worldBoss
-      ? (ratio <= .34 ? 3 : ratio <= .68 ? 2 : 1)
+      ? (world===0 ? (ratio<=.40?3:ratio<=.74?2:1)
+                   : (ratio<=.34?3:ratio<=.68?2:1))
       : (ratio <= .52 ? 2 : 1);
   };
   const titles = [
