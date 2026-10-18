@@ -15,7 +15,7 @@ function harness() {
   const UI = new Proxy({}, { get(_o,k) { return (...a) => events.push({ key:k, args:a }); } });
   const SFX = new Proxy({}, { get(){ return ()=>{}; } });
   const context = vm.createContext({ localStorage, UI, SFX });
-  for(const p of ['js/config.js','js/campaign.js','js/wave-director.js','js/guardians.js','js/game.js']) {
+  for(const p of ['js/config.js','js/campaign.js','js/wave-director.js','js/guardians.js','js/ink-xp.js', 'js/game.js']) {
     vm.runInContext(file(p), context, { filename:p });
   }
   return { ...vm.runInContext('({G,CAMPAIGN,AREAS,GUARDIANS})',context), saved, events };
