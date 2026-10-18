@@ -728,6 +728,100 @@ const G = (() => {
     }
   }
 
+  /* Night Scroll arts are deliberately small paper gestures, all
+     automatic in the existing one-stick / touch control scheme. */
+  function igniteLantern(){
+    const p=S.player,st=S.stats,range=CFG.lantern.radius(st.lantern);
+    S.lanternFlash=.48;
+    let interrupted=false;
+    for(const e of S.enemies){
+      if(!['shade','wraith','kage','moth','stilt'].includes(e.type))continue;
+      const d=Math.hypot(e.x-p.x,e.y-p.y);
+      if(d>range+e.r)continue;
+      e.lanternReveal=CFG.lantern.reveal;
+      if(!interrupted && ['tele','aim','windup'].includes(e.state)){
+        e.state='rest';e.stateT=0;e.stun=Math.max(e.stun,CFG.lantern.interrupt);
+        interrupted=true;
+      }
+      markWeapon('lantern',e.x,e.y,{r:8,alpha:.88});
+    }
+    SFX.wind();
+  }
+
+  function fireCrescent(){
+    const target=nearestEnemy(S.player.x,S.player.y,390);
+    if(!target)return false;
+    const p=S.player,lv=S.stats.crescent;
+    const ang=Math.atan2(target.y-p.y,target.x-p.x);
+    S.crescents.push({
+      x:p.x+Math.cos(ang)*12,y:p.y+Math.sin(ang)*12,
+      vx:Math.cos(ang)*CFG.crescent.speed,
+      vy:Math.sin(ang)*CFG.crescent.speed,ang,
+      reach:CFG.crescent.reach(lv),travel:0,
+      age:0,phase:'out',marked:0,hits:new Set(),
+      dmg:CFG.crescent.dmg(lv),
+    });
+    SFX.fan();return true;
+  }
+
+  function updateCrescents(dt){
+    for(let i=S.crescents.length-1;i>=0;i--){
+      const b=S.crescents[i];b.age+=dt;
+      const x0=b.x,y0=b.y;
+      if(b.phase==='out'){
+        const step=Math.min(CFG.crescent.speed*dt,b.reach-b.travel);
+        b.x+=Math.cos(b.ang)*step;b.y+=Math.sin(b.ang)*step;
+        b.travel+=step;
+        if(b.travel>=b.reach-.1){
+          b.phase='back';b.hits=new Set();b.marked=0;
+        }
+      }else{
+        const a=Math.atan2(S.player.y-b.y,S.player.x-b.x);
+        b.ang=a;const step=CFG.crescent.speed*1.14*dt;
+        b.x+=Math.cos(a)*step;b.y+=Math.sin(a)*step;
+      }
+      const travelled=Math.hypot(b.x-x0,b.y-y0);
+      b.marked+=travelled;
+      if(b.marked>=35){
+        b.marked%=35;
+        markWeapon('crescent',b.x,b.y,{r:6,angle:b.ang,alpha:.88});
+      }
+      for(let j=S.enemies.length-1;j>=0;j--){
+        const e=S.enemies[j];
+        if(b.hits.has(e))continue;
+        if(segmentCircleHit(x0,y0,b.x,b.y,e.x,e.y,e.r+6)===null)continue;
+        b.hits.add(e);
+        damageEnemy(e,j,b.dmg,false,b.ang);
+        markWeapon('crescent',e.x,e.y,{r:9,angle:b.ang,alpha:.85});
+      }
+      if(b.age>2.6||(b.phase==='back'&&
+          Math.hypot(b.x-S.player.x,b.y-S.player.y)<16))
+        S.crescents.splice(i,1);
+    }
+  }
+
+  function shedShroud(){
+    const p=S.player,lv=S.stats.shroud;
+    const dx=S.inputVec.x,dy=S.inputVec.y,d=Math.hypot(dx,dy)||1;
+    const ox=p.x,oy=p.y,dash=CFG.shroud.dash(lv);
+    p.x+=dx/d*dash;p.y+=dy/d*dash;
+    S.trailFrom=null; // no artificial line across the displacement
+    S.shroudEchoes.push({
+      x:ox,y:oy,life:CFG.shroud.decoy(lv),
+      max:CFG.shroud.decoy(lv),
+    });
+    if(S.shroudEchoes.length>2)S.shroudEchoes.shift();
+    markWeapon('shroud',ox,oy,{r:9,angle:Math.atan2(dy,dx)});
+    markWeapon('shroud',p.x,p.y,{r:6,angle:Math.atan2(dy,dx)});
+  }
+
+  function updateShroudEchoes(dt){
+    for(let i=S.shroudEchoes.length-1;i>=0;i--){
+      S.shroudEchoes[i].life-=dt;
+      if(S.shroudEchoes[i].life<=0)S.shroudEchoes.splice(i,1);
+    }
+  }
+
   /* ---------------- updates ---------------- */
   function updatePlayer(dt) {
     const p = S.player, st = S.stats;
@@ -770,6 +864,31 @@ const G = (() => {
     if (S.adrenT > 0) S.adrenT -= dt;
     if (S.invulnT > 0) S.invulnT -= dt;
     if (st.wardCd > 0) st.wardCd -= dt;
+    S.mirrorT=Math.max(0,S.mirrorT-dt);
+    S.lanternFlash=Math.max(0,S.lanternFlash-dt);
+    if(st.lantern>0){
+      S.lanternT-=dt;
+      if(S.lanternT<=0){
+        S.lanternT=CFG.lantern.period(st.lantern);
+        igniteLantern();
+      }
+    }
+    if(st.crescent>0){
+      S.crescentT-=dt;
+      if(S.crescentT<=0){
+        S.crescentT=fireCrescent()?CFG.crescent.period(st.crescent):.65;
+      }
+    }
+    if(st.shroud>0){
+      S.shroudT=Math.max(0,S.shroudT-dt);
+      S.shroudMotion=m>.85?S.shroudMotion+dt:0;
+      if(!S.shroudT&&S.shroudMotion>1.10 &&
+         nearestEnemy(p.x,p.y,190)){
+        shedShroud();
+        S.shroudT=CFG.shroud.period(st.shroud);
+        S.shroudMotion=0;
+      }
+    }
     if (p.recoil > 0) p.recoil -= dt * 14;
 
     /* black tide: the ink breathes outward on its own rhythm */
@@ -1141,12 +1260,17 @@ const G = (() => {
   }
 
   function updateEnemies(dt) {
-    const p = S.player;
     for (const e of S.enemies) {
+      /* The newest shroud attracts ordinary pursuers briefly. A boss
+         ignores decoys, and hit detection below still uses real player. */
+      const ghost=S.shroudEchoes[S.shroudEchoes.length-1];
+      const p=ghost&&!e.elite&&
+        Math.hypot(e.x-ghost.x,e.y-ghost.y)<200?ghost:S.player;
       e.t += dt;
       if (e.hitFlash > 0) e.hitFlash -= dt;
       if (e.orbCd > 0) e.orbCd -= dt;
       if (e.slowT > 0) e.slowT -= dt;
+      if((e.lanternReveal||0)>0)e.lanternReveal-=dt;
       if((e.suitekiT||0)>0)e.suitekiT-=dt;
       if (e.stun > 0) {
         e.stun -= dt;
@@ -1416,8 +1540,9 @@ const G = (() => {
       }
     }
 
-    /* contact damage */
+    /* contact damage always checks the real hero, never a decoy. */
     if (S.invulnT <= 0) {
+      const p=S.player;
       for (const e of S.enemies) {
         const dx = e.x - p.x, dy = e.y - p.y;
         const rr = e.r + p.r - 2;
@@ -1665,6 +1790,8 @@ const G = (() => {
 
     updatePlayer(dt);
     updateBullets(dt);
+    updateCrescents(dt);
+    updateShroudEchoes(dt);
     updateEbullets(dt);
     updateEnemies(dt);
     if (S.mode !== 'playing') return;
