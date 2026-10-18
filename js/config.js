@@ -48,8 +48,8 @@ const CFG = {
   /* brush skills */
   /* The Eraser is a wide, damage-ticking absence, not orbiting bullets.
      Wide radius is earned; one damage every .8s stays below volley DPS. */
-  eraser: { radius: lv => 100 + 35 * lv, dmgCd: 0.82, erasePeriod: 0.25, skim: 0.13 },
-  orbit:   { radius: lv => 100 + 35 * lv, dmgCd: 0.82 }, // legacy save-compatible alias
+  eraser: { radius: lv => 65 + 35 * (lv - 1), dmgCd: 0.82, erasePeriod: 0.25, skim: 0.13 },
+  orbit:   { radius: lv => 65 + 35 * (lv - 1), dmgCd: 0.82 }, // legacy save-compatible alias
   nova:    { period: lv => 6.6 - 0.9 * (lv - 1), radius: lv => 165 + lv * 38, knock: 330, stun: 0.4 },
   ward:    { cd: 22 },
   slow:    { dur: 1.6, mult: 0.55 },
@@ -118,8 +118,8 @@ const AREAS = [
   },
   {
     id: 'II', name: 'NIGHT SCROLL', kanji: '夜', theme: 'dark',
-    desc: 'The ink deepens. Things move inside it.',
-    mult: { hp: 1.55, sp: 1.05, budget: 1.35 },
+    desc: 'Indigo-dyed night washi. Pale spirits can no longer hide in its grain.',
+    mult: { hp: 1.65, sp: 1.09, budget: 1.48 },
     roster: ['wraith', 'shade', 'moth', 'kage', 'stilt', 'dart', 'pulseling'],
     elite: 'shade',
     mechanic: 'PHANTOM AMBUSH',
