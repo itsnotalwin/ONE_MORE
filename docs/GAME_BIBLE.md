@@ -218,6 +218,16 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 
 A source-controlled checklist, not a claim of a live GitHub Projects integration. Mark a box complete **only after verified**. Keep product delivery, technical debt, visual art and narrative tasks separate.
 
+### CURRENT DEVELOPMENT PROGRAM — FIVE PHASES
+
+These are sequential implementation phases, not five changes to deploy at once.
+
+- [x] **01 / COMBAT FOUNDATIONS:** swept collision for ink drops, blades, hostile needles/globs, and Spirit Scribes; piercing hits each enemy at most once; clearing held keyboard and joystick state on run boundaries. Implemented with `tests/combat.test.cjs`. **Physical phone feel still needs acceptance**.
+- [ ] **02 / WAVE DIRECTOR 2.0:** intentionally varied encounters in all 10 levels, beginning with First Wash, with clear pressure/recovery pacing and restrained difficulty scaling.
+- [ ] **03 / GUARDIAN ENCOUNTERS:** unique, telegraphed, multi-phase bosses and fair recovery windows for each scroll, with no replacement for the existing sumi-e artwork.
+- [ ] **04 / UPGRADE SYNERGIES:** improve decisions in 3-card rewards, introduce deliberate weapon interactions, test for dominant/overpowered builds; never force a single optimal build.
+- [ ] **05 / STORY IN GAMEPLAY:** deliver small story beats through environment and campaign milestones so the Last Stroke's movie and the actual game connect.
+
 ### DONE / VERIFIED BY CODE AND AUTOMATED TESTS
 
 - [x] Zero-build browser game and GitHub Pages deployment on \`main\`.
@@ -229,6 +239,7 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 - [x] Three upgrade-card choices adapted for phone viewport.
 - [x] Endless mode, pause, basic scoring and result screens.
 - [x] Campaign regression suite and immutable style-source checks.
+- [x] **Phase 1 / Combat Foundations:** swept collision and piercing reliability, input reset at scene changes, and 11 dedicated automated regression cases.
 - [x] Seven-shot continuous animation, original SVG docs illustrations and Chronicle source added on development.
 - [x] Real Chromium full-browser QA captured desktop 1440×900 and phone-sized 393×852 renders for opening, creation, erasure, survivor, and title; navigation, skip, replay and absence of JS exceptions verified by [GitHub Actions](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml).
 - [x] Living game document, story bible, and roadmap committed on branch.
@@ -238,6 +249,7 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 - [ ] Cinematic seven-shot pacing feels intentional on iPhone and desktop.
 - [x] Intro controls and captions stay within simulated desktop and portrait-phone Chromium viewports.
 - [ ] Check short landscape and actual iPhone Safari devices for text clipping and touch accessibility.
+- [ ] Manually play First Wash on iPhone: test touch loss/retry, piercing bullets across dense crowds, projectile feel, damage feedback, and boss hit registration.
 - [ ] Sound option respects Safari's user-gesture policy, mute behavior and audio interruption.
 - [ ] Prologue's **every-visit autoplay**, replay, skip, and return-to-title navigation tested manually.
 - [ ] Chronicle unlock gating verified with genuine gameplay progression and a cleared campaign.
