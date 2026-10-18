@@ -196,7 +196,7 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 
 - Responsive one-canvas game; touch pointer joystick; prevent scroll while playing.
 - \`prefers-reduced-motion\` is respected in old and new UI.
-- The intro uses up to 1.5× device pixel ratio to avoid oversized framebuffers and redraws prepainted scenes from an offscreen canvas.
+- The intro uses up to 1.5× device pixel ratio, cached Canvas plates, brushstroke reveals, moving ink motes and frame-to-frame dissolves. Hidden gameplay rendering pauses while the film is onscreen.
 - Script-only voice and sound; cinematic sound begins only after the user opts in. Original game sound preferences remain separate.
 - No user accounts, backend services or analytics. Campaign persists locally.
 - Asset dimensions and memory must remain reasonable for Safari on iPhone.
@@ -236,7 +236,7 @@ A source-controlled checklist, not a claim of a live GitHub Projects integration
 - [ ] Cinematic seven-frame pacing feels intentional on iPhone and desktop.
 - [ ] Intro scenes, controls and captions actually fit short/tall viewports without clipping.
 - [ ] Sound option respects Safari's user-gesture policy, mute behavior and audio interruption.
-- [ ] Prologue's first-session behavior, replay, skip, and return-to-title navigation tested manually.
+- [ ] Prologue's **every-visit autoplay**, replay, skip, and return-to-title navigation tested manually.
 - [ ] Chronicle unlock gating verified with genuine gameplay progression and a cleared campaign.
 - [ ] Benchmark intro frame time, memory and battery usage on iPhone Safari.
 - [ ] Capture **actual** game screenshots from a browser and compare with pinned original art.
