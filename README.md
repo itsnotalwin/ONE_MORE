@@ -1,5 +1,37 @@
 # ONE MORE
 
+![ONE MORE: The Last Stroke, original illustrated story title card (not a screenshot)](docs/images/last-stroke-hero.svg)
+
+<p align="center"><strong>THE LAST STROKE</strong> · AN EXPERIMENTAL SEVEN-FRAME CINEMATIC PROLOGUE<br/>
+The ink remembers every stroke.</p>
+
+> **Experimental story branch:** [experiment/the-last-stroke](https://github.com/itsnotalwin/ONE_MORE/tree/experiment/the-last-stroke). This is a creative preview, **not the live production release**. The current original game remains on [main](https://github.com/itsnotalwin/ONE_MORE/tree/main).
+
+**Try the branch preview:** [Open the experimental web build](https://raw.githack.com/itsnotalwin/ONE_MORE/experiment/the-last-stroke/index.html) through raw.githack, a **third-party preview proxy, not GitHub Pages**. It may ask you to confirm before showing HTML, and updates can take a few minutes to appear. Production still lives at [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/).
+
+## A story hidden beneath the paper
+
+Before the world had a name, there was paper. The Painter imagined mountains, rivers, and living things in a single breath. But ink seeped through the other side, and abandoned marks learned to move. Afraid of these mistakes, the Painter tried to wash everything away. One unfinished brushstroke survived.
+
+**You are that stroke.**
+
+The prologue is a **61-second, seven-frame playable cinematic** rendered by the browser: ink-wash mountains, inverted night scrolls, water erasure, a final vermilion mark, and a surviving brush spirit. It uses no stock video, no remote animation model, and no MP4 download. The player can skip it, advance frames, enable subtle synthesized sound, or replay from the title. A **Chronicle** unlocks the complete fiction as your campaign progresses.
+
+![Seven-frame prologue storyboard, authored SVG illustration, not live gameplay captures](docs/images/seven-frames.svg)
+
+## Three scrolls, one unfinished fate
+
+![The three existing environments in an original editorial SVG triptych, not screenshots](docs/images/three-scrolls.svg)
+
+The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, upgrade picks follow each cleared wave, and permanent campaign unlocks survive failed runs. The experimental cinematic never alters game physics or enemy balance.
+
+**Living project documents:** [Full GAME BIBLE, story, art/sprite/animation atlas and Kanban roadmap](docs/GAME_BIBLE.md) · [Original style protection contract](DESIGN.md) · [Research notes](docs/RESEARCH.md).
+
+*All images in this README are **authored SVG illustrations** made for documentation and direction, not fabricated gameplay screenshots. Real screenshots are explicitly on the QA checklist.*
+
+---
+
+
 *An ink-born survival. No walls. No arena. One endless sheet of washi.*
 
 **ONE MORE** is a zero-dependency, zero-build browser game written in vanilla
@@ -123,21 +155,28 @@ python3 -m http.server 8000
 one-more/
 ├── index.html                  # shell: canvas + all screens + ink wobble filters
 ├── css/
-│   └── style.css               # the sumi-e design system
+│   ├── style.css               # the original sumi-e design system
+│   └── intro.css               # cinematic + Chronicle only
 ├── js/
 │   ├── config.js               # tuning: areas, enemies, waves, upgrades, ranks
 │   ├── campaign.js             # persistent world/level unlocks
 │   ├── audio.js                # synthesized ink sound kit (splats, taiko, gong)
 │   ├── ui.js                   # DOM screens, HUD, kanji numerals, upgrade cards
 │   ├── game.js                 # camera, areas, waves, entities, weapons, flow
-│   ├── render.js               # sumi-e renderer: tiling paper themes, brush
-│   │                           #   strokes, line boil, world-space stain layer
+│   ├── render.js               # original gameplay renderer
+│   ├── intro.js                # optional seven-scene canvas film + Chronicle
 │   └── main.js                 # bootstrap, input, game loop, wiring
 ├── .github/
 │   └── workflows/
-│       └── test.yml            # progression + style-source checks on PRs
+│       ├── test.yml            # progression + style-source checks on PRs
+│       └── story-preview.yml   # experimental tests + downloadable preview bundle
 ├── tests/
-│   └── progression.test.cjs    # Node built-in regression tests, no dependencies
+│   ├── progression.test.cjs    # existing campaign regression tests
+│   └── story.test.cjs          # optional prologue and archive regression tests
+├── docs/
+│   ├── GAME_BIBLE.md           # canon lore, technical atlas, roadmap checklist
+│   ├── RESEARCH.md             # art, accessibility, hosting choices
+│   └── images/                 # original SVG illustrations (not screenshots)
 ├── DESIGN.md                   # frozen visual style references and rules
 ├── LICENSE
 └── README.md
@@ -163,21 +202,26 @@ only, and the game is 100% client-side by design.
 
 ## Test
 
-Run `node --test tests/progression.test.cjs` (Node.js 18+). The suite checks
+Run `node --test tests/*.test.cjs` (Node.js 18+). The suite checks
 all 30 stage clears, 300 wave transitions, sequential unlocks, world-specific
 enemy patterns, final bosses, storage fallback, Endless, and frozen original
 renderer/audio/CSS contents. It is a headless logic test; actual browser visual
 checks on mobile and desktop are still required before deploying.
 
 For exact original appearance, consult [DESIGN.md](DESIGN.md) and its
-commit-pinned references. Existing enemy illustrations, ink effects and
-animations are preserved, not redrawn.
+commit-pinned references. Existing enemy illustrations, combat ink effects and
+animations are preserved. Story scenes use additional **separate, cached Canvas painting**.
+
+**Preview hosting:** GitHub Pages supports one configured publishing source per
+repository. We intentionally **have not changed Pages away from `main`**. This
+branch's third-party raw.githack preview is for testing, not a substitute for
+a separately configured first-party staging deployment.
 
 ## Tech
 
 - Vanilla JavaScript (ES6+), Canvas 2D, WebAudio API
 - Procedural brush rendering: tapered strokes, wobbling blobs, splatter
-  stamps, dry-brush streaks, line-boil animation — no image assets
+  stamps, dry-brush streaks, line-boil animation — no imported combat image assets
 - Unbounded world: camera-follow, rectangle-accurate off-screen spawning,
   sprite-cached world-space stains, hash-grid ambient paper marks
 - Zero dependencies, zero build step, zero telemetry
