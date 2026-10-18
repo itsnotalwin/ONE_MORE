@@ -46,7 +46,10 @@ const CFG = {
   adrenaline: { mult: 1.22, dur: lv => 1.4 + 0.45 * (lv - 1) },
 
   /* brush skills */
-  orbit:   { radius: lv => 40 + lv * 5, speed: 2.7, dmgCd: 0.45 },
+  /* The Eraser is a wide, damage-ticking absence, not orbiting bullets.
+     Wide radius is earned; one damage every .8s stays below volley DPS. */
+  eraser: { radius: lv => 100 + 35 * lv, dmgCd: 0.82, erasePeriod: 0.25, skim: 0.13 },
+  orbit:   { radius: lv => 100 + 35 * lv, dmgCd: 0.82 }, // legacy save-compatible alias
   nova:    { period: lv => 6.6 - 0.9 * (lv - 1), radius: lv => 165 + lv * 38, knock: 330, stun: 0.4 },
   ward:    { cd: 22 },
   slow:    { dur: 1.6, mult: 0.55 },
@@ -142,7 +145,7 @@ const UPGRADES = [
   { id: 'adren',  name: 'Red Seal',     desc: 'Every kill presses a seal: a short 1.2× stride surge.',      max: 3, apply: s => { s.adren += 1; } },
   { id: 'shock',  name: 'Ink Burst',    desc: 'Taking a hit splashes everything nearby away. Once per hit.', max: 1, apply: s => { s.shock = true; } },
   { id: 'echo',   name: 'Echo Stroke',  desc: 'A mirrored volley answers behind your back. +1 droplet.',    max: 2, apply: s => { s.echo += 1; } },
-  { id: 'orbit',  name: 'Ink Orbit',    desc: 'A droplet circles the brush, grinding what it touches.',     max: 3, apply: s => { s.orb += 1; } },
+  { id: 'orbit',  name: 'The Eraser',   desc: 'A distant clearing field wipes ink from the paper and gently damages beasts. Radius grows each rank.', max: 3, weapon: true, apply: s => { s.orb += 1; } },
   { id: 'nova',   name: 'Black Tide',   desc: 'Every few breaths the ink surges outward, shoving all back.', max: 3, apply: s => { s.nova += 1; } },
   { id: 'slow',   name: 'Wet Paper',    desc: 'Struck beasts wade through soaked paper — slowed briefly.',  max: 2, apply: s => { s.slow += 1; } },
   { id: 'crit',   name: 'Crimson Tip',  desc: 'One stroke in six bites twice as deep. Deeper per rank.',    max: 2, apply: s => { s.crit += 1; } },
