@@ -42,6 +42,8 @@ function harness(reduced=false) {
     performance:{now(){return 0;}},
     requestAnimationFrame(fn){frames.push(fn);return frames.length;},
     cancelAnimationFrame(){},
+    setTimeout(){return 1;},
+    clearTimeout(){},
   });
   for(const p of ['js/film.js','js/intro.js'])vm.runInContext(file(p),context,{filename:p});
   return {
