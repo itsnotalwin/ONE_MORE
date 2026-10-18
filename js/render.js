@@ -1385,7 +1385,7 @@ const R = (() => {
     const vang = Math.atan2(p.vy, p.vx);
     if (p.shape === 'line') {
       c.rotate(vang);
-      inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1 });
+      inkStroke(c, [{ x: -p.size * 1.4, y: 0 }, { x: p.size * 1.2, y: 0 }], 1.8, { alpha: 1, color: p.red ? RED : INK });
     } else if (p.shape === 'dot') {
       c.rotate(vang);
       teardrop(c, p.size * 0.75);
