@@ -1159,3 +1159,26 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
 .up-card.is-seal .up-new{border-color:#ac1538;color:#ac1538}
 .load-item.is-seal,.load-item.is-seal b{color:#ac1538}
 
+/* Night Scroll: pale ink on genuine indigo-toned paper, without changing
+   First Wash or Cinnabar. Text and health stay visible over world canvas. */
+#hud.is-night,#waveBanner.is-night{
+  --ink:#fff1da;--paper:#242b39;
+  --ink-70:rgba(255,241,218,.88);
+  --ink-45:rgba(255,241,218,.62);
+  --ink-25:rgba(255,241,218,.34);
+  --ink-12:rgba(255,241,218,.20);
+}
+#hud.is-night .wave-chip{
+  background:#f3e7cf;color:#242b39;
+  box-shadow:2px 3px 0 rgba(0,0,0,.26);
+}
+#hud.is-night .wave-progress{background:rgba(255,241,218,.27)}
+#hud.is-night .wave-fill{background:#fff1da}
+#hud.is-night .hp-cell.on .hp-shape{stroke:#fff1da;fill:#fff1da}
+#hud.is-night .hp-cell .hp-shape{stroke:rgba(255,241,218,.76)}
+#hud.is-night .hud-time,#hud.is-night .hud-label,
+#hud.is-night .hud-area-name,#hud.is-night .hud-area-count{
+  color:rgba(255,241,218,.86);
+}
+#hud.is-night .load-item:not(.is-seal){color:#fff1da}
+#hud.is-night .load-item:not(.is-seal) b{color:rgba(255,241,218,.86)}
