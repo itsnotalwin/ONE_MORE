@@ -1093,6 +1093,8 @@ const G = (() => {
 
   function fireEchoVolley(){
     const p=S.player,st=S.stats;
+    /* Echo is its own ability and cannot use fireVolley's local spd. */
+    const spd=CFG.player.bulletSpeed*st.bulletSpeedMult;
       const en = st.echo;
       const espread = 0.24 * (en - 1);
       for (let i = 0; i < en; i++) {
