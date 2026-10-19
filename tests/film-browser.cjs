@@ -517,6 +517,7 @@ async function inspect(browser,name,viewport){
   await page.evaluate(()=>G.openCampaign(0));
   await page.click('#campaignTabWeapons');
   await page.locator('#starterGrid [data-starter="quill"]').click();
+  await page.click('#campaignTabLevels');
   await page.locator('#campaignLevels button[data-level="1"]').click();
   const quill=await page.evaluate(()=>{
     const S=G.S,p=S.player;
