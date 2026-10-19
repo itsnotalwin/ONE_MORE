@@ -152,6 +152,38 @@ const AREAS = [
   },
 ];
 
+/* Selectable beginning instruments: earned permanently by clearing stages.
+   Combat is still automatic. Rank-ups continue to enhance the chosen
+   instrument, and temporary upgrades reset after each ten-wave level.
+   Unlocks are derived from the existing v1 campaign save, not a new
+   mutable currency or a second progression database. */
+const STARTERS = Object.freeze([
+  {id:'gun', name:'Ink Gun', kanji:'銃', kind:'RANGED',
+   unlock:[0,0], delay:1, tagline:'A sure hand, a clean first mark.',
+   special:'Every fourth volley snaps out an extra quick droplet.',
+   detail:'Fast, accurate ink shots and a fourth-volley double tap.'},
+  {id:'brush', name:'Great Brush', kanji:'筆', kind:'MELEE',
+   unlock:[0,2], delay:1.15, tagline:'Sweep the page, not the enemy.',
+   special:'Every third swing becomes a broad finishing sweep.',
+   detail:'A sweeping close-range arc that knocks ink beasts away.'},
+  {id:'quill', name:'Needle Quill', kanji:'針', kind:'RANGED',
+   unlock:[0,4], delay:1.48, tagline:'A mark that refuses to stop.',
+   special:'Every fourth piercing needle travels further and hits more.',
+   detail:'Slow precision needles that pass through multiple enemies.'},
+  {id:'mallet', name:'Inkstone Mallet', kanji:'硯', kind:'MELEE',
+   unlock:[0,7], delay:1.7, tagline:'The whole paper remembers.',
+   special:'Every third strike releases a wider knockback pulse.',
+   detail:'Heavy, local crushing blows with periodic defensive shock.'},
+  {id:'thread', name:'Silk Spool', kanji:'糸', kind:'RANGED',
+   unlock:[1,2], delay:1.52, tagline:'Tie one fate to another.',
+   special:'Every third cast chains into an additional nearby target.',
+   detail:'A living thread arcs between ink beasts, slowing its victims.'},
+  {id:'cutter', name:'Paper Cutter', kanji:'切', kind:'MELEE',
+   unlock:[1,5], delay:.93, tagline:'Fold. Cut. Unfold.',
+   special:'Every fourth slice releases a returning paper edge.',
+   detail:'Quick close-range slashes and a periodic paper blade throw.'},
+]);
+
 const UPGRADES = [
   { id: 'rapid',  name: 'Quick Hand',   desc: '−15% time between volleys. The brush barely lifts.',         max: 5, apply: s => { s.fireCdMult *= 0.85; } },
   { id: 'heavy',  name: 'Bitter Ink',   desc: '+1 damage per droplet. Dense, dark, final.',                 max: 4, apply: s => { s.dmg += 1; } },
