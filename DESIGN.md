@@ -14,6 +14,7 @@ The original game is a living sumi-e painting on endless washi paper. This is th
 - **Composition:** unbounded paper, camera following the brush. Never add an arena wall or substitute generic backgrounds.
 - **New screens:** extend `css/style.css` using only existing color/type variables and locally scoped classes. Never restyle existing selectors as a side effect.
 - **Accessibility:** retain keyboard/touch input, responsive layouts, pause-on-blur behavior, and reduced-motion preferences.
+- **No scrolling within screens:** fit every menu, selection, help, results and story panel to the visible viewport; page long content with clearly labeled controls instead of hiding it behind inner scroll areas. Keep primary buttons on-screen in portrait and short landscape.
 
 ### Frozen source links
 
