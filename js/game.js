@@ -354,8 +354,17 @@ const G = (() => {
   function pickUpgrades(n) {
     const st=S.stats;
     const world=S.runMode==='endless'?S.areaIdx:S.worldIndex;
+    const supports=(id)=>{
+      /* No useless projectile-only upgrades in a pure melee or chain
+         build. Every offered choice must meaningfully improve the run. */
+      if(id==='split')return S.starter==='gun';
+      if(id==='pierce'||id==='velo')
+        return ['gun','quill','cutter'].includes(S.starter);
+      return true;
+    };
     const available=shuffle(UPGRADES.filter(u=>
-      (st.levels[u.id]||0)<u.max && (u.world==null||u.world<=world)));
+      supports(u.id)&&(st.levels[u.id]||0)<u.max &&
+      (u.world==null||u.world<=world)));
     /* Once a technique has reached the original rank cap, its unique
        post-max red upgrade enters the next rank-up menu. Reserve one
        slot when possible so the crimson milestone is actually findable
