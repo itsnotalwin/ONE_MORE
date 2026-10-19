@@ -56,7 +56,7 @@ test('hit and meaningful XP absorption trigger bounded independent ink-soul gest
   const renderer=read('js/render.js');
   assert.ok(renderer.includes('p.absorbPulse'));
   assert.ok(renderer.includes('p.rankPulse'));
-  assert.ok(renderer.includes('Math.sin(p.flowPhase||0)'));
+  assert.ok(renderer.includes('Math.sin(phase)*sp'),'rendered lower folds consume running phase');
 });
 test('First Wash has a flat ivory tile path and excludes ambient decor',()=>{
   const render=read('js/render.js'),start=render.indexOf('function buildTile(');
