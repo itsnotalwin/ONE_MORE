@@ -131,6 +131,77 @@ test('Paper Cutter slashes up close and throws a temporary returning folded edge
   o.S.player.fireT=9999;o.G.update(.02);
   assert.ok(edge.x<oldX,'the paper edge turns back toward its wielder');
 });
+function attackAtRange(weapon,distance,prior=0,radius=12,speedMult=1){
+  const o=run(weapon,distance),e=o.S.enemies[0];
+  e.r=radius;
+  o.S.starterCount=prior;
+  o.S.stats.bulletSpeedMult=speedMult;
+  o.G.update(.001);
+  return {...o,e,fired:o.S.starterCount===prior+1};
+}
+test('normal melee swings fire only within actual hit geometry including enemy radius',()=>{
+  for(const radius of [6,12,24]){
+    const reaches=[
+      ['brush',65+radius],
+      ['mallet',34+55*.92+radius],
+      ['cutter',62+radius],
+    ];
+    for(const [weapon,limit] of reaches){
+      const inside=attackAtRange(weapon,limit-.2,0,radius);
+      assert.ok(inside.fired,weapon+' must fire inside its hit boundary');
+      assert.ok(inside.e.hp<90,weapon+' must damage inside its hit boundary');
+      const outside=attackAtRange(weapon,limit+.2,0,radius);
+      assert.equal(outside.fired,false,weapon+' must wait beyond its hit boundary');
+      assert.equal(outside.S.starterCount,0,'out-of-reach target must not consume attack count');
+      assert.equal(outside.S.primaryFx.length,0,'out-of-reach target must not animate an empty swing');
+      assert.equal(outside.S.player.fireT,.08,'out-of-reach target uses short retry, not attack cooldown');
+    }
+  }
+});
+test('third Brush and Mallet swings respect expanded special impact geometry',()=>{
+  for(const [weapon,limit] of [
+    ['brush',82+12],['mallet',34+82*.92+12],
+  ]){
+    const inside=attackAtRange(weapon,limit-.2,2);
+    assert.ok(inside.fired,weapon+' special must trigger at expanded reach');
+    assert.ok(inside.e.hp<90,weapon+' special must actually deal damage');
+    assert.ok(inside.S.primaryFx.some(f=>f.kind===weapon&&f.special));
+    const outside=attackAtRange(weapon,limit+.2,2);
+    assert.equal(outside.fired,false,weapon+' must not waste pending special');
+    assert.equal(outside.S.starterCount,2,'special counter must be preserved');
+  }
+});
+test('Paper Cutter waits for melee range, except when its fourth returning edge can hit',()=>{
+  assert.equal(attackAtRange('cutter',150).fired,false,'normal cut cannot hit distant enemy');
+  const special=attackAtRange('cutter',150,3);
+  assert.ok(special.fired,'fourth cut may use actual outbound edge range');
+  assert.ok(special.S.bullets.some(b=>b.kind==='paperEdge'));
+  for(let i=0;i<10;i++)special.G.update(.045);
+  assert.ok(special.e.hp<90,'returning edge can actually reach distant target');
+  const limit=15+390*.8*.52+12+3;
+  assert.equal(attackAtRange('cutter',limit-.2,3).fired,true);
+  assert.equal(attackAtRange('cutter',limit+.2,3).fired,false);
+  assert.equal(attackAtRange('cutter',215,3,12,1.4).fired,true,
+    'projectile speed upgrade extends only actual special range');
+  assert.equal(attackAtRange('cutter',215,0,12,1.4).fired,false,
+    'speed upgrade never extends ordinary Cutter melee');
+});
+test('waiting for reachable melee enemies preserves the next special and weapon cadence',()=>{
+  for(const [weapon,prior,far,near] of [
+    ['brush',2,120,80],['mallet',2,160,95],['cutter',3,215,65],
+  ]){
+    const o=attackAtRange(weapon,far,prior),S=o.S;
+    assert.equal(o.fired,false);
+    o.e.x=near;
+    S.player.fireT=0;
+    o.G.update(.001);
+    assert.equal(S.starterCount,prior+1,weapon+' special should fire once in range');
+    assert.ok(S.primaryFx.some(f=>f.kind===weapon&&f.special));
+    const instrument=o.STARTERS.find(w=>w.id===weapon);
+    assert.ok(Math.abs(S.player.fireT-o.CFG.player.fireCd*instrument.delay)<1e-9,
+      weapon+' attack cadence must remain unchanged');
+  }
+});
 test('starter silhouettes are not terrain signatures; mastery, XP and night arts remain',()=>{
   const src=file('js/game.js'),renderer=file('js/render.js');
   assert.ok(src.includes('function fireStarter('));

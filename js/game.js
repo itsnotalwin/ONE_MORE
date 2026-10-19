@@ -1137,22 +1137,36 @@ const G = (() => {
       segments:options.segments||[],seq:++S.primarySeq});
     if(S.primaryFx.length>20)S.primaryFx.shift();
   }
+  /* Reuse exact impact geometry for target acquisition and damage.
+     An out-of-reach enemy must never consume a melee attack cooldown. */
+  function meleeGeometry(kind,empowered){
+    return {
+      arc:kind==='brush'?(empowered?2.7:1.9)
+        :kind==='cutter'?1.15:Math.PI*2,
+      reach:kind==='brush'?(empowered?82:65)
+        :kind==='cutter'?62:(empowered?82:55),
+      offset:kind==='mallet'?34:0,
+    };
+  }
+  function meleeTargetInReach(kind,e,aim,{arc,reach,offset}){
+    const p=S.player;
+    const cx=p.x+Math.cos(aim)*offset;
+    const cy=p.y+Math.sin(aim)*offset;
+    const dx=e.x-cx,dy=e.y-cy;
+    const distance=Math.hypot(dx,dy);
+    if(distance>reach+e.r || (kind!=='mallet'&&
+      Math.abs(Math.atan2(Math.sin(Math.atan2(e.y-p.y,e.x-p.x)-aim),
+        Math.cos(Math.atan2(e.y-p.y,e.x-p.x)-aim)))>arc*.5))return false;
+    return kind!=='mallet'||distance<=reach*.92+e.r;
+  }
   function meleeStrike(kind,empowered){
     const p=S.player,st=S.stats,aim=p.aim;
-    const arc=kind==='brush'?(empowered?2.7:1.9)
-      :kind==='cutter'?1.15:Math.PI*2;
-    const reach=kind==='brush'?(empowered?82:65)
-      :kind==='cutter'?62:(empowered?82:55);
-    const cx=kind==='mallet'?p.x+Math.cos(aim)*34:p.x;
-    const cy=kind==='mallet'?p.y+Math.sin(aim)*34:p.y;
+    const geometry=meleeGeometry(kind,empowered);
+    const reach=geometry.reach;
     let hits=0;
     for(let i=S.enemies.length-1;i>=0;i--){
-      const e=S.enemies[i],dx=e.x-cx,dy=e.y-cy;
-      const distance=Math.hypot(dx,dy);
-      if(distance>reach+e.r || (kind!=='mallet'&&
-        Math.abs(Math.atan2(Math.sin(Math.atan2(e.y-p.y,e.x-p.x)-aim),
-          Math.cos(Math.atan2(e.y-p.y,e.x-p.x)-aim)))>arc*.5))continue;
-      if(kind==='mallet'&&distance>reach*.92+e.r)continue;
+      const e=S.enemies[i];
+      if(!meleeTargetInReach(kind,e,aim,geometry))continue;
       damageEnemy(e,i,st.dmg+(kind==='mallet'?1:0),true,aim);
       hits++;
     }
@@ -1243,10 +1257,21 @@ const G = (() => {
   }
   function readyStarterTarget(tgt){
     if(!tgt)return false;
-    const id=S.starter||'gun';
-    const reach=id==='brush'?92:id==='mallet'?102:
-      id==='cutter'?90:id==='thread'?275:Infinity;
-    return Math.hypot(tgt.x-S.player.x,tgt.y-S.player.y)<reach+tgt.r;
+    const id=S.starter||'gun',p=S.player;
+    if(id==='brush'||id==='mallet'||id==='cutter'){
+      const empowered=(S.starterCount+1)%(id==='cutter'?4:3)===0;
+      const aim=Math.atan2(tgt.y-p.y,tgt.x-p.x);
+      if(meleeTargetInReach(id,tgt,aim,meleeGeometry(id,empowered)))return true;
+      if(id==='cutter'&&empowered){
+        /* Every fourth cut launches a folded edge from 15px ahead.
+           It flies out until 52% of its 0.8s life, with 3px swept-hit
+           padding; normal cuts still require actual melee reach. */
+        const edgeReach=15+390*S.stats.bulletSpeedMult*.8*.52;
+        return Math.hypot(tgt.x-p.x,tgt.y-p.y)<=edgeReach+tgt.r+3;
+      }
+      return false;
+    }
+    return Math.hypot(tgt.x-p.x,tgt.y-p.y)<(id==='thread'?275:Infinity)+tgt.r;
   }
 
   /* A projectile can cover 28+ pixels in one 50ms phone frame.
