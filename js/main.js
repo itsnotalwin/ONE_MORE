@@ -191,8 +191,29 @@
   /* ---------------- buttons ---------------- */
   document.getElementById('playBtn').addEventListener('click', () => start('journey'));
   document.getElementById('endlessBtn').addEventListener('click', () => start('endless'));
+  const helpSteps = [...helpDialog.querySelectorAll('.home-help-steps > div')];
+  let helpStep = 0;
+  function showHelpStep(index) {
+    helpStep = Math.max(0, Math.min(helpSteps.length - 1, index));
+    helpSteps.forEach((step, i) => { step.hidden = i !== helpStep; });
+    document.getElementById('helpPrev').disabled = helpStep === 0;
+    document.getElementById('helpNext').disabled = helpStep === helpSteps.length - 1;
+    document.getElementById('helpPage').textContent =
+      String(helpStep + 1).padStart(2, '0') + ' / ' + String(helpSteps.length).padStart(2, '0');
+  }
   document.getElementById('howToPlayBtn').addEventListener('click', () => {
-    if(G.mode==='title'&&!helpDialog.open)helpDialog.showModal();
+    if(G.mode==='title'&&!helpDialog.open) {
+      showHelpStep(0);
+      helpDialog.showModal();
+    }
+  });
+  document.getElementById('helpPrev').addEventListener('click', () => showHelpStep(helpStep - 1));
+  document.getElementById('helpNext').addEventListener('click', () => showHelpStep(helpStep + 1));
+  helpDialog.addEventListener('keydown', e => {
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      showHelpStep(helpStep + (e.key === 'ArrowRight' ? 1 : -1));
+    }
   });
   document.getElementById('helpClose').addEventListener('click', () => helpDialog.close());
   document.getElementById('helpDone').addEventListener('click', () => {
@@ -214,6 +235,25 @@
     G.retryOrNext();
   });
   document.getElementById('selectBackBtn').addEventListener('click', goMenu);
+  const campaignTabs = document.querySelector('.campaign-tabs');
+  const campaignViews = ['scrolls', 'weapons', 'levels'];
+  campaignTabs.addEventListener('click', e => {
+    const tab = e.target.closest('[data-campaign-view]');
+    if(tab) UI.selectCampaignView(tab.dataset.campaignView);
+  });
+  campaignTabs.addEventListener('keydown', e => {
+    if(!['ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;
+    const current = campaignViews.indexOf(document.querySelector('.campaign-panel').dataset.view);
+    const i = e.key === 'Home' ? 0 : e.key === 'End' ? campaignViews.length - 1 :
+      (current + (e.key === 'ArrowRight' ? 1 : -1) + campaignViews.length) % campaignViews.length;
+    e.preventDefault();
+    UI.selectCampaignView(campaignViews[i]);
+    campaignTabs.querySelector('[data-campaign-view="' + campaignViews[i] + '"]').focus();
+  });
+  document.getElementById('campaignNextBtn').addEventListener('click', () => {
+    const view = document.querySelector('.campaign-panel').dataset.view;
+    UI.selectCampaignView(view === 'scrolls' ? 'weapons' : view === 'weapons' ? 'levels' : 'scrolls');
+  });
   document.getElementById('campaignWorlds').addEventListener('click', e => {
     const button = e.target.closest('button[data-world]');
     if (!button || button.disabled) return;
@@ -241,6 +281,7 @@
   /* ---------------- init ---------------- */
   UI.buildLegend();
   UI.buildTicker();
+  UI.selectCampaignView('scrolls');
   UI.muteVisual(SFX.muted);
   UI.setRunNo(G.getRuns() + 1);
   UI.setBest(G.getBest());
