@@ -1080,8 +1080,14 @@ const G = (() => {
         kind: 'drop',
       });
     }
-    /* echo stroke: the mirrored volley answers from behind */
-    if (st.echo > 0) {
+    /* echo stroke is still a separately acquired art. */
+    if(st.echo>0)fireEchoVolley();
+    p.recoil = 1;
+    SFX.shoot();
+  }
+
+  function fireEchoVolley(){
+    const p=S.player,st=S.stats;
       const en = st.echo;
       const espread = 0.24 * (en - 1);
       for (let i = 0; i < en; i++) {
@@ -1095,9 +1101,130 @@ const G = (() => {
           kind: 'echo',
         });
       }
+  }
+
+  /* Every starter has its own silhouette, attack range and cadence.
+     The old gun volley remains byte-identical for fresh players.
+     Basic instruments never paint terrain at any rank: lasting black /
+     Vermilion signatures still belong to learned skills alone. */
+  function primaryFrame(kind,aim,options={}){
+    const p=S.player;
+    S.primaryFx.push({kind,aim,x:p.x,y:p.y,
+      life:options.life||.24,max:options.life||.24,
+      reach:options.reach||60,special:!!options.special,
+      segments:options.segments||[],seq:++S.primarySeq});
+    if(S.primaryFx.length>20)S.primaryFx.shift();
+  }
+  function meleeStrike(kind,empowered){
+    const p=S.player,st=S.stats,aim=p.aim;
+    const arc=kind==='brush'?(empowered?2.7:1.9)
+      :kind==='cutter'?1.15:Math.PI*2;
+    const reach=kind==='brush'?(empowered?82:65)
+      :kind==='cutter'?62:(empowered?82:55);
+    const cx=kind==='mallet'?p.x+Math.cos(aim)*34:p.x;
+    const cy=kind==='mallet'?p.y+Math.sin(aim)*34:p.y;
+    let hits=0;
+    for(let i=S.enemies.length-1;i>=0;i--){
+      const e=S.enemies[i],dx=e.x-cx,dy=e.y-cy;
+      const distance=Math.hypot(dx,dy);
+      if(distance>reach+e.r || (kind!=='mallet'&&
+        Math.abs(Math.atan2(Math.sin(Math.atan2(e.y-p.y,e.x-p.x)-aim),
+          Math.cos(Math.atan2(e.y-p.y,e.x-p.x)-aim)))>arc*.5))continue;
+      if(kind==='mallet'&&distance>reach*.92+e.r)continue;
+      damageEnemy(e,i,st.dmg+(kind==='mallet'?1:0),true,aim);
+      hits++;
     }
-    p.recoil = 1;
+    primaryFrame(kind,aim,{reach,life:kind==='mallet'?.35:.22,special:empowered});
+    if(kind==='mallet'){
+      S.shake=Math.max(S.shake,S.reduced?0:empowered?4:1.6);
+    }
+    if(hits)SFX.hit();
+    else SFX.shoot();
+  }
+  function shootQuill(empowered){
+    const p=S.player,st=S.stats,angle=p.aim;
+    const velocity=CFG.player.bulletSpeed*st.bulletSpeedMult*1.22;
+    S.bullets.push({
+      x:p.x+Math.cos(angle)*19,y:p.y+Math.sin(angle)*19,
+      vx:Math.cos(angle)*velocity,vy:Math.sin(angle)*velocity,
+      ang:angle,dmg:st.dmg,hits:(empowered?4:2)+st.pierce,
+      age:0,life:empowered?1.13:1,kind:'needleQuill',
+    });
+    primaryFrame('quill',angle,{reach:80,life:.19,special:empowered});
     SFX.shoot();
+  }
+  function shootThread(target,empowered){
+    const p=S.player,st=S.stats;
+    const visited=new Set(),links=[],count=empowered?3:2;
+    let next=target;
+    for(let n=0;n<count&&next;n++){
+      const current=next;
+      visited.add(current);
+      const prev=links.length?links[links.length-1].to:{x:p.x,y:p.y};
+      links.push({from:{x:prev.x,y:prev.y},to:{x:current.x,y:current.y}});
+      const idx=S.enemies.indexOf(current);
+      if(idx>=0){
+        current.slowT=Math.max(current.slowT,1.05);
+        damageEnemy(current,idx,st.dmg,false,p.aim);
+      }
+      let best=Infinity;next=null;
+      for(const other of S.enemies){
+        if(visited.has(other))continue;
+        const d=(current.x-other.x)**2+(current.y-other.y)**2;
+        if(d<120*120&&d<best){best=d;next=other;}
+      }
+    }
+    primaryFrame('thread',p.aim,{segments:links,reach:240,
+      special:empowered,life:.30});
+    if(links.length)SFX.hit();
+  }
+  function shootPaperEdge(){
+    const p=S.player,st=S.stats,angle=p.aim;
+    S.bullets.push({
+      x:p.x+Math.cos(angle)*15,y:p.y+Math.sin(angle)*15,
+      vx:Math.cos(angle)*390*st.bulletSpeedMult,
+      vy:Math.sin(angle)*390*st.bulletSpeedMult,
+      ang:angle,dmg:st.dmg,hits:2+st.pierce,age:0,
+      life:.8,kind:'paperEdge',
+    });
+  }
+  function fireStarter(target){
+    const id=S.starter||'gun',st=S.stats,p=S.player;
+    const n=++S.starterCount;
+    const empowered=id==='gun'?n%4===0
+      :id==='quill'?n%4===0
+      :id==='cutter'?n%4===0:n%3===0;
+    if(id==='gun'){
+      fireVolley();
+      if(empowered){
+        const a=p.aim,velocity=CFG.player.bulletSpeed*st.bulletSpeedMult;
+        S.bullets.push({x:p.x+Math.cos(a)*CFG.player.muzzle,
+          y:p.y+Math.sin(a)*CFG.player.muzzle,
+          vx:Math.cos(a+.095)*velocity,vy:Math.sin(a+.095)*velocity,
+          ang:a+.095,dmg:st.dmg,hits:1+st.pierce,age:0,
+          life:CFG.player.bulletLife,kind:'drop'});
+      }
+      primaryFrame('gun',p.aim,{reach:CFG.player.muzzle,life:.13,special:empowered});
+    }else if(id==='quill'){
+      shootQuill(empowered);
+    }else if(id==='thread'){
+      shootThread(target,empowered);
+    }else if(id==='brush'||id==='mallet'||id==='cutter'){
+      meleeStrike(id,empowered);
+      if(id==='cutter'&&empowered)shootPaperEdge();
+    }
+    /* Echo Stroke is a separate earned rear-facing technique.
+       It remains functional with every chosen starter, not only the
+       original gun. */
+    if(id!=='gun'&&st.echo>0)fireEchoVolley();
+    p.recoil=1;
+  }
+  function readyStarterTarget(tgt){
+    if(!tgt)return false;
+    const id=S.starter||'gun';
+    const reach=id==='brush'?92:id==='mallet'?102:
+      id==='cutter'?90:id==='thread'?275:Infinity;
+    return Math.hypot(tgt.x-S.player.x,tgt.y-S.player.y)<reach+tgt.r;
   }
 
   /* A projectile can cover 28+ pixels in one 50ms phone frame.
