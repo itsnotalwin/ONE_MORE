@@ -236,15 +236,24 @@ const INTRO = (() => {
     if(!visible)return;
     if(index===SCENES.length-1)finish();else selectScene(index+1);
   }
+  /* One chapter per visible page: preserve every word without scrolling. */
+  let archiveIndex = 0;
+  function showArchivePage(index) {
+    archiveIndex = Math.max(0, Math.min(ARCHIVE.length - 1, index));
+    const entry = ARCHIVE[archiveIndex], total = CAMPAIGN.totalCompleted();
+    const unlocked = total >= entry.unlock;
+    $('archiveChapters').innerHTML =
+      '<article class="archive-entry'+(unlocked?'':' sealed')+'"><span class="archive-index">'+
+      String(archiveIndex+1).padStart(2,'0')+'</span><div><h3>'+entry.title+'</h3><p>'+
+      (unlocked?entry.text:'THIS SCROLL IS STILL SEALED. COMPLETE '+entry.unlock+' LEVELS TO UNROLL IT.')+
+      '</p></div></article>';
+    $('archivePage').textContent = String(archiveIndex+1).padStart(2,'0')+' / '+
+      String(ARCHIVE.length).padStart(2,'0');
+    $('archivePrev').disabled = archiveIndex === 0;
+    $('archiveNext').disabled = archiveIndex === ARCHIVE.length - 1;
+  }
   function openArchive(){
-    const total=CAMPAIGN.totalCompleted();
-    $('archiveChapters').innerHTML=ARCHIVE.map((entry,i)=>{
-      const unlocked=total>=entry.unlock;
-      return '<article class="archive-entry'+(unlocked?'':' sealed')+'"><span class="archive-index">'+
-        String(i+1).padStart(2,'0')+'</span><div><h3>'+entry.title+'</h3><p>'+
-        (unlocked?entry.text:'THIS SCROLL IS STILL SEALED. COMPLETE '+entry.unlock+' LEVELS TO UNROLL IT.')+
-        '</p></div></article>';
-    }).join('');
+    showArchivePage(0);
     G.mode='chronicle';UI.show('chronicle');
   }
   function closeArchive(){G.mode='title';UI.show('title');}
@@ -254,7 +263,11 @@ const INTRO = (() => {
       if(k==='Enter'||k==='Space'||k==='ArrowRight'){next();return true;}
       return false;
     }
-    if(G.mode==='chronicle'&&(k==='Escape'||k==='Backspace')){closeArchive();return true;}
+    if(G.mode==='chronicle'){
+      if(k==='Escape'||k==='Backspace'){closeArchive();return true;}
+      if(k==='ArrowRight'||k==='PageDown'){showArchivePage(archiveIndex+1);return true;}
+      if(k==='ArrowLeft'||k==='PageUp'){showArchivePage(archiveIndex-1);return true;}
+    }
     return false;
   }
   $('introSkip').addEventListener('click',finish);
@@ -262,6 +275,8 @@ const INTRO = (() => {
   $('replayIntroBtn').addEventListener('click',play);
   $('chronicleBtn').addEventListener('click',openArchive);
   $('archiveBack').addEventListener('click',closeArchive);
+  $('archivePrev').addEventListener('click',()=>showArchivePage(archiveIndex-1));
+  $('archiveNext').addEventListener('click',()=>showArchivePage(archiveIndex+1));
   window.addEventListener('pagehide',()=>{if(audio)audio.ctx.suspend().catch(()=>{});});
   return {play,finish,next,openArchive,handleKey,SCENES,ARCHIVE};
 })();
