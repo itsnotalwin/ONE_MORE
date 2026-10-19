@@ -1273,24 +1273,44 @@ const R = (() => {
   /* Single continuous ink-soul with a gently trailing hem. Running
      bends its whole calligraphic silhouette rather than kicking two
      conspicuous pseudo-legs and shaking the body every few frames. */
+  /* Visible two-beat ink-soul gait. The forehead and single paper eye
+     stay anchored while the TWO CONNECTED LOWER FOLDS exchange weight.
+     At a 10px hitbox, a sub-pixel hem change reads as a frozen sprite,
+     so the folds deliberately sweep ~3px end-to-end at running speed.
+     Everything is derived from smooth phase and smoothed velocity:
+     no frame random, detached feet, body-wide hopping or hitbox edits. */
   function inkSoulPath(c,r,t,seed,reduced,motion){
     const p=G.S.player,sp=Math.max(0,Math.min(1,p.visualSpeed||0));
-    const drift=reduced?0:Math.sin(p.flowPhase||0)*.025*sp;
-    const lean=-(p.visualMoveX||0)*.16*sp;
-    const tail=(p.visualMoveY||0)*.08*sp;
-    const idle=reduced?0:Math.sin(t*1.7+seed*.001)*.018*(1-sp);
+    const phase=p.flowPhase||0;
+    const step=reduced?0:Math.sin(phase)*sp;
+    const follow=reduced?0:Math.sin(phase-.65)*sp;
+    const lean=-(p.visualMoveX||0)*.095*sp;
+    const tail=(p.visualMoveY||0)*.085*sp;
+    const breath=reduced?0:Math.sin(t*1.9+seed*.001)*.038*(1-sp);
+    const compress=p.visualState==='anticipate'?.055:0;
+    const settle=p.visualState==='brake'?.045:0;
+    const leftFold=step*.54;
+    const rightFold=-step*.54;
     c.beginPath();
-    c.moveTo(-r*.34,-r*(1.12+idle));
-    c.bezierCurveTo(r*.04,-r*(1.35+idle),r*.83,-r*1.04,r*.97,-r*.43);
-    c.bezierCurveTo(r*1.13,r*.08,r*.90,r*.63,r*.53,r*.75);
-    c.quadraticCurveTo(r*(.68+lean*.45),r*(1.02+tail*.2),
-      r*(.20+lean*.6),r*(1.05+idle+drift));
-    c.quadraticCurveTo(-r*.07,r*(.80+tail*.12),
-      -r*(.27-lean*.4),r*(1.09-idle-drift));
-    c.quadraticCurveTo(-r*(.62-lean*.6),r*(1.19-tail*.25),
-      -r*(.70-lean*.7),r*(.68-tail*.35));
-    c.bezierCurveTo(-r*(1.10-lean*.25),r*.42,
-      -r*(1.11-lean*.18),-r*.42,-r*.34,-r*(1.12+idle));
+    c.moveTo(-r*.34,-r*(1.12+breath-compress));
+    c.bezierCurveTo(r*.04,-r*(1.35+breath),r*.83,-r*1.04,r*.97,-r*.43);
+    c.bezierCurveTo(r*(1.13+lean*.3),r*.08,r*.90,r*.63,r*.53,r*.75);
+    /* Fore-hem tucks in as rear-hem unfurls. At stride extrema the
+       two connected tips move roughly 5px apart relative to one another. */
+    c.quadraticCurveTo(r*(.73+lean*.25+follow*.11),
+      r*(1.17+rightFold*.55-settle),
+      r*(.20+rightFold*.10+lean*.15),
+      r*(1.03+rightFold+tail*.10-settle));
+    c.quadraticCurveTo(-r*.07,
+      r*(.80+follow*.10),
+      -r*(.27-leftFold*.07),
+      r*(1.08+leftFold+tail*.09-settle));
+    c.quadraticCurveTo(-r*(.66+lean*.3-follow*.08),
+      r*(1.24+leftFold*.50-settle),
+      -r*(.70+lean*.3),
+      r*(.68+leftFold*.15));
+    c.bezierCurveTo(-r*(1.10-lean*.3),r*.42,
+      -r*(1.11-lean*.2),-r*.42,-r*.34,-r*(1.12+breath-compress));
     c.closePath();
   }
 
