@@ -1337,6 +1337,67 @@ const R = (() => {
     c.restore();
   }
 
+  /* The Last Stroke's ink gun. A miniature sumi-e hand-piece with a
+     visible nib/barrel, an ivory inset and a dark ink reservoir. It is
+     rendered in world space rather than the soul's breathing transform:
+     the tip and the basic volley spawn at EXACTLY CFG.player.muzzle.
+     No static sprite, bullet-shaped arm or modern glowing gun asset. */
+  function drawInkGun(c,p,st){
+    c.save();
+    c.translate(p.x,p.y);
+    c.rotate(p.aim); /* true fire direction, not delayed eye tracking */
+    const back=Math.max(0,Math.min(1,p.recoil||0))*1.45;
+    c.translate(-back,0);
+    c.lineJoin='round';c.lineCap='round';
+    /* Living ink holds the carved gun by a short, rooted arm. */
+    c.strokeStyle=PAPER;c.lineWidth=3.25;
+    c.beginPath();c.moveTo(4.3,4.7);c.quadraticCurveTo(7.8,4,9.5,2);
+    c.stroke();
+    c.strokeStyle=INK;c.lineWidth=2.25;c.stroke();
+    /* Ivory rim separates the instrument from the black soul, even
+       at its original 20px diameter and on the inverted night scroll. */
+    c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.35;
+    c.beginPath();
+    c.moveTo(6.1,-3.6);
+    c.quadraticCurveTo(6.8,-4.45,8.8,-4.1);
+    c.lineTo(17.4,-3.15);
+    c.quadraticCurveTo(19.6,-2.85,19.7,-1.4);
+    c.lineTo(19.7,1.8);
+    c.lineTo(9.3,2.9);
+    c.quadraticCurveTo(6.8,3.35,6.1,1.6);
+    c.closePath();c.fill();c.stroke();
+    /* Downward tapered grip, deliberately part of the instrument. */
+    c.beginPath();c.moveTo(9.15,2.75);
+    c.lineTo(8.05,7.25);c.lineTo(5.8,7.65);
+    c.lineTo(5.55,4.85);c.lineTo(6.65,2.35);
+    c.fill();c.stroke();
+    /* Black ink chamber with one restrained paper glint. */
+    c.fillStyle=INK;
+    c.beginPath();c.ellipse(11.7,-.55,3.45,1.85,-.06,0,TAU);
+    c.fill();
+    c.strokeStyle=PAPER;c.lineWidth=.65;
+    c.beginPath();c.moveTo(9.9,-1.12);c.lineTo(12.75,-1.5);c.stroke();
+    /* The tip is a visible ink nib. The shot leaves x=20, y=0. */
+    c.strokeStyle=INK;c.lineWidth=1.65;
+    c.beginPath();c.moveTo(17.7,-.95);c.lineTo(CFG.player.muzzle,-.95);
+    c.moveTo(17.7,1);c.lineTo(CFG.player.muzzle,1);c.stroke();
+    c.beginPath();c.arc(CFG.player.muzzle,0,1.15,-Math.PI/2,Math.PI/2);
+    c.stroke();
+    /* Echo Stroke's mirrored barrel is an earned second outlet,
+       not a mysterious projectile emerging from the soul's back. */
+    if(st?.echo>0){
+      c.globalAlpha=.78;c.lineWidth=1.35;c.strokeStyle=INK;
+      c.fillStyle=PAPER;
+      c.beginPath();c.moveTo(-8.6,-2.35);
+      c.lineTo(-16.8,-2.35);c.lineTo(-18,-.95);
+      c.lineTo(-18,1.3);c.lineTo(-8.6,2.4);c.closePath();
+      c.fill();c.stroke();
+      c.fillStyle=INK;
+      c.beginPath();c.ellipse(-12.7,0,2.1,1.15,0,0,TAU);c.fill();
+    }
+    c.restore();
+  }
+
   function drawPlayer(c,t){
     const S=G.S,p=S.player,st=S.stats;
     const seed=p.visualSeed||0x51a7;
@@ -1384,6 +1445,7 @@ const R = (() => {
       c.restore();
     }
     c.restore();
+    drawInkGun(c,p,st);
   }
 
   /* Suiteki is an uninterrupted wet ink thread: connected round-cap
