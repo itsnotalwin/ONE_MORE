@@ -17,6 +17,8 @@ on:
       - 'js/ui.js'
       - 'tests/wave-director.test.cjs'
       - 'css/intro.css'
+      - 'css/viewport.css'
+      - 'css/home.css'
       - 'index.html'
       - 'tests/film-browser.cjs'
       - '.github/workflows/film-visual-qa.yml'
