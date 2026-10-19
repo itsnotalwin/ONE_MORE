@@ -357,6 +357,10 @@ const UI = (() => {
           : d.level === 10 ? 'This scroll is complete. A new sheet awaits.'
           : `Level ${pad2(d.level)} sealed. The next page is yours.`)
         : `The brush fell on wave ${pad2(d.waves + 1)}. This level remains yours to retry.`;
+      if(d.newlyUnlocked)
+        el.overSub.textContent+='  NEW INSTRUMENT UNSEALED: '+
+          d.newlyUnlocked.name.toUpperCase()+
+          '. Equip it on the scroll selection screen.';
       el.overKicker.textContent = `RUN ${pad3(d.run)} — ${area.name} · LEVEL ${pad2(d.level)}${vict ? ' COMPLETE' : ''}`;
       el.againBtn.textContent = vict
         ? (d.finalCampaign ? 'CHOOSE A SCROLL' : d.level === 10 ? 'ENTER NEXT SCROLL' : 'NEXT LEVEL')
