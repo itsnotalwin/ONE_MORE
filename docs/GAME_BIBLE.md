@@ -234,7 +234,7 @@ The gun is deliberately modest and readable at the default ~20 px player hitbox.
 
 1. Cinematic prologue (experimental, optional and skippable).
 2. Title screen with Enso, Play Journey, Endless Scroll, replay prologue and Chronicle.
-3. Scroll + Level selection, three worlds and ten stages per world.
+3. Scroll, Weapon and Level tabs: three full-viewport pages for world choice, six starter instruments and ten stages per world (no inner scrolling).
 4. Survival gameplay with movement, automatic attack, HUD and wave banners.
 5. Upgrade selection after cleared waves 1–9, exactly 3 cards fitting mobile screen.
 6. Pause and abandonment screens.
