@@ -179,6 +179,37 @@ async function inspect(browser,name,viewport){
   assert.equal(motion.state,'run',name+' player visibly transitions to flowing RUN');
   assert.ok(motion.phase>1&&motion.speed>.5&&motion.r===10,
     name+' player folds advance while collision radius stays fixed');
+  /* Real Canvas pixel proof: two static frames at opposite RUN stride
+     phases must differ in the character's outline, not just flowPhase.
+     The game is paused only for these two synchronous drawings; the
+     subsequent browser journey continues normally. */
+  const silhouette=await page.evaluate(()=>{
+    const mode=G.mode,p=G.S.player;
+    const oldPhase=p.flowPhase,oldSpeed=p.visualSpeed,oldState=p.visualState;
+    const ctx=document.getElementById('game').getContext('2d');
+    const dpr=G.S.dpr;
+    const x=Math.max(0,Math.round((G.S.W/2+p.x-G.S.cam.x-25)*dpr));
+    const y=Math.max(0,Math.round((G.S.H/2+p.y-G.S.cam.y-25)*dpr));
+    const w=Math.min(ctx.canvas.width-x,Math.round(50*dpr));
+    const h=Math.min(ctx.canvas.height-y,Math.round(50*dpr));
+    G.mode='paused';G.S.shake=0;p.visualSpeed=1;p.visualState='run';
+    const frame=phase=>{
+      p.flowPhase=phase;
+      R.draw(ctx,82.5);
+      return ctx.getImageData(x,y,w,h).data;
+    };
+    const first=frame(Math.PI/2),second=frame(3*Math.PI/2);
+    let changed=0;
+    for(let i=0;i<first.length;i+=4){
+      if(Math.abs(first[i]-second[i])+Math.abs(first[i+1]-second[i+1])+
+        Math.abs(first[i+2]-second[i+2])>45)changed++;
+    }
+    p.flowPhase=oldPhase;p.visualSpeed=oldSpeed;
+    p.visualState=oldState;G.mode=mode;
+    return {changed,dpr};
+  });
+  assert.ok(silhouette.changed>18,
+    name+' Canvas ink-soul must visibly reshape between opposite RUN poses (changed '+silhouette.changed+' pixels)');
   await page.screenshot({path:path.join(out,name+'-13-stable-brush-moving.png')});
   await page.keyboard.up('d');
   /* Palettes must still render living ink on the reverse/night scroll. */
