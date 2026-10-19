@@ -207,6 +207,26 @@ dialog.home-help[open]{
   .screen-upgrade .up-desc{font-size:8.5px;line-height:1.15}
   .screen-upgrade .up-name{font-size:14px}
 }
+/* Mid-height portrait phones: keep result actions in view as well. */
+@media(max-height:720px){
+  .screen-over .over-panel{
+    padding:18px 20px;gap:8px;max-height:calc(100dvh - 16px);
+  }
+  .screen-over .over-title{font-size:clamp(28px,6vh,40px)}
+  .screen-over .over-body{margin:3px 0;gap:12px}
+  .screen-over .rank-block{width:65px;height:65px}
+  .screen-over .rank-value{font-size:38px}
+  .screen-over .over-stats{gap:5px}
+  .screen-over .over-actions{gap:6px;margin-top:4px}
+  .screen-over .over-actions .block-btn,
+  .screen-over .over-actions .ghost-btn{padding:9px 12px}
+}
+@media(max-width:480px) and (min-height:481px) and (max-height:720px){
+  .screen-over .over-body{flex-direction:row;align-items:center}
+  .screen-over .rank-block{align-self:center}
+  .screen-over .over-actions{flex-direction:column}
+  .screen-over .stat-row{font-size:9px;letter-spacing:.04em}
+}
 @media(max-height:560px){
   .screen-over .over-panel{padding:12px 17px;gap:6px;max-height:calc(100dvh - 15px)}
   .screen-over .over-title{font-size:clamp(26px,7vh,35px)}
