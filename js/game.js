@@ -1009,13 +1009,18 @@ const G = (() => {
     p.visualMoveY += (vy - p.visualMoveY) * (S.reduced ? 1 : 1 - Math.exp(-dt * 8));
     const lean = Math.max(-0.045, Math.min(0.045, p.visualMoveX * 0.036));
     p.visualTilt += (lean - p.visualTilt) * (S.reduced ? 1 : 1 - Math.exp(-dt * 7));
+    for(let i=S.primaryFx.length-1;i>=0;i--){
+      S.primaryFx[i].life-=dt;
+      if(S.primaryFx[i].life<=0)S.primaryFx.splice(i,1);
+    }
     p.fireT -= dt;
     if (p.fireT <= 0) {
       const tgt = nearestEnemy();
-      if (tgt) {
+      if (readyStarterTarget(tgt)) {
         p.aim = Math.atan2(tgt.y - p.y, tgt.x - p.x);
-        fireVolley();
-        p.fireT = CFG.player.fireCd * st.fireCdMult;
+        fireStarter(tgt);
+        const instrument=STARTERS.find(w=>w.id===S.starter)||STARTERS[0];
+        p.fireT=CFG.player.fireCd*st.fireCdMult*instrument.delay;
       } else {
         p.fireT = 0.08;
       }
@@ -1255,6 +1260,12 @@ const G = (() => {
       const b = S.bullets[i];
       b.prevX = b.x; b.prevY = b.y;
       const travel = Math.max(0, Math.min(dt, b.life - b.age));
+      if(b.kind==='paperEdge'&&b.age>=b.life*.52){
+        const dx=S.player.x-b.x,dy=S.player.y-b.y;
+        const a=Math.atan2(dy,dx),velocity=390*S.stats.bulletSpeedMult;
+        b.vx=Math.cos(a)*velocity;b.vy=Math.sin(a)*velocity;
+        b.ang=a;
+      }
       b.x += b.vx * travel; b.y += b.vy * travel; b.age += dt;
       if(travel>0)paintFlight(b,b.prevX,b.prevY,b.x,b.y);
       if (expire && b.age > b.life) {
