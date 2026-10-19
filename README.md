@@ -43,6 +43,23 @@ The Last Stroke now has a tiny, procedurally painted **ink gun** with a small re
 
 The gun rotates to the **actual targeting direction** while the ink-soul retains its independent running animation and smooth eye tracking. Everything follows the paper's existing light/dark ink palette, with zero new image assets. Basic shots still never mark the map. Automated regression tests also verify the weapon art and projectile origin in both desktop and phone viewports.
 
+## Six instruments, one living brush-soul (development)
+
+**Choose your starting weapon at the scroll selection screen.** The default **Ink Gun** remains the fast familiar ranged tool, and five other beginning weapons are permanently earned by completing campaign levels. Every unlocked starter is selectable when replaying earlier levels, and the choice persists independently of XP upgrades, deaths and new runs.
+
+| Instrument | Type | Unlock | Special |
+|---|---|---|---|
+| **Ink Gun** | Ranged | Starting weapon | Fourth-volley double-tap |
+| **Great Brush** | Melee | Paper I · level 02 | Third swing becomes an extra-wide calligraphic sweep |
+| **Needle Quill** | Ranged | Paper I · level 04 | Fourth piercing needle gains extra reach and penetration |
+| **Inkstone Mallet** | Melee | Paper I · level 07 | Every third impact becomes a bigger crowd-knockback shock |
+| **Silk Spool** | Ranged control | Paper II · level 02 | Third cast chains into a third slowed target |
+| **Paper Cutter** | Melee | Paper II · level 05 | Every fourth cut launches a returning folded blade |
+
+Each weapon has its own **procedurally drawn held implement, temporary attack animation, cooldown, range and combat role**. No heavy sprite pack was added. The player also has a sharper folded-paper hood and small expressive negative-space facial details to keep the character identifiable at phone resolution. All existing XP upgrades, acquired specials and black-then-optional-Vermilion mastery progression remain, while starter attacks themselves still do not stain the paper.
+
+Full implementation contract: [**Six Beginning Instruments**](docs/STARTER-ARSENAL-DESIGN.md), with regressions in `tests/starter-weapons.test.cjs`.
+
 ## Phase 6: a living hero on untouched washi (development)
 
 **Implemented:** the ink-soul now anticipates movement, flows through a two-beat RUN, eases into turns and braking, and reacts to hits, ink absorption and brush-rank gains. Its original movement physics and 10px collision circle have not changed.
