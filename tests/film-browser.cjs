@@ -78,6 +78,12 @@ async function inspect(browser,name,viewport){
   assert.ok((await page.locator('#campaignStatus').textContent()).includes('THE FIRST MARK'));
   assert.equal(await page.locator('#campaignLevels button[data-level="1"]').isEnabled(),true);
   assert.equal(await page.locator('#campaignLevels button[data-level="2"]').isEnabled(),false);
+  assert.equal(await page.locator('#starterGrid .starter-card').count(),6,
+    name+' shows all six unlockable starter instruments');
+  assert.equal(await page.locator('#starterGrid .starter-card:disabled').count(),5,
+    name+' only the original gun should be unlocked on a fresh campaign');
+  assert.equal(await page.locator('#starterGrid [data-starter="gun"]').getAttribute('aria-pressed'),'true');
+  await page.screenshot({path:path.join(out,name+'-17-starter-armory-locked.png')});
   await page.screenshot({path:path.join(out,name+'-08-wave-director-levels.png')});
   await page.click('#campaignLevels button[data-level="1"]');
   await page.waitForFunction(()=>G.mode==='playing');
@@ -447,6 +453,57 @@ async function inspect(browser,name,viewport){
   assert.ok(snail.wet>=3&&snail.joined&&snail.width===8.5,
     name+' actual moving Suiteki ribbon joins seamlessly without blobs');
   await page.screenshot({path:path.join(out,name+'-18-joined-ivory-washi-trail.png')});
+  /* Weapon ownership comes from existing campaign clears. Selecting a
+     newly unlocked weapon is persistent and applies when replaying the
+     FIRST paper, on both phone and desktop browser renderers. */
+  await page.evaluate(()=>{
+    localStorage.setItem('om_campaign_v1',JSON.stringify({
+      version:1,completed:[10,10,9],
+    }));
+    G.openCampaign(0);
+  });
+  await page.waitForFunction(()=>G.mode==='select');
+  assert.equal(await page.locator('#starterGrid .starter-card:not(:disabled)').count(),6,
+    name+' all starter cards earned across the campaign');
+  await page.locator('#starterGrid [data-starter="brush"]').click();
+  assert.equal(await page.locator('#starterGrid [data-starter="brush"]').getAttribute('aria-pressed'),'true',
+    name+' selected Great Brush card announces itself accessibly');
+  await page.screenshot({path:path.join(out,name+'-18-starter-armory-unlocked.png')});
+  await page.locator('#campaignLevels button[data-level="1"]').click();
+  assert.equal(await page.evaluate(()=>G.S.starter),'brush',
+    name+' earned melee brush usable immediately when replaying Paper 1');
+  const stroke=await page.evaluate(()=>{
+    const S=G.S,p=S.player;
+    S.queue=['pulse'];S.spawnTimer=99999;S.markers=[];
+    S.enemies=[{type:'pulse',x:p.x+55,y:p.y,r:12,
+      hp:35,maxHp:35,speed:0,t:0,seed:.41,state:'cruise',
+      stateT:0,hitFlash:0,slowT:0,elite:false,kbx:0,kby:0,
+      orbCd:0,stun:0,ang:0,dirT:0,spawnT:0}];
+    p.fireT=0;G.update(.03);
+    return {hits:S.enemies[0].hp<35,
+      kind:S.primaryFx.at(-1)?.kind,marks:S.stainQueue.filter(q=>q.kind==='weapon').length,
+      radius:p.r};
+  });
+  assert.deepEqual(stroke,{hits:true,kind:'brush',marks:0,radius:10},
+    name+' Great Brush visibly swings, hits and never paints the map');
+  await page.screenshot({path:path.join(out,name+'-19-great-brush-first-paper.png')});
+  await page.evaluate(()=>G.openCampaign(0));
+  await page.locator('#starterGrid [data-starter="quill"]').click();
+  await page.locator('#campaignLevels button[data-level="1"]').click();
+  const quill=await page.evaluate(()=>{
+    const S=G.S,p=S.player;
+    S.queue=['pulse'];S.spawnTimer=99999;S.markers=[];
+    S.enemies=[{type:'pulse',x:p.x+250,y:p.y,r:12,
+      hp:35,maxHp:35,speed:0,t:0,seed:.42,state:'cruise',
+      stateT:0,hitFlash:0,slowT:0,elite:false,kbx:0,kby:0,
+      orbCd:0,stun:0,ang:0,dirT:0,spawnT:0}];
+    p.fireT=0;G.update(.03);
+    return {starter:S.starter,needle:S.bullets.some(b=>b.kind==='needleQuill'),
+      marks:S.stainQueue.some(q=>q.kind==='weapon')};
+  });
+  assert.deepEqual(quill,{starter:'quill',needle:true,marks:false},
+    name+' a second earned ranged weapon works on early Paper 1');
+  await page.screenshot({path:path.join(out,name+'-20-needle-quill-first-paper.png')});
   assert.deepEqual(errors,[],name+' had no browser JS exceptions');
   await context.close();
   return {name,shots:21,phase7Verified:true,redSealVerified:true,eraserVerified:true,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
