@@ -58,6 +58,9 @@ async function inspect(browser,name,viewport){
   await page.screenshot({path:path.join(out,name+'-08-clean-home.png')});
   await page.click('#howToPlayBtn');
   assert.equal(await page.locator('#howToPlayDialog').evaluate(d=>d.open),true);
+  assert.equal(await page.locator('.home-help-steps > div:visible').count(),1);
+  await page.click('#helpNext');
+  assert.equal(await page.locator('#helpPage').textContent(),'02 / 03');
   await page.screenshot({path:path.join(out,name+'-09-onboarding-sheet.png')});
   await page.click('#helpClose');
   assert.equal(await page.locator('#howToPlayDialog').evaluate(d=>d.open),false);
@@ -83,7 +86,11 @@ async function inspect(browser,name,viewport){
   assert.equal(await page.locator('#starterGrid .starter-card:disabled').count(),5,
     name+' only the original gun should be unlocked on a fresh campaign');
   assert.equal(await page.locator('#starterGrid [data-starter="gun"]').getAttribute('aria-pressed'),'true');
+  await page.click('#campaignTabWeapons');
+  assert.equal(await page.locator('#campaignWeapons').isVisible(),true);
   await page.screenshot({path:path.join(out,name+'-17-starter-armory-locked.png')});
+  await page.click('#campaignTabLevels');
+  assert.equal(await page.locator('#campaignStages').isVisible(),true);
   await page.screenshot({path:path.join(out,name+'-08-wave-director-levels.png')});
   await page.click('#campaignLevels button[data-level="1"]');
   await page.waitForFunction(()=>G.mode==='playing');
@@ -465,10 +472,12 @@ async function inspect(browser,name,viewport){
   await page.waitForFunction(()=>G.mode==='select');
   assert.equal(await page.locator('#starterGrid .starter-card:not(:disabled)').count(),6,
     name+' all starter cards earned across the campaign');
+  await page.click('#campaignTabWeapons');
   await page.locator('#starterGrid [data-starter="brush"]').click();
   assert.equal(await page.locator('#starterGrid [data-starter="brush"]').getAttribute('aria-pressed'),'true',
     name+' selected Great Brush card announces itself accessibly');
   await page.screenshot({path:path.join(out,name+'-18-starter-armory-unlocked.png')});
+  await page.click('#campaignTabLevels');
   await page.locator('#campaignLevels button[data-level="1"]').click();
   assert.equal(await page.evaluate(()=>G.S.starter),'brush',
     name+' earned melee brush usable immediately when replaying Paper 1');
@@ -488,6 +497,7 @@ async function inspect(browser,name,viewport){
     name+' Great Brush visibly swings, hits and never paints the map');
   await page.screenshot({path:path.join(out,name+'-19-great-brush-first-paper.png')});
   await page.evaluate(()=>G.openCampaign(0));
+  await page.click('#campaignTabWeapons');
   await page.locator('#starterGrid [data-starter="quill"]').click();
   await page.locator('#campaignLevels button[data-level="1"]').click();
   const quill=await page.evaluate(()=>{
