@@ -26,6 +26,8 @@ const UI = (() => {
     campaignWorlds: $('campaignWorlds'), campaignLevels: $('campaignLevels'),
     campaignWorldName: $('campaignWorldName'), campaignMechanic: $('campaignMechanic'),
     campaignStatus: $('campaignStatus'),
+    starterGrid: $('starterGrid'),starterCount: $('starterCount'),
+    starterExplain: $('starterExplain'),
     statWaves: $('statWaves'), statKills: $('statKills'), statInkRank: $('statInkRank'), statTime: $('statTime'), statScore: $('statScore'),
     newBestBadge: $('newBestBadge'), flash: $('flash'),
   };
@@ -114,6 +116,35 @@ const UI = (() => {
     const p = 'ONE MORE WAVE · ONE MORE STROKE · THE INK REMEMBERS · THREE SCROLLS, ONE BRUSH · THE SCROLL TURNS · EVERY STAIN A STORY · ONE MORE RUN · ';
     const half = `<span>${p.repeat(6)}</span>`;
     el.tickerTrack.innerHTML = half + half;
+  }
+
+  /* The armory is a paper catalogue, not another loot roll. Every
+     unlocked instrument may be carried back to an older stage. */
+  function renderStarters(progress,selected='gun'){
+    if(!el.starterGrid)return;
+    const unlocks=STARTERS.filter(w=>w.unlock[1]===0 ||
+      (progress.completed[w.unlock[0]]||0)>=w.unlock[1]);
+    el.starterCount.textContent=String(unlocks.length).padStart(2,'0')+
+      ' / '+String(STARTERS.length).padStart(2,'0')+' UNSEALED';
+    el.starterGrid.innerHTML=STARTERS.map(w=>{
+      const allowed=unlocks.includes(w),chosen=allowed&&selected===w.id;
+      const detail=w.unlock[1]===0?'STARTING INSTRUMENT':
+        'COMPLETE '+AREAS[w.unlock[0]].name+' · '+String(w.unlock[1]).padStart(2,'0');
+      return `<button type="button" data-starter="${w.id}" class="starter-card${chosen?' selected':''}"
+        ${allowed?'':'disabled'} aria-pressed="${chosen}"
+        aria-label="${w.name}, ${w.kind.toLowerCase()}, ${allowed?(chosen?'equipped':'unlocked'):'locked: '+detail}">
+        <span class="starter-icon" aria-hidden="true">${w.kanji}</span>
+        <span class="starter-copy">
+          <span class="starter-topline">${w.kind} · ${chosen?'EQUIPPED':allowed?'UNSEALED':'SEALED'}</span>
+          <strong>${w.name}</strong>
+          <small>${allowed?w.special:detail}</small>
+        </span>
+        <span class="starter-mark" aria-hidden="true">${chosen?'✓':allowed?'↗':'鎖'}</span>
+      </button>`;
+    }).join('');
+    const active=STARTERS.find(w=>w.id===selected)||STARTERS[0];
+    el.starterExplain.textContent=active.name+' · '+active.detail+
+      '  Unlocked forever. Choose it on any previously reached level.';
   }
 
   /* Campaign selection is a new screen, built using the existing paper/ink tokens. */
@@ -365,7 +396,7 @@ const UI = (() => {
   }
 
   return {
-    show, renderCampaign, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
+    show, renderCampaign, renderStarters, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
     setRunNo, setBest, setInkProgress, buildLegend, buildTicker, fillUpgrades, markSelected,
     setDeploy, setUpgradeHeader, showOver, muteVisual, setLoadout, setArea, setMode, el, toKanji,
   };
