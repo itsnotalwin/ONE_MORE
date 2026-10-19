@@ -45,6 +45,7 @@ const G = (() => {
     choices: [], selected: null,
 
     joy: null,
+    starter: 'gun', starterCount:0, primaryFx:[], primarySeq:0,
     inputVec: { x: 0, y: 0 },
   };
 
@@ -64,6 +65,29 @@ const G = (() => {
   /* ---------------- persistence ---------------- */
   const getBest = () => store.get('om_best_v1', null);
   const getRuns = () => store.get('om_runs_v1', 0);
+
+  /* Starter inventory is an interpretation of campaign achievements.
+     It is NEVER reset on run death or replay and does not unlock a
+     later level. Old campaign save format remains unchanged. */
+  function starterUnlocked(id,progress=CAMPAIGN.read()){
+    const item=STARTERS.find(w=>w.id===id);
+    return !!item && (item.unlock[1]===0 ||
+      (progress.completed[item.unlock[0]]||0)>=item.unlock[1]);
+  }
+  function chosenStarter(){
+    const id=store.get('om_starter_v1','gun');
+    return starterUnlocked(id)?id:'gun';
+  }
+  function setStarter(id){
+    if(!starterUnlocked(id))return false;
+    store.set('om_starter_v1',id);
+    /* Selection affects NEXT run only: never swap an active weapon
+       during a fight, its warning or an XP-choice interruption. */
+    if(S.mode==='select'){
+      UI.renderStarters(CAMPAIGN.read(),id);
+    }
+    return true;
+  }
 
   /* ---------------- helpers ---------------- */
   function shuffle(a) {
@@ -391,8 +415,11 @@ const G = (() => {
     /* A new ten-wave level begins with clean washi. */
     if (typeof R !== 'undefined') R.resetStains();
     S.stats = freshStats();
+    S.starter=chosenStarter();S.starterCount=0;S.primarySeq=0;
+    S.primaryFx=[];
     S.bullets = []; S.ebullets = []; S.enemies = []; S.markers = [];
     S.particles = []; S.popups = []; S.rings = []; S.stainQueue = [];
+    S.primaryFx=[];
     S.inkDrops = []; S.inkRecall = false;
     S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
     S.crescents=[];S.shroudEchoes=[];S.lanternFlash=0;
@@ -448,6 +475,7 @@ const G = (() => {
     S.mode = 'select';
     UI.hud(false);
     UI.renderCampaign(progress, worldIndex);
+    UI.renderStarters(progress,chosenStarter());
     UI.show('select');
     initAttract();
   }
@@ -1929,7 +1957,7 @@ const G = (() => {
     get mode() { return S.mode; },
     set mode(m) { S.mode = m; },
     startRun, startLevel, openCampaign, retryOrNext, continueEndless, abandon, deploy, pickAt,
-    getCampaign: CAMPAIGN.read,
+    getCampaign: CAMPAIGN.read, getStarter:chosenStarter, setStarter, starterUnlocked,
     update, updateDying, updateIdle, initAttract,
     getBest, getRuns,
   };
