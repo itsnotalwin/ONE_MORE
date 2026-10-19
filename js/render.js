@@ -1292,8 +1292,12 @@ const R = (() => {
     const leftFold=step*.25;
     const rightFold=-step*.25;
     c.beginPath();
+    /* A deliberate tilted peak identifies the protagonist even
+       as a 20px silhouette: a single folded page-corner hood. */
     c.moveTo(-r*.34,-r*(1.12+breath-compress));
-    c.bezierCurveTo(r*.04,-r*(1.35+breath),r*.83,-r*1.04,r*.97,-r*.43);
+    c.quadraticCurveTo(-r*.24,-r*(1.40+breath),-r*.02,-r*(1.53+breath));
+    c.quadraticCurveTo(r*.08,-r*1.19,r*.20,-r*1.30);
+    c.bezierCurveTo(r*.54,-r*1.20,r*.83,-r*1.04,r*.97,-r*.43);
     c.bezierCurveTo(r*(1.13+lean*.3),r*.08,r*.90,r*.63,r*.53,r*.75);
     /* Fore-hem tucks in as rear-hem unfurls. At stride extrema the
        two connected tips move roughly 5px apart relative to one another. */
@@ -1429,6 +1433,14 @@ const R = (() => {
     c.strokeStyle=PAPER;c.lineWidth=1.9;c.lineCap='round';
     c.beginPath();c.moveTo(eyeX-2.1,eyeY-.8);
     c.quadraticCurveTo(eyeX,eyeY+1.1,eyeX+2.5,eyeY-.55);c.stroke();
+    /* Negative-space paper mask details: a single tilted brow cut
+       and tiny cheek seal. They move WITH the hood, not as sprites. */
+    c.globalAlpha=.85;c.lineWidth=.68;
+    c.beginPath();c.moveTo(eyeX-2.5,eyeY-2.5);
+    c.quadraticCurveTo(eyeX-.3,eyeY-3.5,eyeX+2.1,eyeY-2.2);c.stroke();
+    c.globalAlpha=.69;c.fillStyle=PAPER;
+    c.beginPath();c.ellipse(-p.r*.45,p.r*.35,.8,1.45,-.42,0,TAU);c.fill();
+    c.globalAlpha=1;
     if(S.invulnT>0){
       c.save();c.globalAlpha=reduced?.35:.28+Math.sin(t*3)*.05;
       c.lineWidth=1;c.strokeStyle=INK;
@@ -1445,7 +1457,8 @@ const R = (() => {
       c.restore();
     }
     c.restore();
-    drawInkGun(c,p,st);
+    if((S.starter||'gun')==='gun')drawInkGun(c,p,st);
+    else drawStarterTool(c,S,t);
   }
 
   /* Suiteki is an uninterrupted wet ink thread: connected round-cap
