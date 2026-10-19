@@ -14,6 +14,7 @@ const CFG = {
     fireCd: 0.42,      // s between volleys
     bulletSpeed: 560,  // px/s
     bulletLife: 0.95,  // s aloft (range = speed * life)
+    muzzle: 20,        // ink gun barrel tip, measured from ink-soul center
     spread: 0.13,      // rad between extra droplets
   },
 
