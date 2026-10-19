@@ -219,6 +219,11 @@
     if (!button || button.disabled) return;
     G.openCampaign(Number(button.dataset.world));
   });
+  document.getElementById('starterGrid').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-starter]');
+    if(!b||b.disabled||G.mode!=='select')return;
+    G.setStarter(b.dataset.starter);
+  });
   document.getElementById('campaignLevels').addEventListener('click', e => {
     const button = e.target.closest('button[data-level]');
     if (!button || button.disabled) return;
