@@ -147,3 +147,49 @@ test('overlapping Suiteki spills share one global damage timer',()=>{
   assert.ok((e.suitekiT||0)>0);
   assert.ok((e.suitekiNextT||0)>.5);
 });
+
+test('actual player silhouette visibly animates at run speed, not just its clock',()=>{
+  const source=read('js/render.js');
+  const start=source.indexOf('  function inkSoulPath(');
+  const stop=source.indexOf('  function drawEraserField(',start);
+  assert.ok(start>=0&&stop>start);
+  const player={
+    visualSpeed:1,visualMoveX:0,visualMoveY:0,
+    visualState:'run',flowPhase:Math.PI/2,
+  };
+  const paint=new Function('G',source.slice(start,stop)+';return inkSoulPath;')({S:{player}});
+  const spy=()=>({
+    paths:[],beginPath(){},moveTo(...a){this.paths.push(['M',...a]);},
+    bezierCurveTo(...a){this.paths.push(['B',...a]);},
+    quadraticCurveTo(...a){this.paths.push(['Q',...a]);},
+    closePath(){},
+  });
+  const c1=spy(),c2=spy();
+  paint(c1,10,1,0x51a7,false,1);
+  player.flowPhase=3*Math.PI/2;
+  paint(c2,10,1,0x51a7,false,1);
+  const tips=commands=>commands.paths.filter(p=>p[0]==='Q');
+  assert.equal(tips(c1).length,3);
+  const delta=(a,b)=>Math.abs(a-b);
+  assert.ok(delta(tips(c1)[0][4],tips(c2)[0][4])>=4.0,
+    'right connected fold travels more than four actual canvas pixels');
+  assert.ok(delta(tips(c1)[1][4],tips(c2)[1][4])>=4.0,
+    'left connected fold visibly alternates out of phase with right');
+  assert.ok(delta(tips(c1)[0][4],tips(c2)[0][4])<6,
+    'the hem moves organically instead of snapping or growing wildly');
+  const head1=c1.paths.slice(0,2),head2=c2.paths.slice(0,2);
+  assert.equal(JSON.stringify(head1),JSON.stringify(head2),
+    'the head stays stable while the lower silhouette runs');
+  player.visualSpeed=0;player.visualState='idle';player.flowPhase=0;
+  const idle1=spy(),idle2=spy();
+  paint(idle1,10,0,0x51a7,false,0);
+  paint(idle2,10,1.1,0x51a7,false,0);
+  assert.notEqual(JSON.stringify(idle1.paths),JSON.stringify(idle2.paths),
+    'idle has a gentle breathing pose, not a frozen still');
+  player.visualSpeed=1;player.visualState='run';
+  const quiet1=spy(),quiet2=spy();
+  player.flowPhase=Math.PI/2;paint(quiet1,10,1,0x51a7,true,1);
+  player.flowPhase=3*Math.PI/2;paint(quiet2,10,1,0x51a7,true,1);
+  assert.equal(JSON.stringify(quiet1.paths),JSON.stringify(quiet2.paths),
+    'reduced-motion preference suppresses repeated gait oscillations');
+});
