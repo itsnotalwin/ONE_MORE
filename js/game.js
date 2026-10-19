@@ -1036,11 +1036,17 @@ const G = (() => {
     const n = st.shots;
     const spread = CFG.player.spread * (n - 1);
     const spd = CFG.player.bulletSpeed * st.bulletSpeedMult;
+    /* A single hand-held ink gun fires the entire spread from its
+       actual visible muzzle. Aim controls direction, spread only changes
+       trajectories, never mysteriously moves the origin through the
+       ink-soul. No projectile stats or terrain rules change. */
+    const muzzleX=p.x+Math.cos(p.aim)*CFG.player.muzzle;
+    const muzzleY=p.y+Math.sin(p.aim)*CFG.player.muzzle;
     for (let i = 0; i < n; i++) {
       const off = n === 1 ? 0 : -spread / 2 + (spread * i) / (n - 1);
       const a = p.aim + off;
       S.bullets.push({
-        x: p.x + Math.cos(a) * 13, y: p.y + Math.sin(a) * 13,
+        x: muzzleX, y: muzzleY,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
         ang: a, dmg: st.dmg, hits: 1 + st.pierce, age: 0, life: CFG.player.bulletLife,
         kind: 'drop',
@@ -1054,7 +1060,8 @@ const G = (() => {
         const off = en === 1 ? 0 : -espread / 2 + (espread * i) / (en - 1);
         const a = p.aim + Math.PI + off;
         S.bullets.push({
-          x: p.x + Math.cos(a) * 13, y: p.y + Math.sin(a) * 13,
+          x: p.x - Math.cos(p.aim) * (CFG.player.muzzle - 2),
+          y: p.y - Math.sin(p.aim) * (CFG.player.muzzle - 2),
           vx: Math.cos(a) * spd * 0.92, vy: Math.sin(a) * spd * 0.92,
           ang: a, dmg: st.dmg, hits: 1 + st.pierce, age: 0, life: CFG.player.bulletLife,
           kind: 'echo',
