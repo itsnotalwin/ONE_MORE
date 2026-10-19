@@ -46,6 +46,23 @@ test('six instruments unlock at authored milestones and earlier levels remain re
   assert.equal(o.G.S.stats.shots,1,'rankup stats reset for each run');
   assert.equal(o.G.getStarter(),'brush','choice persisted independently');
 });
+test('first completion grants a starter announcement, but replay does not grant it twice',()=>{
+  const o=make([1,0,0]),S=o.G.S;
+  function finish(){
+    S.queue=[];S.markers=[];S.enemies=[];
+    S.waveActive=true;S.spawnTimer=9999;S.stats.wave=10;S.clearedT=0;
+    o.G.update(.05);o.G.update(1.2);
+    assert.equal(o.G.mode,'over');
+    return o.events.filter(e=>e.key==='showOver').at(-1).args[0];
+  }
+  assert.ok(o.G.startLevel(0,2));
+  const reward=finish();
+  assert.equal(reward.newlyUnlocked.id,'brush');
+  assert.ok(o.G.starterUnlocked('brush'));
+  assert.ok(o.G.startLevel(0,2));
+  const replay=finish();
+  assert.equal(replay.newlyUnlocked,null);
+});
 test('late Night Scroll weapons can be carried into original First Wash',()=>{
   const o=run('cutter',85);
   assert.equal(o.S.worldIndex,0);
