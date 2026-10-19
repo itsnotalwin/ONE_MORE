@@ -1,0 +1,138 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const file=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+function make(completed=[0,0,0]){
+  const stored=new Map([['om_campaign_v1',JSON.stringify({version:1,completed})]]);
+  const localStorage={getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,String(v))};
+  const events=[];
+  const UI=new Proxy({},{get(_o,k){return (...a)=>events.push({key:k,args:a});}});
+  const SFX=new Proxy({},{get(){return ()=>{};}});
+  const R={resetStains(){},eraseTerrain(){return 0;}};
+  const context=vm.createContext({localStorage,UI,SFX,R});
+  for(const p of ['js/config.js','js/campaign.js','js/wave-director.js',
+    'js/guardians.js','js/ink-xp.js','js/game.js'])
+    vm.runInContext(file(p),context,{filename:p});
+  return {...vm.runInContext('({G,CAMPAIGN,STARTERS,CFG})',context),stored,events};
+}
+function enemy(x=100,y=0){
+  return {type:'pulse',x,y,r:12,hp:90,maxHp:90,t:0,seed:.4,
+    speed:0,state:'cruise',stateT:0,hitFlash:0,slowT:0,
+    orbCd:0,kbx:0,kby:0,stun:0,ang:0,elite:false,dirT:0,spawnT:0};
+}
+function run(weapon,x=100,extras=[]){
+  const o=make([10,10,9]);
+  assert.ok(o.G.setStarter(weapon),'starter unlocked by campaign completion');
+  assert.ok(o.G.startLevel(0,1));
+  const S=o.G.S;S.queue=['pulse'];S.spawnTimer=9999;S.markers=[];
+  S.player.fireT=0;
+  S.enemies=[enemy(x),...extras.map(z=>enemy(z))];
+  return {...o,S};
+}
+test('six instruments unlock at authored milestones and earlier levels remain replayable',()=>{
+  const o=make([0,0,0]);
+  assert.equal(o.STARTERS.length,6);
+  assert.deepEqual(Array.from(o.STARTERS,w=>w.id),
+    ['gun','brush','quill','mallet','thread','cutter']);
+  assert.ok(o.G.starterUnlocked('gun'));
+  for(const w of o.STARTERS.slice(1))assert.ok(!o.G.starterUnlocked(w.id));
+  assert.equal(o.G.setStarter('cutter'),false);
+  assert.equal(o.G.getStarter(),'gun');
+  o.CAMPAIGN.complete(0,1);o.CAMPAIGN.complete(0,2);
+  assert.ok(o.G.starterUnlocked('brush'));
+  assert.ok(o.G.setStarter('brush'));
+  assert.ok(o.G.startLevel(0,1));
+  assert.equal(o.G.S.starter,'brush','new instrument can replay first stage');
+  assert.equal(o.G.S.stats.shots,1,'rankup stats reset for each run');
+  assert.equal(o.G.getStarter(),'brush','choice persisted independently');
+});
+test('late Night Scroll weapons can be carried into original First Wash',()=>{
+  const o=run('cutter',85);
+  assert.equal(o.S.worldIndex,0);
+  assert.equal(o.S.starter,'cutter');
+  assert.equal(o.G.getStarter(),'cutter');
+  assert.equal(o.G.setStarter('needle_fake'),false);
+  assert.equal(o.S.starter,'cutter','no changes to an active run');
+});
+test('default gun preserves basic bullet, muzzle and learned damage upgrades',()=>{
+  const o=run('gun',300);
+  o.S.stats.dmg=3;o.S.stats.shots=2;o.G.update(.05);
+  assert.equal(o.S.starterCount,1);
+  assert.equal(o.S.bullets.filter(b=>b.kind==='drop').length,2);
+  assert.ok(o.S.bullets.every(b=>b.dmg===3));
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='gun'));
+  for(let i=0;i<3;i++){o.S.player.fireT=0;o.G.update(.01);}
+  assert.equal(o.S.starterCount,4);
+  assert.ok(o.S.bullets.some(b=>b.kind==='drop'));
+  assert.ok(!o.S.stainQueue.some(q=>q.kind==='weapon'),
+    'even enhanced gun never stamps the map');
+});
+test('Great Brush deals actual melee damage and earns wider third sweep',()=>{
+  const o=run('brush',64);
+  const first=o.S.enemies[0].hp;
+  o.G.update(.05);
+  assert.ok(o.S.enemies[0].hp<first);
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='brush'));
+  for(let i=0;i<2;i++){o.S.player.fireT=0;o.G.update(.05);}
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='brush'&&f.special));
+  assert.ok(!o.S.stainQueue.some(q=>q.kind==='weapon'));
+});
+test('Needle Quill fires piercing needles with a stronger fourth',()=>{
+  const o=run('quill',290);
+  o.G.update(.02);
+  assert.ok(o.S.bullets.some(b=>b.kind==='needleQuill'&&b.hits===2));
+  for(let i=0;i<3;i++){o.S.player.fireT=0;o.G.update(.02);}
+  assert.ok(o.S.bullets.some(b=>b.kind==='needleQuill'&&b.hits>=4));
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='quill'&&f.special));
+});
+test('Inkstone Mallet knocks locally with a larger third impact',()=>{
+  const o=run('mallet',82);
+  o.G.update(.02);
+  assert.ok(o.S.enemies[0].hp<90);
+  for(let i=0;i<2;i++){o.S.player.fireT=0;o.G.update(.02);}
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='mallet'&&f.special&&f.reach>=80));
+  assert.ok(!o.S.stainQueue.some(q=>q.kind==='weapon'));
+});
+test('Silk Spool chains, slows, and adds a third target on its special',()=>{
+  const o=run('thread',125,[175,223]);
+  o.G.update(.02);
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='thread'&&f.segments.length===2));
+  assert.ok(o.S.enemies[0].slowT>0);
+  for(let i=0;i<2;i++){o.S.player.fireT=0;o.G.update(.02);}
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='thread'&&f.special&&f.segments.length===3));
+});
+test('Paper Cutter slashes up close and throws a temporary returning folded edge',()=>{
+  const o=run('cutter',65);
+  o.G.update(.02);
+  assert.ok(o.S.enemies[0].hp<90);
+  for(let i=0;i<3;i++){o.S.player.fireT=0;o.G.update(.02);}
+  assert.ok(o.S.bullets.some(b=>b.kind==='paperEdge'));
+  assert.ok(o.S.primaryFx.some(f=>f.kind==='cutter'&&f.special));
+  const edge=o.S.bullets.find(b=>b.kind==='paperEdge');
+  edge.age=edge.life*.55;
+  const oldX=edge.x;
+  o.S.player.fireT=9999;o.G.update(.02);
+  assert.ok(edge.x<oldX,'the paper edge turns back toward its wielder');
+});
+test('starter silhouettes are not terrain signatures; mastery, XP and night arts remain',()=>{
+  const src=file('js/game.js'),renderer=file('js/render.js');
+  assert.ok(src.includes('function fireStarter('));
+  assert.ok(src.includes('function fireEchoVolley('));
+  assert.ok(src.includes("return b.kind==='blade'?'fan'"));
+  assert.ok(renderer.includes('function drawStarterTool('));
+  assert.ok(renderer.includes('function drawPrimaryFx('));
+  assert.ok(renderer.includes('function drawPrimaryProjectile('));
+  assert.ok(renderer.includes("if((S.starter||'gun')==='gun')drawInkGun("));
+  assert.ok(src.includes('const seals=shuffle(RED_SEALS.filter('));
+  assert.ok(src.includes("st.levels[u.id]||0"));
+});
+test('armory is keyboard-accessible and has visible mobile responsive selection',()=>{
+  const ui=file('js/ui.js'),html=file('index.html'),css=file('css/style.css');
+  assert.ok(ui.includes('function renderStarters('));
+  assert.ok(ui.includes('aria-pressed='));
+  assert.ok(html.includes('id="starterGrid"'));
+  assert.ok(html.indexOf('id="starterGrid"')<html.indexOf('id="campaignLevels"'));
+  assert.ok(css.includes('.starter-card:focus-visible'));
+  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+  assert.ok(file('js/main.js').includes("G.setStarter(b.dataset.starter)"));
+});
