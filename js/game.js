@@ -570,9 +570,14 @@ const G = (() => {
     S.nextStage = null;
     S.stainQueue.length = 0;
     if (typeof R !== 'undefined') R.resetStains();
+    let newlyUnlocked=null;
     if (victory && S.runMode === 'journey') {
+      const previous=CAMPAIGN.read();
+      const firstClear=(previous.completed[S.worldIndex]||0)<S.level;
       CAMPAIGN.complete(S.worldIndex, S.level);
       S.nextStage = CAMPAIGN.next(S.worldIndex, S.level);
+      if(firstClear)newlyUnlocked=STARTERS.find(w=>
+        w.unlock[0]===S.worldIndex&&w.unlock[1]===S.level)||null;
     }
     let rank = 'D';
     const ranks = S.runMode === 'journey' ? [[10, 'S'], [8, 'A'], [6, 'B'], [3, 'C']] : CFG.ranks;
@@ -587,6 +592,7 @@ const G = (() => {
       mode: S.runMode, victory: !!victory,
       worldIndex: S.worldIndex, level: S.level, nextStage: S.nextStage,
       finalCampaign: S.runMode === 'journey' && !S.nextStage,
+      newlyUnlocked,
     });
     UI.hud(false);
     UI.show('over');
