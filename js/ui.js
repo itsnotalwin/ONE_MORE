@@ -389,7 +389,10 @@ const UI = (() => {
   /* the brush's current loadout, worn on the wrist */
   function setLoadout(levels) {
     if (!el.hudLoadout) return;
-    el.hudLoadout.innerHTML = [...UPGRADES, ...RED_SEALS]
+    const starter=STARTERS.find(w=>w.id===G.S.starter)||STARTERS[0];
+    const insignia='<span class="load-item load-primary" title="'+starter.name+
+      ' · '+starter.kind+'"><strong>'+starter.kanji+'</strong></span>';
+    el.hudLoadout.innerHTML = insignia + [...UPGRADES, ...RED_SEALS]
       .filter(u => (levels[u.id] || 0) > 0)
       .map(u => `<span class="load-item${u.seal?' is-seal':''}" title="${u.name}"><svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.redSealOf || u.id] || GLYPHS.patch}</svg><b>${u.seal?'朱':levels[u.id]}</b></span>`)
       .join('');
