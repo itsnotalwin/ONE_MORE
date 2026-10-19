@@ -10,6 +10,19 @@ const base='http://127.0.0.1:8765/';
 const out=path.join(__dirname,'..','film-stills');
 fs.mkdirSync(out,{recursive:true});
 
+/* An overflow:hidden wrapper must not disguise clipped content. */
+async function assertViewportFit(page,selector,viewport,label){
+  const m=await page.locator(selector).evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    return {top:r.top,bottom:r.bottom,height:el.clientHeight,scroll:el.scrollHeight,
+      width:el.clientWidth,scrollWidth:el.scrollWidth};
+  });
+  assert.ok(m.top>=-3 && m.bottom<=viewport.height+3,
+    label+' stays within the visible screen: '+JSON.stringify(m));
+  assert.ok(m.scroll<=m.height+3 && m.scrollWidth<=m.width+3,
+    label+' fits without concealed scrollable content: '+JSON.stringify(m));
+}
+
 async function inspect(browser,name,viewport){
   const context=await browser.newContext({
     viewport,deviceScaleFactor:name==='phone'?2:1,
@@ -61,6 +74,7 @@ async function inspect(browser,name,viewport){
   assert.equal(await page.locator('.home-help-steps > div:visible').count(),1);
   await page.click('#helpNext');
   assert.equal(await page.locator('#helpPage').textContent(),'02 / 03');
+  await assertViewportFit(page,'#howToPlayDialog',viewport,name+' manual');
   await page.screenshot({path:path.join(out,name+'-09-onboarding-sheet.png')});
   await page.click('#helpClose');
   assert.equal(await page.locator('#howToPlayDialog').evaluate(d=>d.open),false);
@@ -79,6 +93,8 @@ async function inspect(browser,name,viewport){
   /* Phase 2: exercise the REAL DOM campaign picker and canvas runtime,
      not merely the director's headless plan builder. */
   assert.ok((await page.locator('#campaignStatus').textContent()).includes('THE FIRST MARK'));
+  await assertViewportFit(page,'#campaignScrolls',viewport,name+' scroll picker');
+  await assertViewportFit(page,'.campaign-footer',viewport,name+' journey actions');
   assert.equal(await page.locator('#campaignLevels button[data-level="1"]').isEnabled(),true);
   assert.equal(await page.locator('#campaignLevels button[data-level="2"]').isEnabled(),false);
   assert.equal(await page.locator('#starterGrid .starter-card').count(),6,
@@ -88,9 +104,11 @@ async function inspect(browser,name,viewport){
   assert.equal(await page.locator('#starterGrid [data-starter="gun"]').getAttribute('aria-pressed'),'true');
   await page.click('#campaignTabWeapons');
   assert.equal(await page.locator('#campaignWeapons').isVisible(),true);
+  await assertViewportFit(page,'#campaignWeapons',viewport,name+' weapon picker');
   await page.screenshot({path:path.join(out,name+'-17-starter-armory-locked.png')});
   await page.click('#campaignTabLevels');
   assert.equal(await page.locator('#campaignStages').isVisible(),true);
+  await assertViewportFit(page,'#campaignStages',viewport,name+' level picker');
   await page.screenshot({path:path.join(out,name+'-08-wave-director-levels.png')});
   await page.click('#campaignLevels button[data-level="1"]');
   await page.waitForFunction(()=>G.mode==='playing');
@@ -518,11 +536,46 @@ async function inspect(browser,name,viewport){
   await context.close();
   return {name,shots:21,phase7Verified:true,redSealVerified:true,eraserVerified:true,homeVerified:true,onboardingVerified:true,inkXPVerified:true,verticalXpVerified:true,animatedBlobVerified:true,nightInkVerified:true,directorVerified:true,guardianVerified:true,noBrowserErrors:true};
 }
+async function inspectShort(browser,name,viewport){
+  const context=await browser.newContext({viewport,isMobile:true,hasTouch:true});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',e=>errors.push(String(e)));
+  await page.goto(base,{waitUntil:'load'});
+  await page.click('#introSkip');
+  await page.waitForFunction(()=>G.mode==='title');
+  await assertViewportFit(page,'.home-content',viewport,name+' title');
+  await page.click('#howToPlayBtn');
+  await assertViewportFit(page,'#howToPlayDialog',viewport,name+' how to play');
+  await page.click('#helpNext');
+  await page.click('#helpNext');
+  assert.equal(await page.locator('#helpPage').textContent(),'03 / 03');
+  await page.click('#helpClose');
+  await page.click('#playBtn');
+  await page.waitForFunction(()=>G.mode==='select');
+  for(const [tab,pane] of [['Scrolls','campaignScrolls'],['Weapons','campaignWeapons'],['Levels','campaignStages']]){
+    await page.click('#campaignTab'+tab);
+    await assertViewportFit(page,'#'+pane,viewport,name+' '+tab);
+    await assertViewportFit(page,'.campaign-footer',viewport,name+' navigation');
+  }
+  await page.click('#selectBackBtn');
+  await page.click('#chronicleBtn');
+  for(let i=0;i<5;i++){
+    await assertViewportFit(page,'.archive-chapters',viewport,name+' chronicle chapter '+i);
+    if(i<4)await page.click('#archiveNext');
+  }
+  await page.click('#archiveBack');
+  assert.deepEqual(errors,[],name+' browser errors');
+  await context.close();
+  return {name,viewport,noInnerScrolling:true};
+}
+
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
     const desktop=await inspect(browser,'desktop',{width:1440,height:900});
     const phone=await inspect(browser,'phone',{width:393,height:852});
-    console.log('Visual smoke QA:',JSON.stringify({desktop,phone}));
+    const smallPortrait=await inspectShort(browser,'small-portrait',{width:360,height:640});
+    const shortLandscape=await inspectShort(browser,'short-landscape',{width:844,height:390});
+    console.log('Visual smoke QA:',JSON.stringify({desktop,phone,smallPortrait,shortLandscape}));
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
