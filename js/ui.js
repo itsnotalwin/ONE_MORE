@@ -182,6 +182,24 @@ const UI = (() => {
     }).join('');
   }
 
+  /* Full-viewport journey pages: switching tabs never resets selections. */
+  function selectCampaignView(view) {
+    const views = ['scrolls', 'weapons', 'levels'];
+    if (!views.includes(view)) return;
+    const panel = document.querySelector('#screenSelect .campaign-panel');
+    panel.dataset.view = view;
+    const panels = {scrolls: 'campaignScrolls', weapons: 'campaignWeapons', levels: 'campaignStages'};
+    for (const key of views) {
+      document.getElementById(panels[key]).hidden = key !== view;
+      const tab = document.querySelector('[data-campaign-view="' + key + '"]');
+      tab.setAttribute('aria-selected', String(key === view));
+      tab.tabIndex = key === view ? 0 : -1;
+    }
+    const next = document.getElementById('campaignNextBtn');
+    next.textContent = view === 'scrolls' ? 'CHOOSE WEAPON →' :
+      view === 'weapons' ? 'CHOOSE LEVEL →' : 'CHANGE SCROLL ↺';
+  }
+
   function show(name) {
     for (const k in el.screens) el.screens[k].classList.toggle('hidden', k !== name);
   }
@@ -403,7 +421,7 @@ const UI = (() => {
   }
 
   return {
-    show, renderCampaign, renderStarters, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
+    show, selectCampaignView, renderCampaign, renderStarters, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
     setRunNo, setBest, setInkProgress, buildLegend, buildTicker, fillUpgrades, markSelected,
     setDeploy, setUpgradeHeader, showOver, muteVisual, setLoadout, setArea, setMode, el, toKanji,
   };
