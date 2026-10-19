@@ -207,7 +207,9 @@ test('actual player silhouette visibly animates at run speed, not just its clock
   paint(c1,10,1,0x51a7,false,1);
   player.flowPhase=3*Math.PI/2;
   paint(c2,10,1,0x51a7,false,1);
-  const tips=commands=>commands.paths.filter(p=>p[0]==='Q');
+  /* The first two quadratic curves now form the folded hood; only
+     the final three belong to the animated, connected lower hem. */
+  const tips=commands=>commands.paths.filter(p=>p[0]==='Q').slice(-3);
   assert.equal(tips(c1).length,3);
   const delta=(a,b)=>Math.abs(a-b);
   assert.ok(delta(tips(c1)[0][4],tips(c2)[0][4])>=4.0,
