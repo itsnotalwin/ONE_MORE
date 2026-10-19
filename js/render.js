@@ -1276,7 +1276,7 @@ const R = (() => {
   /* Visible two-beat ink-soul gait. The forehead and single paper eye
      stay anchored while the TWO CONNECTED LOWER FOLDS exchange weight.
      At a 10px hitbox, a sub-pixel hem change reads as a frozen sprite,
-     so the folds deliberately sweep ~3px end-to-end at running speed.
+     so the folds deliberately sweep ~5px end-to-end at running speed.
      Everything is derived from smooth phase and smoothed velocity:
      no frame random, detached feet, body-wide hopping or hitbox edits. */
   function inkSoulPath(c,r,t,seed,reduced,motion){
@@ -1289,8 +1289,8 @@ const R = (() => {
     const breath=reduced?0:Math.sin(t*1.9+seed*.001)*.038*(1-sp);
     const compress=p.visualState==='anticipate'?.055:0;
     const settle=p.visualState==='brake'?.045:0;
-    const leftFold=step*.54;
-    const rightFold=-step*.54;
+    const leftFold=step*.25;
+    const rightFold=-step*.25;
     c.beginPath();
     c.moveTo(-r*.34,-r*(1.12+breath-compress));
     c.bezierCurveTo(r*.04,-r*(1.35+breath),r*.83,-r*1.04,r*.97,-r*.43);
