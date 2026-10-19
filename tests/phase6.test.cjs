@@ -25,6 +25,45 @@ function safeStage(G){
   G.S.queue=['pulse'];G.S.spawnTimer=99999;
   G.S.markers=[];G.S.player.fireT=99999;
 }
+test('the ink gun is a distinct drawn instrument with a world-accurate muzzle',()=>{
+  const render=read('js/render.js'),game=read('js/game.js');
+  assert.ok(render.includes('function drawInkGun(c,p,st)'), 'a dedicated hand-held gun is drawn');
+  assert.ok(render.includes('drawInkGun(c,p,st);'), 'the ink gun appears above the living soul');
+  assert.ok(render.includes('c.rotate(p.aim);'), 'barrel tracks the real projectile aim');
+  assert.ok(render.includes('CFG.player.muzzle'), 'muzzle is shared with gameplay geometry');
+  assert.ok(render.includes("if(st?.echo>0)"), 'Echo earns a visible rear nozzle');
+  assert.ok(game.includes('const muzzleX=p.x+Math.cos(p.aim)*CFG.player.muzzle'));
+  assert.ok(!render.includes('p.x * 31 + p.y * 17'),'no world-coordinate sprite jitter');
+});
+test('base and upgraded multiple shots all leave the gun tip, Echo from its rear nozzle',()=>{
+  const {G,CFG}=boot();safeStage(G);
+  const p=G.S.player,st=G.S.stats;
+  st.shots=3;st.echo=2;st.dmg=3;st.pierce=1;
+  G.S.enemies.push(enem(180,80));
+  p.fireT=0;
+  G.update(.025);
+  const shots=G.S.bullets.filter(b=>b.kind==='drop');
+  const echo=G.S.bullets.filter(b=>b.kind==='echo');
+  assert.equal(shots.length,3);
+  assert.equal(echo.length,2);
+  assert.equal(CFG.player.muzzle,20);
+  const angle=Math.atan2(80,180);
+  for(const b of shots){
+    assert.ok(Math.abs(b.prevX-Math.cos(angle)*20)<.001);
+    assert.ok(Math.abs(b.prevY-Math.sin(angle)*20)<.001);
+    assert.equal(b.dmg,3);
+    assert.equal(b.hits,2);
+  }
+  for(const b of echo){
+    assert.ok(Math.abs(b.prevX+Math.cos(angle)*18)<.001);
+    assert.ok(Math.abs(b.prevY+Math.sin(angle)*18)<.001);
+  }
+  assert.ok(shots[0].vx!==shots[2].vx||shots[0].vy!==shots[2].vy,
+    'Twin Stroke retains its spread even though it shares the muzzle');
+  assert.equal(p.r,10,'weapon does not change the hitbox');
+  assert.ok(!G.S.stainQueue.some(mark=>mark.weapon==='shot'),
+    'gun bullets do not start painting the paper');
+});
 test('ink-soul cycles between true flowing running, anticipation and idle without changing hitbox',()=>{
   const {G}=boot();safeStage(G);
   const p=G.S.player,r=p.r;
