@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="./css/intro.css" />
 <link rel="stylesheet" href="./css/home.css" />
 <link rel="stylesheet" href="./css/ink-xp.css" />
+<link rel="stylesheet" href="./css/viewport.css" />
 </head>
 <body>
 <!-- hand-wobble filter: gives every ink border a brushed edge -->
@@ -120,7 +121,12 @@
       </header>
       <h2>THE CHRONICLE.</h2>
       <p class="archive-sub">A record of what the paper remembers. New chapters unseal as the journey advances.</p>
-      <div id="archiveChapters" class="archive-chapters"></div>
+      <div id="archiveChapters" class="archive-chapters" aria-live="polite"></div>
+      <nav class="archive-pager" aria-label="Chronicle pages">
+        <button type="button" id="archivePrev">← PREVIOUS</button>
+        <span id="archivePage" aria-live="off">01 / 05</span>
+        <button type="button" id="archiveNext">NEXT →</button>
+      </nav>
       <footer class="archive-foot">墨 / THE ENDLESS PAGE HAS NO LAST WORD</footer>
     </div>
   </section>
@@ -187,39 +193,58 @@
         <div><span>02</span><p><strong>FIGHT</strong>The brush fires on its own. Dodge ink beasts and watch their warning marks.</p></div>
         <div><span>03</span><p><strong>GROW</strong>Absorb ink from fallen beasts to level up and choose upgrades. Survive ten waves to unseal the next level.</p></div>
       </div>
+      <nav class="home-help-pager" aria-label="Instruction pages">
+        <button type="button" id="helpPrev">← PREVIOUS</button>
+        <span id="helpPage">01 / 03</span>
+        <button type="button" id="helpNext">NEXT →</button>
+      </nav>
       <button id="helpDone" class="home-help-start" type="button">I'M READY <span aria-hidden="true">↗</span></button>
     </dialog>
   </section>
 
-  <!-- ============ SCROLL / LEVEL SELECTION ============ -->
+  <!-- ============ SCROLL / WEAPON / LEVEL SELECTION ============ -->
   <section id="screenSelect" class="screen screen-select hidden">
     <span class="wm wm-select" aria-hidden="true">巻</span>
-    <div class="campaign-panel">
-      <p class="campaign-kicker">THE JOURNEY · CHOOSE YOUR SCROLL</p>
-      <h2 class="campaign-title">THE SCROLLS.</h2>
-      <p class="campaign-intro">TEN LEVELS ON EACH SHEET · TEN WAVES IN EVERY RUN</p>
-      <div class="campaign-worlds" id="campaignWorlds" aria-label="World selection"></div>
-      <div class="campaign-stage-head">
-        <div>
-          <span class="campaign-small-label">THE SELECTED SHEET</span>
-          <h3 id="campaignWorldName">FIRST WASH</h3>
+    <div class="campaign-panel" data-view="scrolls">
+      <header class="campaign-heading">
+        <p class="campaign-kicker">THE JOURNEY · CHOOSE YOUR SCROLL</p>
+        <h2 class="campaign-title">THE SCROLLS.</h2>
+        <p class="campaign-intro">TEN LEVELS ON EACH SHEET · TEN WAVES IN EVERY RUN</p>
+      </header>
+      <nav class="campaign-tabs" role="tablist" aria-label="Choose your journey step">
+        <button id="campaignTabScrolls" type="button" role="tab" data-campaign-view="scrolls" aria-selected="true" aria-controls="campaignScrolls">01 · SCROLL</button>
+        <button id="campaignTabWeapons" type="button" role="tab" data-campaign-view="weapons" aria-selected="false" aria-controls="campaignWeapons">02 · WEAPON</button>
+        <button id="campaignTabLevels" type="button" role="tab" data-campaign-view="levels" aria-selected="false" aria-controls="campaignStages">03 · LEVEL</button>
+      </nav>
+      <section id="campaignScrolls" class="campaign-section" role="tabpanel" aria-labelledby="campaignTabScrolls">
+        <div class="campaign-worlds" id="campaignWorlds" aria-label="World selection"></div>
+        <div class="campaign-stage-head">
+          <div><span class="campaign-small-label">THE SELECTED SHEET</span><h3 id="campaignWorldName">FIRST WASH</h3></div>
+          <span class="campaign-status" id="campaignStatus">0 / 10 LEVELS COMPLETE</span>
         </div>
-        <span class="campaign-status" id="campaignStatus">0 / 10 LEVELS COMPLETE</span>
-      </div>
-      <p class="campaign-mechanic" id="campaignMechanic"></p>
-      <div class="starter-chest" aria-labelledby="starterTitle">
-        <div class="starter-head">
-          <div><span class="campaign-small-label">AN INSTRUMENT FOR THE LAST STROKE</span>
-          <h3 id="starterTitle">CHOOSE YOUR WEAPON.</h3></div>
-          <span class="starter-unlock-count" id="starterCount">01 / 06 UNSEALED</span>
+        <p class="campaign-mechanic" id="campaignMechanic"></p>
+      </section>
+      <section id="campaignWeapons" class="campaign-section" role="tabpanel" aria-labelledby="campaignTabWeapons" hidden>
+        <div class="starter-chest" aria-labelledby="starterTitle">
+          <div class="starter-head">
+            <div><span class="campaign-small-label">AN INSTRUMENT FOR THE LAST STROKE</span>
+            <h3 id="starterTitle">CHOOSE YOUR WEAPON.</h3></div>
+            <span class="starter-unlock-count" id="starterCount">01 / 06 UNSEALED</span>
+          </div>
+          <div id="starterGrid" class="starter-grid" role="group" aria-label="Starter weapon collection"></div>
+          <p class="starter-explain" id="starterExplain">Equipped for this run. Earn new weapons by completing stages, then revisit any unlocked sheet.</p>
         </div>
-        <div id="starterGrid" class="starter-grid" role="group" aria-label="Starter weapon collection"></div>
-        <p class="starter-explain" id="starterExplain">Equipped for this run. Earn new weapons by completing stages, then revisit any unlocked sheet.</p>
-      </div>
-      <div class="campaign-levels" id="campaignLevels" aria-label="Level selection"></div>
+      </section>
+      <section id="campaignStages" class="campaign-section" role="tabpanel" aria-labelledby="campaignTabLevels" hidden>
+        <div class="campaign-stage-head">
+          <div><span class="campaign-small-label">CHOOSE A LEVEL</span><h3>THE NEXT STROKE.</h3></div>
+          <span class="campaign-small-label">TEN WAVES EACH</span>
+        </div>
+        <div class="campaign-levels" id="campaignLevels" aria-label="Level selection"></div>
+      </section>
       <div class="campaign-footer">
-        <span>SEALED LEVELS MAY BE REPLAYED · UNCLEARED LEVELS REMAIN LOCKED</span>
         <button type="button" class="ghost-btn" id="selectBackBtn">BACK TO TITLE</button>
+        <button type="button" class="block-btn campaign-next" id="campaignNextBtn">CHOOSE WEAPON →</button>
       </div>
     </div>
   </section>
