@@ -37,6 +37,12 @@ Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and 
 
 See the [Phase 7 implementation notes](docs/PHASE-7-NIGHT-ARTS-AND-FIRST-SEAL.md) and [combat tests](tests/night-arsenal.test.cjs). Gameplay changes are on `development` only; `main` remains untouched.
 
+## The ink-soul's hand-held gun (development)
+
+The Last Stroke now has a tiny, procedurally painted **ink gun** with a small reservoir, grip, and visible calligraphic muzzle, rather than firing drops out of its own body. Ordinary volleys, including Twin Stroke and Bitter Ink variants, originate from the barrel tip (`CFG.player.muzzle = 20`), with their existing damage, range tuning, shot spread, fire rate and penetration unchanged. Upgrading Echo Stroke adds a smaller rear nozzle for mirrored shots so those projectiles have an equally legible source.
+
+The gun rotates to the **actual targeting direction** while the ink-soul retains its independent running animation and smooth eye tracking. Everything follows the paper's existing light/dark ink palette, with zero new image assets. Basic shots still never mark the map. Automated regression tests also verify the weapon art and projectile origin in both desktop and phone viewports.
+
 ## Phase 6: a living hero on untouched washi (development)
 
 **Implemented:** the ink-soul now anticipates movement, flows through a two-beat RUN, eases into turns and braking, and reacts to hits, ink absorption and brush-rank gains. Its original movement physics and 10px collision circle have not changed.
