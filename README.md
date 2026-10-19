@@ -186,8 +186,8 @@ creatures and brush rendering: **SPLIT BLOOM** (FIRST WASH, waves 6/9),
 
 ## How to play
 
-Choose **THE JOURNEY**, select an unlocked scroll, then choose the next
-unlocked level. Survive ten waves to seal it; between waves choose one of three
+Choose **THE JOURNEY**, then use the **SCROLL → WEAPON → LEVEL** tabs to
+pick an unlocked scroll, your starter instrument and the next unlocked level. Survive ten waves to seal it; between waves choose one of three
 brush upgrades. These upgrades reset on every new level, while completed
 levels stay saved in your browser.
 
