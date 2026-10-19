@@ -1182,3 +1182,45 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
 }
 #hud.is-night .load-item:not(.is-seal){color:#fff1da}
 #hud.is-night .load-item:not(.is-seal) b{color:rgba(255,241,218,.86)}
+
+/* ============================================================
+   SIX INSTRUMENTS / collectible starter armory
+   Never distract from the paper. One cinnabar-selected seal.
+   ============================================================ */
+.starter-chest{margin:20px 0 19px}
+.starter-head{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-bottom:11px}
+.starter-head h3{font:400 clamp(19px,3.6vw,27px)/1.15 var(--display);margin:5px 0 0}
+.starter-unlock-count{font-size:9px;letter-spacing:.17em;color:var(--red);white-space:nowrap}
+.starter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.starter-card{position:relative;min-width:0;min-height:102px;display:flex;gap:11px;
+  align-items:start;text-align:left;border:1px solid var(--ink-25);
+  background:rgba(237,231,217,.72);padding:12px 10px;
+  transition:border-color .2s,transform .2s,background .2s}
+.starter-card.selected{border-color:var(--red);background:rgba(178,58,43,.045)}
+.starter-card.selected::after{content:'';position:absolute;inset:3px;border:1px solid rgba(178,58,43,.23);pointer-events:none}
+.starter-card:not(:disabled):hover{transform:translateY(-2px);border-color:var(--red)}
+.starter-card:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.starter-card:disabled{opacity:.44;cursor:not-allowed}
+.starter-icon{flex:0 0 33px;width:33px;height:33px;display:grid;place-items:center;
+  font:23px var(--display);background:var(--ink);color:var(--paper);transform:rotate(-4deg)}
+.starter-card.selected .starter-icon{background:var(--red)}
+.starter-copy{min-width:0;display:flex;flex-direction:column;gap:5px}
+.starter-topline{font-size:8px;letter-spacing:.1em;color:var(--red)}
+.starter-copy strong{font-size:11px;letter-spacing:.035em;line-height:1.25}
+.starter-copy small{font-size:9px;color:var(--ink-70);line-height:1.42}
+.starter-mark{margin-left:auto;color:var(--red);font-size:12px}
+.starter-explain{margin:9px 1px 0;font-size:10px;line-height:1.5;color:var(--ink-70)}
+@media(max-width:720px){
+  .starter-chest{margin:13px 0}
+  .starter-head h3{font-size:20px}
+  .starter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .starter-card{padding:9px 7px;gap:7px;min-height:83px}
+  .starter-icon{flex-basis:25px;width:25px;height:25px;font-size:18px}
+  .starter-copy small{font-size:8px}
+  .starter-topline{font-size:7px}
+  .starter-copy strong{font-size:10px}
+  .starter-explain{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .starter-card{transition:none}
+}
