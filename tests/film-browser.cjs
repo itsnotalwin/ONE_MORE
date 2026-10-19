@@ -128,6 +128,39 @@ async function inspect(browser,name,viewport){
   assert.ok(plan.count>0);
   await page.waitForTimeout(1200);
   await page.screenshot({path:path.join(out,name+'-09-wave-director-game.png')});
+  /* The ink gun is actual Canvas ink, not just projectile coordinates.
+     Hold simulation still, rotate only the aim and compare the region
+     beyond the character's collision circle where its gun must sit. */
+  const gunArt=await page.evaluate(()=>{
+    const ctx=document.getElementById('game').getContext('2d');
+    const S=G.S,p=S.player,prior=G.mode;
+    const aim=p.aim,eye=p.visualAim,shake=S.shake;
+    G.mode='paused';S.shake=0;
+    const d=S.dpr;
+    const x=Math.max(0,Math.round((S.W/2+p.x-S.cam.x+13)*d));
+    const y=Math.max(0,Math.round((S.H/2+p.y-S.cam.y-5)*d));
+    const w=Math.min(ctx.canvas.width-x,Math.round(13*d));
+    const h=Math.min(ctx.canvas.height-y,Math.round(10*d));
+    const frame=angle=>{
+      p.aim=angle;p.visualAim=angle;
+      R.draw(ctx,84.25);
+      return ctx.getImageData(x,y,w,h).data;
+    };
+    const front=frame(0),back=frame(Math.PI);
+    let changed=0;
+    for(let i=0;i<front.length;i+=4)
+      if(Math.abs(front[i]-back[i])+Math.abs(front[i+1]-back[i+1])+
+         Math.abs(front[i+2]-back[i+2])>55)changed++;
+    /* Restore before continuing the progression/browser film. */
+    p.aim=aim;p.visualAim=eye;G.mode=prior;S.shake=shake;
+    R.draw(ctx,84.25);
+    return {changed,hitbox:p.r,muzzle:CFG.player.muzzle};
+  });
+  assert.ok(gunArt.changed>7,name+' drawn gun changes muzzle-side Canvas pixels when aiming (changed '+gunArt.changed+')');
+  assert.equal(gunArt.hitbox,10);
+  assert.equal(gunArt.muzzle,20);
+  await page.screenshot({path:path.join(out,name+'-09b-handheld-ink-gun.png')});
+
   /* Stage 4: living splat cores drift, magnetically absorb and grant a
      real upgrade mid-wave, without resetting the Wave Director state. */
   await page.evaluate(()=>{
