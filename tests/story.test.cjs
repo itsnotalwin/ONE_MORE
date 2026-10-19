@@ -104,11 +104,23 @@ test('final reel ends at game title; reduced-motion mode still advances the film
 test('story archive remains unlock-gated and original game assets are untouched',()=>{
   const x=harness(),{INTRO,G,nodes}=x;
   x.savedProgress=0;INTRO.openArchive();
+  assert.ok(nodes.get('archiveChapters').innerHTML.includes('Before time had weight'));
+  assert.equal(nodes.get('archivePage').textContent,'01 / 05');
+  INTRO.handleKey('ArrowRight');
+  INTRO.handleKey('ArrowRight');
   assert.ok(nodes.get('archiveChapters').innerHTML.includes('STILL SEALED'));
   x.savedProgress=20;INTRO.openArchive();
+  INTRO.handleKey('ArrowRight');
+  INTRO.handleKey('ArrowRight');
   assert.ok(nodes.get('archiveChapters').innerHTML.includes('Kage and Shade'));
+  assert.equal(nodes.get('archivePage').textContent,'03 / 05');
   x.savedProgress=30;INTRO.openArchive();
+  for(let i=0;i<4;i++)nodes.get('archiveNext').click();
   assert.ok(nodes.get('archiveChapters').innerHTML.includes('At the final seal,'));
+  assert.equal(nodes.get('archivePage').textContent,'05 / 05');
+  assert.equal(nodes.get('archiveNext').disabled,true);
+  nodes.get('archivePrev').click();
+  assert.equal(nodes.get('archivePage').textContent,'04 / 05');
   assert.ok(INTRO.handleKey('Escape'));
   assert.equal(G.mode,'title');
   const html=file('index.html'),js=file('js/intro.js'),main=file('js/main.js');
