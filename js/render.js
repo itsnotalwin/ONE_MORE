@@ -1402,6 +1402,168 @@ const R = (() => {
     c.restore();
   }
 
+  /* Hand-held instruments are real visible extensions of the tiny
+     ink-soul. One clear shape for each weapon, with no sprite atlas and
+     no movement jitter. Aim remains tied to combat rather than gaze. */
+  function drawStarterTool(c,S,t){
+    const p=S.player,id=S.starter||'gun';
+    const snap=Math.min(1,Math.max(0,p.recoil||0));
+    const sway=S.reduced?0:Math.sin(t*1.65)*.025;
+    c.save();c.translate(p.x,p.y);
+    c.rotate(p.aim+sway+(id==='brush'?.34*snap:id==='cutter'?.27*snap:
+      id==='mallet'?.20*snap:0));
+    c.translate(-snap*1.4,0);
+    c.lineJoin='round';c.lineCap='round';
+    /* A small white grip links tool to ink and stays readable on night. */
+    c.strokeStyle=PAPER;c.lineWidth=2.7;
+    c.beginPath();c.moveTo(5.5,2.9);c.lineTo(10.2,2.1);c.stroke();
+    c.strokeStyle=INK;c.lineWidth=1.45;c.stroke();
+    if(id==='brush'){
+      c.strokeStyle=INK;c.lineWidth=3.4;
+      c.beginPath();c.moveTo(7,1);c.lineTo(27,0);c.stroke();
+      c.strokeStyle=PAPER;c.lineWidth=.7;
+      c.beginPath();c.moveTo(10,.15);c.lineTo(23,-.4);c.stroke();
+      c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.15;
+      c.fillRect(23,-3.1,6.5,6.2);c.strokeRect(23,-3.1,6.5,6.2);
+      /* The brush's bold wetted fan tapers to one expressive point. */
+      c.fillStyle=INK;c.beginPath();c.moveTo(29,-5.7);
+      c.quadraticCurveTo(37,-5.1,42,0);
+      c.quadraticCurveTo(37,5.4,29,5.7);c.closePath();c.fill();
+      c.strokeStyle=PAPER;c.globalAlpha=.8;c.lineWidth=.8;
+      c.beginPath();c.moveTo(31,-3);c.lineTo(36,-1.4);c.stroke();
+    }else if(id==='quill'){
+      c.strokeStyle=INK;c.lineWidth=1.9;
+      c.beginPath();c.moveTo(7,0);c.lineTo(28,0);c.stroke();
+      c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.1;
+      c.beginPath();c.moveTo(9,-2.9);
+      c.quadraticCurveTo(18,-8.1,25,-3.7);
+      c.lineTo(30,0);c.lineTo(25,3.7);
+      c.quadraticCurveTo(17,7,9,2.8);c.closePath();c.fill();c.stroke();
+      c.beginPath();c.moveTo(16,0);c.lineTo(36,0);c.stroke();
+      c.fillStyle=INK;c.beginPath();c.moveTo(36,0);c.lineTo(29,-1.4);
+      c.lineTo(29,1.4);c.closePath();c.fill();
+    }else if(id==='mallet'){
+      c.strokeStyle=INK;c.lineWidth=4.1;
+      c.beginPath();c.moveTo(8,0);c.lineTo(30,0);c.stroke();
+      c.fillStyle=INK;
+      c.beginPath();c.moveTo(22,-11);c.lineTo(31,-12.5);
+      c.lineTo(36,-7);c.lineTo(35,8);c.lineTo(24,11);
+      c.lineTo(21,6);c.closePath();c.fill();
+      c.strokeStyle=PAPER;c.lineWidth=1.05;c.globalAlpha=.86;
+      c.beginPath();c.moveTo(26,-8);c.lineTo(28,7);
+      c.moveTo(29,-9);c.lineTo(32,-5);c.stroke();
+    }else if(id==='thread'){
+      c.strokeStyle=INK;c.lineWidth=2;
+      c.beginPath();c.moveTo(8,0);c.lineTo(16,0);c.stroke();
+      c.fillStyle=PAPER;c.lineWidth=1.5;
+      c.beginPath();c.ellipse(21,0,6,7,.12,0,TAU);
+      c.fill();c.stroke();
+      c.strokeStyle=INK;c.lineWidth=.9;
+      for(const dx of [18,20.7,23.4]){
+        c.beginPath();c.moveTo(dx,-4.5);c.lineTo(dx,4.5);c.stroke();
+      }
+      c.beginPath();c.moveTo(27,0);
+      c.bezierCurveTo(33,-6,36,3,40,-2);c.stroke();
+      c.fillStyle=INK;c.beginPath();c.arc(40,-2,1.5,0,TAU);c.fill();
+    }else if(id==='cutter'){
+      c.strokeStyle=INK;c.lineWidth=2.8;
+      c.beginPath();c.moveTo(6,1);c.lineTo(15,0);c.stroke();
+      c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.1;
+      c.beginPath();c.moveTo(12,-3);c.lineTo(25,-8);
+      c.lineTo(37,-1);c.lineTo(19,5);c.closePath();c.fill();c.stroke();
+      c.beginPath();c.moveTo(18,1.5);c.lineTo(33,-1.9);c.stroke();
+      c.fillStyle=INK;c.fillRect(11,-2.2,3.4,4.5);
+    }
+    c.restore();
+  }
+
+  /* Ephemeral ink flourishes are animation, NOT persistent paper stains.
+     There is no gameplay damage in this renderer. */
+  function drawPrimaryFx(c,fx){
+    const fade=Math.max(0,Math.min(1,fx.life/fx.max));
+    const age=1-fade,a=fx.aim,r=fx.reach;
+    c.save();c.strokeStyle=INK;c.fillStyle=INK;c.lineCap='round';
+    if(fx.kind==='thread'){
+      for(const link of fx.segments){
+        c.globalAlpha=.81*fade;c.lineWidth=2.25;
+        c.beginPath();c.moveTo(link.from.x,link.from.y);
+        const mx=(link.from.x+link.to.x)*.5;
+        const my=(link.from.y+link.to.y)*.5;
+        c.quadraticCurveTo(mx-5,my-7,link.to.x,link.to.y);c.stroke();
+        c.globalAlpha=.47*fade;
+        c.beginPath();c.arc(link.to.x,link.to.y,3.3,0,TAU);c.stroke();
+      }
+    }else if(fx.kind==='brush'||fx.kind==='cutter'){
+      const size=fx.kind==='brush'?(fx.special?2.7:1.9):1.15;
+      const sweep=fx.kind==='brush'?r*.84:r*.75;
+      c.globalAlpha=.77*fade;c.lineWidth=fx.kind==='brush'?6:2.8;
+      c.beginPath();
+      const steps=14;
+      for(let j=0;j<=steps;j++){
+        const th=a-size*.5+size*j/steps,rr=sweep+Math.sin(j*.55+fx.seq)*2.2;
+        const x=fx.x+Math.cos(th)*rr,y=fx.y+Math.sin(th)*rr;
+        if(!j)c.moveTo(x,y);else c.lineTo(x,y);
+      }
+      c.stroke();
+      /* Dry-brush flecks appear briefly at the finishing edge. */
+      c.globalAlpha=.35*fade;c.lineWidth=1.2;
+      c.beginPath();
+      for(let j=0;j<=steps;j++){
+        const th=a-size*.5+size*j/steps;
+        const x=fx.x+Math.cos(th)*(sweep+6),y=fx.y+Math.sin(th)*(sweep+6);
+        if(!j)c.moveTo(x,y);else c.lineTo(x,y);
+      }c.stroke();
+    }else if(fx.kind==='mallet'){
+      const mx=fx.x+Math.cos(a)*34,my=fx.y+Math.sin(a)*34;
+      const radius=r*(.4+age*.6);
+      c.lineWidth=fx.special?3:2.3;c.globalAlpha=.73*fade;
+      c.beginPath();c.ellipse(mx,my,radius,radius*.67,a,0,TAU);c.stroke();
+      c.lineWidth=1;c.globalAlpha=.4*fade;
+      for(let i=0;i<5;i++){
+        const th=a+i*TAU/5;
+        c.beginPath();
+        c.moveTo(mx+Math.cos(th)*radius*.7,my+Math.sin(th)*radius*.5);
+        c.lineTo(mx+Math.cos(th)*radius*1.2,my+Math.sin(th)*radius*.84);
+        c.stroke();
+      }
+    }else if(fx.kind==='quill'){
+      c.globalAlpha=.66*fade;c.lineWidth=1.4;
+      const x=fx.x+Math.cos(a)*17,y=fx.y+Math.sin(a)*17;
+      c.beginPath();c.moveTo(x,y);
+      c.lineTo(x+Math.cos(a)*65*age,y+Math.sin(a)*65*age);c.stroke();
+      if(fx.special){c.lineWidth=.7;c.globalAlpha=.36*fade;
+        c.beginPath();c.moveTo(x+Math.cos(a+0.08)*8,y+Math.sin(a+0.08)*8);
+        c.lineTo(x+Math.cos(a+.08)*70*age,y+Math.sin(a+.08)*70*age);c.stroke();}
+    }else if(fx.kind==='gun'){
+      c.globalAlpha=.68*fade;c.lineWidth=1.4;
+      const x=fx.x+Math.cos(a)*CFG.player.muzzle,y=fx.y+Math.sin(a)*CFG.player.muzzle;
+      for(let j=-1;j<=1;j++){
+        const th=a+j*.53,d=fx.special?9:5;
+        c.beginPath();c.moveTo(x+Math.cos(th)*2,y+Math.sin(th)*2);
+        c.lineTo(x+Math.cos(th)*d,y+Math.sin(th)*d);c.stroke();
+      }
+    }
+    c.restore();
+  }
+  function drawPrimaryProjectile(c,b){
+    c.save();c.translate(b.x,b.y);c.rotate(b.ang);
+    c.lineCap='round';c.lineJoin='round';
+    if(b.kind==='needleQuill'){
+      c.strokeStyle=INK;c.lineWidth=1.55;
+      c.beginPath();c.moveTo(-17,0);c.lineTo(16,0);c.stroke();
+      c.fillStyle=INK;c.beginPath();c.moveTo(16,0);
+      c.lineTo(9,-2.4);c.lineTo(9,2.4);c.closePath();c.fill();
+      c.strokeStyle=PAPER;c.lineWidth=.6;
+      c.beginPath();c.moveTo(-5,0);c.lineTo(9,0);c.stroke();
+    }else if(b.kind==='paperEdge'){
+      c.rotate(b.age*10);c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.25;
+      c.beginPath();c.moveTo(13,0);c.lineTo(-7,7);
+      c.lineTo(-3,0);c.lineTo(-7,-7);c.closePath();c.fill();c.stroke();
+      c.beginPath();c.moveTo(11,0);c.lineTo(-4,0);c.stroke();
+    }
+    c.restore();
+  }
+
   function drawPlayer(c,t){
     const S=G.S,p=S.player,st=S.stats;
     const seed=p.visualSeed||0x51a7;
@@ -2033,7 +2195,12 @@ const R = (() => {
     for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);
     for (const m of S.markers) drawMarker(ctx, m);
     for (const r of S.rings) drawRing(ctx, r);
-    for (const b of S.bullets) drawBullet(ctx, b);
+    for (const b of S.bullets){
+      if(b.kind==='needleQuill'||b.kind==='paperEdge')
+        drawPrimaryProjectile(ctx,b);
+      else drawBullet(ctx,b);
+    }
+    for(const fx of S.primaryFx||[])drawPrimaryFx(ctx,fx);
     for (const b of S.crescents||[]) drawCrescent(ctx,b);
     for (const e of S.shroudEchoes||[])drawShroudEcho(ctx,e);
     for (const b of S.ebullets) drawEBullet(ctx, b);
