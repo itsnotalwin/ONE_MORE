@@ -97,7 +97,7 @@ There is no final boss called the Painter. The act of removing the premature sea
 
 | Character | Nature | Gameplay expression |
 |---|---|---|
-| **The Last Stroke** | Unfinished, determined brush-spirit; playable protagonist | Auto-fires, moves, and leaves permanent ink traces |
+| **The Last Stroke** | Unfinished, determined living ink-soul with a tiny handmade ink gun | Aims and auto-fires from its real gun muzzle; the starting shot never paints the ground |
 | **The Painter** | Absent creator; voice felt through text and environmental clues | Not present as an enemy or NPC yet |
 | **The Blots** | Disowned shapes; sometimes split or mutate | BLOT, DRIP, BLIP |
 | **The Rejected** | Choices that almost existed | SHADE, KAGE, STILT |
@@ -200,6 +200,14 @@ Do **not** invent a sprite-sheet directory in a design spec, and do not replace 
 | Animated short film | `js/film.js`, `js/intro.js` | Live-drawn brush stroke, mountains, beasts, erasure, character motion, composited shot fades and camera push | Development |
 | Chronicle | `js/intro.js` `ARCHIVE` | Readable prose, unlock-gated | Experiment |
 | Editorial illustrations | `docs/images/*.svg` | Original authored SVG, **not gameplay screenshots** | Experiment |
+
+### The Last Stroke's hand-held ink gun (implemented)
+
+The protagonist now carries a miniature **sumi-e ink gun**, drawn procedurally in `drawInkGun` above the same living silhouette. It has a short connecting arm, an ivory-inset ink reservoir, a distinctive nib barrel and a grip. The same `CFG.player.muzzle = 20` world-pixel offset is used both by the drawn barrel and by `fireVolley()` to create real projectiles at the tip; the shot spread changes projectile direction, **never its shared muzzle origin**. Gun orientation uses the actual targeting angle, rather than the eye's delayed smoothed gaze. Ordinary projectile damage, pierce count, speed, lifetime, cadence, player locomotion and physical radius are unchanged.
+
+After Echo Stroke is unlocked, a visibly smaller rear-facing nozzle appears and the acquired mirrored projectiles leave from its back tip. The basic ink-gun weapon never creates persistent terrain strokes, at any upgrade rank. The spirit remains a moving living ink creature, rather than becoming an illustrated human or a static sprite. On Night Scroll the barrel's light/dark ink polarity follows the same paper theme as its owner.
+
+The gun is deliberately modest and readable at the default ~20 px player hitbox. No separate external assets, glows, fake muzzle terrain splashes or extra combat advantages. See `tests/phase6.test.cjs` and the mobile/desktop Canvas pixel check in `tests/film-browser.cjs` for regression coverage.
 
 ### Animation rules
 
