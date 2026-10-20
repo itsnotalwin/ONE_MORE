@@ -33,6 +33,18 @@ async function inspect(browser,name,viewport){
   page.on('pageerror',e=>errors.push(String(e)));
   const response=await page.goto(base,{waitUntil:'load'});
   assert.equal(response.status(),200);
+  const artURLs=[
+    './icons/icon-192.png','./icons/icon-512.png',
+    './icons/icon-512-maskable.png','./icons/apple-touch-icon.png',
+    './assets/hero-atlas.webp','./assets/hero-atlas-night.webp'
+  ];
+  for(const url of artURLs){
+    const result=await page.evaluate(async url=>{
+      const r=await fetch(url);return {status:r.status,size:(await r.blob()).size};
+    },url);
+    assert.equal(result.status,200,name+' can load '+url);
+    assert.ok(result.size>10000,name+' has nontrivial art for '+url);
+  }
   await page.waitForFunction(()=>G.mode==='opening');
   assert.equal(await page.locator('#openingSkip').isVisible(),true,
     'standalone ink opening starts automatically');

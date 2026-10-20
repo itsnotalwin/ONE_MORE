@@ -1582,6 +1582,46 @@ const R = (() => {
     c.restore();
   }
 
+  /* The new hand-painted protagonist is a six-row Canvas atlas.
+     Load each world palette once. If loading fails, retain the original
+     procedural brush soul instead of breaking the game. */
+  const heroImages={pale:null,dark:null};
+  if(typeof Image!=='undefined'){
+    for(const key of ['pale','dark']){
+      const image=new Image();
+      image.decoding='async';
+      image.src='./assets/hero-atlas'+(key==='dark'?'-night':'')+'.webp';
+      heroImages[key]=image;
+    }
+  }
+  function paintHeroSprite(c,p,S,t){
+    const image=heroImages[S.areaIdx===1?'dark':'pale'];
+    if(!image||!image.complete||!image.naturalWidth)return false;
+    const moving=(p.visualSpeed||0)>.27;
+    const melee=S.primaryFx&&S.primaryFx.some(f=>
+      ['brush','mallet','cutter'].includes(f.kind)&&f.life>0);
+    const attack=(p.recoil||0)>.12||melee;
+    let row=0,count=6,fps=4;
+    if(S.mode==='dying'){row=5;count=5;fps=8;}
+    else if((p.hitPulse||0)>.01){row=4;count=2;fps=8;}
+    else if(S.shroudMotion>.1&&moving){row=3;count=4;fps=13;}
+    else if(attack){row=2;count=6;fps=13;}
+    else if(moving){row=1;count=8;fps=10;}
+    /* RUN advances from the existing locomotion phase, not a separate
+       gameplay clock. The movement speed/hitbox remain exactly as before. */
+    const phase=row===1?(p.flowPhase||0)/ (Math.PI*2)*count:
+      row===5?Math.max(0,(1-(S.dyingT||0)/1.1))*count:t*fps;
+    const frame=Math.max(0,Math.floor(phase))%count;
+    const face=Math.cos(moving?p.visualFacing:p.visualAim);
+    const flip=face<-.15?-1:1;
+    c.save();
+    c.scale(flip,1);
+    c.globalAlpha=1;
+    c.drawImage(image,frame*180,row*160,180,160,-23,-23,46,42);
+    c.restore();
+    return true;
+  }
+
   function drawPlayer(c,t){
     const S=G.S,p=S.player,st=S.stats;
     const seed=p.visualSeed||0x51a7;
@@ -1604,22 +1644,22 @@ const R = (() => {
       size*(1-speed*.015+impulse*.05+anticipation+absorb*.014));
     /* Head is planted, gaze steady. No repeated whole-body bounce. */
     if(!reduced)c.translate(0,Math.sin(t*1.7+seed*.001)*.12*(1-speed)-impulse*.7);
-    c.fillStyle=INK;c.globalAlpha=1;
-    inkSoulPath(c,p.r,t,seed,reduced,motion);
-    c.fill();
-    /* Curved single paper-eye: watchful and curious, not an angry
-       two-slit monster. Its gaze eases with the game's existing aim. */
-    const eyeX=Math.cos(aim)*p.r*.28,eyeY=-p.r*.13+Math.sin(aim)*p.r*.12;
-    c.strokeStyle=PAPER;c.lineWidth=1.9;c.lineCap='round';
-    c.beginPath();c.moveTo(eyeX-2.1,eyeY-.8);
-    c.quadraticCurveTo(eyeX,eyeY+1.1,eyeX+2.5,eyeY-.55);c.stroke();
-    /* Negative-space paper mask details: a single tilted brow cut
-       and tiny cheek seal. They move WITH the hood, not as sprites. */
-    c.globalAlpha=.85;c.lineWidth=.68;
-    c.beginPath();c.moveTo(eyeX-2.5,eyeY-2.5);
-    c.quadraticCurveTo(eyeX-.3,eyeY-3.5,eyeX+2.1,eyeY-2.2);c.stroke();
-    c.globalAlpha=.69;c.fillStyle=PAPER;
-    c.beginPath();c.ellipse(-p.r*.45,p.r*.35,.8,1.45,-.42,0,TAU);c.fill();
+    if(!paintHeroSprite(c,p,S,t)){
+      /* Existing procedural player is the safe fallback when assets have
+         not loaded, or if an image is blocked or unsupported. */
+      c.fillStyle=INK;c.globalAlpha=1;
+      inkSoulPath(c,p.r,t,seed,reduced,motion);
+      c.fill();
+      const eyeX=Math.cos(aim)*p.r*.28,eyeY=-p.r*.13+Math.sin(aim)*p.r*.12;
+      c.strokeStyle=PAPER;c.lineWidth=1.9;c.lineCap='round';
+      c.beginPath();c.moveTo(eyeX-2.1,eyeY-.8);
+      c.quadraticCurveTo(eyeX,eyeY+1.1,eyeX+2.5,eyeY-.55);c.stroke();
+      c.globalAlpha=.85;c.lineWidth=.68;
+      c.beginPath();c.moveTo(eyeX-2.5,eyeY-2.5);
+      c.quadraticCurveTo(eyeX-.3,eyeY-3.5,eyeX+2.1,eyeY-2.2);c.stroke();
+      c.globalAlpha=.69;c.fillStyle=PAPER;
+      c.beginPath();c.ellipse(-p.r*.45,p.r*.35,.8,1.45,-.42,0,TAU);c.fill();
+    }
     c.globalAlpha=1;
     if(S.invulnT>0){
       c.save();c.globalAlpha=reduced?.35:.28+Math.sin(t*3)*.05;
