@@ -277,12 +277,28 @@
   document.getElementById('muteBtn').addEventListener('click', toggleMute);
   const openingSkip=document.getElementById('openingSkip');
   const themeColor=document.querySelector('meta[name="theme-color"]');
-  let openingBackdrop=null;
+  const statusBarInk=document.getElementById('statusBarInk');
+  const paperTint={pale:'#ede7d9',dark:'#242b39',red:'#eadbc4'};
+  let statusTint=null,openingBackdrop=null;
+  function tintSystemBar(color){
+    if(statusTint===color)return; /* never churn styles on every animation frame */
+    statusTint=color;
+    statusBarInk.style.backgroundColor=color;
+    document.body.style.backgroundColor=color;
+    document.documentElement.style.backgroundColor=color;
+    if(themeColor)themeColor.setAttribute('content',color);
+  }
   function setOpeningBackdrop(dark){
-    if(openingBackdrop===dark)return; /* just two state changes, no per-frame DOM churn */
+    if(openingBackdrop===dark)return;
     openingBackdrop=dark;
     document.body.classList.toggle('ink-opening',dark);
-    if(themeColor)themeColor.setAttribute('content',dark?'#131009':'#ede7d9');
+    tintSystemBar(dark?'#131009':paperTint.pale);
+  }
+  function syncSystemBar(mode){
+    if(mode==='opening')return; /* opening has its own black-to-paper transition */
+    const gameplay=['playing','paused','upgrade','dying'].includes(mode);
+    const area=gameplay?AREAS[G.S.areaIdx%AREAS.length]:null;
+    tintSystemBar(paperTint[area?.theme]||paperTint.pale);
   }
   openingSkip.addEventListener('click',()=>OPENING.skip());
   window.addEventListener('pointerdown',()=>{
@@ -331,6 +347,7 @@
     if (dt > 0.05) dt = 0.05;
 
     const m = G.mode;
+    syncSystemBar(m);
     if (lastMode === 'playing' && m !== 'playing') clearInput();
     lastMode = m;
     vec();

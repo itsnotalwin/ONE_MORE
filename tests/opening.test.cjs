@@ -66,6 +66,12 @@ test('original cinematic and combat renderer are not replaced by GLM files',()=>
   assert.ok(read('js/render.js').includes('function drawEnemy('));
   assert.ok(html.includes('<script src="./js/opening.js"></script>'));
   assert.ok(html.includes('id="openingSkip"'));
+  assert.ok(html.includes('id="statusBarInk"'),
+    'a standalone-only CSS system-strip tint marker exists');
+  assert.ok(read('css/intro.css').includes('@media(display-mode:standalone)'));
+  assert.ok(read('js/main.js').includes('syncSystemBar(m)'));
+  assert.ok(read('js/main.js').includes("dark:'#242b39'"),
+    'Night Scroll must tint the iPhone status strip to match its paper');
   assert.ok(html.includes('id="replayIntroBtn"'));
   assert.ok(html.includes('name="apple-mobile-web-app-capable" content="yes"'));
   assert.ok(html.includes('name="apple-mobile-web-app-status-bar-style" content="black-translucent"'),
