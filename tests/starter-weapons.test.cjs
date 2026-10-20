@@ -131,8 +131,8 @@ for(const [label,distance] of [
 test('Twin Stroke keeps its close fan and narrows only when needed',()=>{
   const near=twinStrokeTrial(55,3),far=twinStrokeTrial(480,3);
   const width=angles=>Math.max(...angles)-Math.min(...angles);
-  assert.ok(width(near)>.25,'close-up brush-fan identity remains visible');
-  assert.ok(width(far)<.03,'long-range small-enemy shots converge');
+  assert.ok(width(near.angles)>.25,'close-up brush-fan identity remains visible');
+  assert.ok(width(far.angles)<.03,'long-range small-enemy shots converge');
 });
 test('Great Brush deals actual melee damage and earns wider third sweep',()=>{
   const o=run('brush',64);
