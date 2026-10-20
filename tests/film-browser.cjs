@@ -145,6 +145,18 @@ async function inspect(browser,name,viewport){
     '#ede7d9',name+' mobile status-bar backing becomes paper after flood');
   assert.equal(await page.evaluate(()=>document.documentElement.style.backgroundColor),
     'rgb(237, 231, 217)',name+' document colour changes with the paper flood');
+  if(name==='phone'){
+    const opening=await page.evaluate(()=>{
+      const get=()=>document.getElementById('openingSkip').getBoundingClientRect().top;
+      const current=get();
+      document.documentElement.style.setProperty('--om-top-ui-nudge','0px');
+      const initial=get();
+      document.documentElement.style.removeProperty('--om-top-ui-nudge');
+      return current-initial;
+    });
+    assert.ok(Math.abs(opening-12)<1,
+      'the opening skip is also lowered 12px on phones');
+  }
   const skip=await page.locator('#openingSkip').boundingBox();
   assert.ok(skip&&skip.x>=0&&skip.x+skip.width<=viewport.width+2,
     name+' Skip remains within desktop or phone width');
@@ -177,6 +189,25 @@ async function inspect(browser,name,viewport){
   }
   assert.ok(Math.abs(homeBleed.upper)<2&&Math.abs(homeBleed.lower-viewport.height)<2,
     name+' home paint still fills the available viewport');
+  if(name==='phone'){
+    const g=await page.evaluate(()=>{
+      const rect=selector=>{
+        const r=document.querySelector(selector).getBoundingClientRect();
+        return {x:r.x,y:r.y,bottom:r.bottom};
+      };
+      const get=()=>({brand:rect('.home-brand'),bottom:rect('.home-bottom'),
+        canvas:rect('#game')});
+      const a=get();
+      document.documentElement.style.setProperty('--om-top-ui-nudge','0px');
+      const b=get();
+      document.documentElement.style.removeProperty('--om-top-ui-nudge');
+      return {a,b};
+    });
+    assert.ok(Math.abs(g.a.brand.y-g.b.brand.y-12)<1,'home masthead clears status bar');
+    assert.ok(Math.abs(g.a.brand.x-g.b.brand.x)<1,'home horizontal layout preserved');
+    assert.ok(Math.abs(g.a.bottom.bottom-g.b.bottom.bottom)<1,'bottom menu unchanged');
+    assert.ok(Math.abs(g.a.canvas.bottom-g.b.canvas.bottom)<1,'full-screen ink unchanged');
+  }
   const homeButton=await page.locator('#playBtn').boundingBox();
   assert.ok(homeButton && homeButton.x>=0 && homeButton.x+homeButton.width<=viewport.width+2,
     name+' primary action is within screen width');
@@ -200,6 +231,17 @@ async function inspect(browser,name,viewport){
   await page.waitForFunction(()=>G.mode==='title');
   await page.click('#replayIntroBtn');
   await page.waitForFunction(()=>G.mode==='intro');
+  if(name==='phone'){
+    const shift=await page.evaluate(()=>{
+      const get=()=>document.getElementById('introSkip').getBoundingClientRect().top;
+      const a=get();
+      document.documentElement.style.setProperty('--om-top-ui-nudge','0px');
+      const b=get();
+      document.documentElement.style.removeProperty('--om-top-ui-nudge');
+      return a-b;
+    });
+    assert.ok(Math.abs(shift-12)<1,'film top actions are also lowered slightly');
+  }
   await page.click('#introSkip');
   await page.waitForFunction(()=>G.mode==='title');
   /* A new player can go from helpful onboarding straight to scroll selection. */
@@ -209,6 +251,23 @@ async function inspect(browser,name,viewport){
   /* Phase 2: exercise the REAL DOM campaign picker and canvas runtime,
      not merely the director's headless plan builder. */
   assert.ok((await page.locator('#campaignStatus').textContent()).includes('THE FIRST MARK'));
+  if(name==='phone'){
+    const shift=await page.evaluate(()=>{
+      const get=()=>({
+        heading:document.querySelector('.campaign-heading').getBoundingClientRect(),
+        footer:document.querySelector('.campaign-footer').getBoundingClientRect()
+      });
+      const a=get();
+      document.documentElement.style.setProperty('--om-top-ui-nudge','0px');
+      const b=get();
+      document.documentElement.style.removeProperty('--om-top-ui-nudge');
+      return {top:a.heading.top-b.heading.top,
+        x:a.heading.x-b.heading.x,footerBottom:a.footer.bottom-b.footer.bottom};
+    });
+    assert.ok(shift.top>=8&&shift.top<=13,'campaign heading gets top clearance: '+JSON.stringify(shift));
+    assert.ok(Math.abs(shift.x)<1,'campaign header horizontal position fixed');
+    assert.ok(Math.abs(shift.footerBottom)<1,'campaign bottom remains fixed');
+  }
   await assertViewportFit(page,'#campaignScrolls',viewport,name+' scroll picker');
   await assertViewportFit(page,'.campaign-footer',viewport,name+' journey actions');
   assert.equal(await page.locator('#campaignLevels button[data-level="1"]').isEnabled(),true);
@@ -744,6 +803,11 @@ async function inspectShort(browser,name,viewport){
   for(let i=0;i<5;i++){
     await assertViewportFit(page,'.archive-chapters',viewport,name+' chronicle chapter '+i);
     if(i<4)await page.click('#archiveNext');
+  }
+  if(name==='short-landscape'){
+    const extra=await page.evaluate(()=>getComputedStyle(document.documentElement)
+      .getPropertyValue('--om-top-ui-nudge').trim());
+    assert.equal(extra,'','no extra shift for cramped landscape screens');
   }
   await page.click('#archiveBack');
   assert.deepEqual(errors,[],name+' browser errors');

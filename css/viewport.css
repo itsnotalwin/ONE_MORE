@@ -291,3 +291,17 @@ html.om-pwa-standalone #stage{top:0;bottom:auto;height:100lvh;
   .hud-bl{bottom:calc(20px + var(--om-safe-bottom))}
   .hud-br{bottom:calc(16px + var(--om-safe-bottom))}
 }
+
+/* Gentle clearance only for TOP-ANCHORED small-screen UI. Full-screen
+   ink, centered panels, bottom controls, and HUD positions stay intact. */
+@media (max-width:720px) and (min-height:560px){
+  :root{--om-top-ui-nudge:12px}
+  .home-top{padding-top:calc(17px + var(--om-safe-top) + var(--om-top-ui-nudge))}
+  .screen-select{padding-top:calc(8px + var(--om-safe-top) + var(--om-top-ui-nudge))}
+  .archive-panel{padding-top:calc(clamp(14px,3vh,35px) + var(--om-top-ui-nudge))}
+  .screen-intro .intro-filmhead{padding-top:calc(clamp(14px,3.1vh,30px) + var(--om-top-ui-nudge))}
+  .opening-skip{top:calc(16px + var(--om-safe-top) + var(--om-top-ui-nudge))}
+}
+@media (max-width:480px) and (min-height:560px){
+  .home-top{padding-top:calc(13px + var(--om-safe-top) + var(--om-top-ui-nudge))}
+}
