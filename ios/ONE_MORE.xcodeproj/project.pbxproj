@@ -1,0 +1,33 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+
+ AA0000000000000000000001 = {isa=PBXBuildFile;fileRef=AA000000000000000000000A;};
+ AA0000000000000000000002 = {isa=PBXBuildFile;fileRef=AA000000000000000000000B;};
+ AA000000000000000000000A = {isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=OneMoreApp.swift;sourceTree="<group>";};
+ AA000000000000000000000B = {isa=PBXFileReference;lastKnownFileType=sourcecode.swift;path=InkGameViewController.swift;sourceTree="<group>";};
+ AA000000000000000000000C = {isa=PBXFileReference;lastKnownFileType=text.plist.xml;path=Info.plist;sourceTree="<group>";};
+ AA000000000000000000000D = {isa=PBXFileReference;explicitFileType=wrapper.application;includeInIndex=0;path=ONE_MORE.app;sourceTree=BUILT_PRODUCTS_DIR;};
+ AA0000000000000000000014 = {isa=PBXGroup;children=(AA0000000000000000000015,AA0000000000000000000016,);sourceTree="<group>";};
+ AA0000000000000000000015 = {isa=PBXGroup;children=(AA000000000000000000000A,AA000000000000000000000B,AA000000000000000000000C,);path=ONE_MORE;sourceTree="<group>";};
+ AA0000000000000000000016 = {isa=PBXGroup;children=(AA000000000000000000000D,);name=Products;sourceTree="<group>";};
+ AA000000000000000000001E = {isa=PBXNativeTarget;buildConfigurationList=AA000000000000000000003D;buildPhases=(AA0000000000000000000028,AA0000000000000000000029,AA000000000000000000002A,AA000000000000000000002B,);buildRules=();dependencies=();name=ONE_MORE;productName=ONE_MORE;productReference=AA000000000000000000000D;productType="com.apple.product-type.application";};
+ AA000000000000000000001F = {isa=PBXProject;attributes={BuildIndependentTargetsInParallel=1;LastUpgradeCheck=1500;TargetAttributes={AA000000000000000000001E={CreatedOnToolsVersion=15.0;};};};buildConfigurationList=AA000000000000000000003C;compatibilityVersion="Xcode 14.0";developmentRegion=en;hasScannedForEncodings=0;knownRegions=(en,Base,);mainGroup=AA0000000000000000000014;productRefGroup=AA0000000000000000000016;projectDirPath="";projectRoot="";targets=(AA000000000000000000001E,);};
+ AA0000000000000000000028 = {isa=PBXSourcesBuildPhase;buildActionMask=2147483647;files=(AA0000000000000000000001,AA0000000000000000000002,);runOnlyForDeploymentPostprocessing=0;};
+ AA0000000000000000000029 = {isa=PBXFrameworksBuildPhase;buildActionMask=2147483647;files=();runOnlyForDeploymentPostprocessing=0;};
+ AA000000000000000000002A = {isa=PBXResourcesBuildPhase;buildActionMask=2147483647;files=();runOnlyForDeploymentPostprocessing=0;};
+ AA000000000000000000002B = {isa=PBXShellScriptBuildPhase;buildActionMask=2147483647;files=();inputPaths=();outputPaths=();name="Copy Game Web Assets";runOnlyForDeploymentPostprocessing=0;shellPath=/bin/sh;shellScript="sh \"$SRCROOT/scripts/copy-web.sh\"";};
+
+ AA0000000000000000000032 = {isa=XCBuildConfiguration;buildSettings={ALWAYS_SEARCH_USER_PATHS=NO;CLANG_ENABLE_MODULES=YES;DEBUG_INFORMATION_FORMAT=dwarf;GCC_OPTIMIZATION_LEVEL=0;IPHONEOS_DEPLOYMENT_TARGET=16.0;SDKROOT=iphoneos;SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG;SWIFT_OPTIMIZATION_LEVEL="-Onone";};name=Debug;};
+ AA0000000000000000000033 = {isa=XCBuildConfiguration;buildSettings={ALWAYS_SEARCH_USER_PATHS=NO;CLANG_ENABLE_MODULES=YES;DEBUG_INFORMATION_FORMAT="dwarf-with-dsym";IPHONEOS_DEPLOYMENT_TARGET=16.0;SDKROOT=iphoneos;SWIFT_OPTIMIZATION_LEVEL="-O";};name=Release;};
+ AA0000000000000000000034 = {isa=XCBuildConfiguration;buildSettings={CODE_SIGN_STYLE=Automatic;GENERATE_INFOPLIST_FILE=NO;INFOPLIST_FILE=ONE_MORE/Info.plist;IPHONEOS_DEPLOYMENT_TARGET=16.0;LD_RUNPATH_SEARCH_PATHS=("$(inherited)","@executable_path/Frameworks",);PRODUCT_BUNDLE_IDENTIFIER=com.itsnotalwin.onemore;PRODUCT_NAME="$(TARGET_NAME)";SUPPORTED_PLATFORMS="iphoneos iphonesimulator";SWIFT_VERSION=5.0;TARGETED_DEVICE_FAMILY=1;};name=Debug;};
+ AA0000000000000000000035 = {isa=XCBuildConfiguration;buildSettings={CODE_SIGN_STYLE=Automatic;GENERATE_INFOPLIST_FILE=NO;INFOPLIST_FILE=ONE_MORE/Info.plist;IPHONEOS_DEPLOYMENT_TARGET=16.0;LD_RUNPATH_SEARCH_PATHS=("$(inherited)","@executable_path/Frameworks",);PRODUCT_BUNDLE_IDENTIFIER=com.itsnotalwin.onemore;PRODUCT_NAME="$(TARGET_NAME)";SUPPORTED_PLATFORMS="iphoneos iphonesimulator";SWIFT_VERSION=5.0;TARGETED_DEVICE_FAMILY=1;};name=Release;};
+ AA000000000000000000003C = {isa=XCConfigurationList;buildConfigurations=(AA0000000000000000000032,AA0000000000000000000033,);defaultConfigurationIsVisible=0;defaultConfigurationName=Release;};
+ AA000000000000000000003D = {isa=XCConfigurationList;buildConfigurations=(AA0000000000000000000034,AA0000000000000000000035,);defaultConfigurationIsVisible=0;defaultConfigurationName=Release;};
+
+ };
+ rootObject = AA000000000000000000001F;
+}

@@ -1,0 +1,35 @@
+name: Native iPhone wrapper build
+
+on:
+  push:
+    branches: [development]
+    paths:
+      - 'ios/**'
+      - 'tests/ios-wrapper.test.cjs'
+      - '.github/workflows/ios-wrapper.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulator-build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify native wrapper contract
+        run: node --test tests/ios-wrapper.test.cjs
+      - name: Build unsigned iPhone Simulator app
+        run: |
+          xcodebuild \
+            -project ios/ONE_MORE.xcodeproj \
+            -scheme ONE_MORE \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
