@@ -277,8 +277,10 @@ dialog.home-help[open]{
   --om-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media(max-width:720px){
-  .hud-tl{top:calc(14px + var(--om-safe-top));left:14px}
-  .hud-tr{top:calc(12px + var(--om-safe-top));right:14px}
+  /* Drop only the top HUD 12px below iOS's translucent status strip.
+     Horizontal placements, bottom controls and menu geometry are intact. */
+  .hud-tl{top:calc(26px + var(--om-safe-top));left:14px}
+  .hud-tr{top:calc(24px + var(--om-safe-top));right:14px}
   .hud-bl{bottom:calc(20px + var(--om-safe-bottom))}
   .hud-br{bottom:calc(16px + var(--om-safe-bottom))}
 }

@@ -10,6 +10,20 @@
 
   /* ---------------- sizing ---------------- */
   function resize() {
+    /* iOS standalone can expose the safe-area paper below its drawable
+       viewport (the flat strip on real iPhones). Extend only the game
+       canvas to the device's physical screen height. Fixed HUD, buttons
+       and menu elements keep their existing screen coordinates. */
+    const standalone=window.navigator.standalone===true||
+      window.matchMedia('(display-mode: standalone)').matches;
+    const iphone=/iPhone|iPod/.test(window.navigator.userAgent);
+    const portrait=window.innerHeight>window.innerWidth;
+    stage.style.bottom='0px';
+    stage.style.height=standalone&&iphone?'auto':'';
+    const missing=standalone&&iphone&&portrait
+      ?Math.min(96,Math.max(0,window.screen.height-stage.clientHeight))
+      :0;
+    if(missing>0)stage.style.bottom='-'+missing+'px';
     const w = stage.clientWidth;
     const h = stage.clientHeight;
     const dpr = Math.min(2, window.devicePixelRatio || 1);

@@ -250,7 +250,9 @@ async function inspect(browser,name,viewport){
     assert.ok(Math.abs(safeHud.topRight.after-safeHud.topRight.before-59)<1);
     assert.ok(Math.abs(safeHud.topLeft.x-safeHud.topLeft.oldX)<1);
     assert.ok(Math.abs(safeHud.topRight.x-safeHud.topRight.oldX)<1);
-    assert.ok(safeHud.hearts>=59,'hearts must stay below the Dynamic Island');
+    assert.ok(safeHud.hearts>=83,'hearts stay below the translucent status region');
+    assert.ok(safeHud.topLeft.before>=26,'top-left HUD has extra iPhone clearance');
+    assert.ok(safeHud.topRight.before>=24,'hearts start below the translucent system blur');
     assert.ok(Math.abs(safeHud.bottomLeft.after-safeHud.bottomLeft.before+34)<1);
     assert.ok(Math.abs(safeHud.bottomRight.after-safeHud.bottomRight.before+34)<1);
     await page.screenshot({path:path.join(out,'phone-23-safe-hud.png')});
@@ -747,6 +749,37 @@ async function inspectShort(browser,name,viewport){
   return {name,viewport,noInnerScrolling:true};
 }
 
+async function inspectIOSStandaloneBleed(browser){
+  /* iOS Home Screen exposes a short drawing viewport on some devices
+     while screen.height still reports the full 852px screen. Emulate
+     that exact 59px system gap to catch a clipped bottom sheet. */
+  const context=await browser.newContext({
+    viewport:{width:393,height:793},screen:{width:393,height:852},
+    isMobile:true,hasTouch:true,deviceScaleFactor:2,
+    userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+  });
+  await context.addInitScript(()=>{
+    Object.defineProperty(navigator,'standalone',{configurable:true,value:true});
+  });
+  const page=await context.newPage();
+  await page.goto(base,{waitUntil:'load'});
+  const data=await page.evaluate(()=>{
+    const stage=document.getElementById('stage').getBoundingClientRect();
+    const canvas=document.getElementById('game').getBoundingClientRect();
+    return {screenHeight:screen.height,innerHeight,
+      stageBottom:stage.bottom,canvasBottom:canvas.bottom,
+      backbufferHeight:G.S.H,stageWidth:stage.width};
+  });
+  assert.equal(data.screenHeight,852,'iPhone screen simulation configured');
+  assert.ok(data.innerHeight<850,'simulate the missing bottom paper strip');
+  assert.ok(data.stageBottom>=851&&data.canvasBottom>=851,
+    'actual ink canvas extends below the 793px layout viewport: '+JSON.stringify(data));
+  assert.ok(data.backbufferHeight>=851,
+    'ink graphics are rendered across the added bottom pixels');
+  assert.equal(data.stageWidth,393,'do not alter horizontal gameplay geometry');
+  await context.close();
+  return {fullScreenBackbuffer:true,mode:'standalone',gapCovered:59};
+}
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
@@ -754,6 +787,7 @@ async function inspectShort(browser,name,viewport){
     const phone=await inspect(browser,'phone',{width:393,height:852});
     const smallPortrait=await inspectShort(browser,'small-portrait',{width:360,height:640});
     const shortLandscape=await inspectShort(browser,'short-landscape',{width:844,height:390});
-    console.log('Visual smoke QA:',JSON.stringify({desktop,phone,smallPortrait,shortLandscape}));
+    const iosStandAlone=await inspectIOSStandaloneBleed(browser);
+    console.log('Visual smoke QA:',JSON.stringify({desktop,phone,smallPortrait,shortLandscape,iosStandAlone}));
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
