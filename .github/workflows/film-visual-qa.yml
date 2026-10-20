@@ -1,4 +1,4 @@
-name: Film visual QA
+name: Cinematic, gameplay, ink and Guardian QA
 
 on:
   push:
@@ -6,7 +6,19 @@ on:
     paths:
       - 'js/film.js'
       - 'js/intro.js'
+      - 'js/wave-director.js'
+      - 'js/guardians.js'
+      - 'js/ink-xp.js'
+      - 'css/ink-xp.css'
+      - 'tests/ink-xp.test.cjs'
+      - 'js/render.js'
+      - 'tests/guardians.test.cjs'
+      - 'js/game.js'
+      - 'js/ui.js'
+      - 'tests/wave-director.test.cjs'
       - 'css/intro.css'
+      - 'css/viewport.css'
+      - 'css/home.css'
       - 'index.html'
       - 'tests/film-browser.cjs'
       - '.github/workflows/film-visual-qa.yml'
@@ -31,12 +43,12 @@ jobs:
       - name: Serve the static game
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/one-more-server.log 2>&1 &
-      - name: Capture animated film and smoke test UI
+      - name: Verify ink absorption, visual growth, film, and multi-phase Guardians
         run: node tests/film-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: one-more-cinematic-actual-browser-stills
+          name: one-more-ink-absorption-browser-stills
           path: film-stills/
           if-no-files-found: ignore
           retention-days: 14

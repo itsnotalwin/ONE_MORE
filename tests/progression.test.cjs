@@ -21,7 +21,7 @@ function harness(deniedStorage = false) {
   });
   const SFX = new Proxy({}, { get() { return () => {}; } });
   const context = vm.createContext({ localStorage: storage, UI, SFX });
-  for (const p of ['js/config.js', 'js/campaign.js', 'js/game.js']) {
+  for (const p of ['js/config.js', 'js/campaign.js', 'js/wave-director.js', 'js/guardians.js', 'js/ink-xp.js', 'js/game.js']) {
     vm.runInContext(file(p), context, { filename: p });
   }
   const { G, CAMPAIGN } = vm.runInContext('({ G, CAMPAIGN })', context);
@@ -36,11 +36,10 @@ function clearLevel(G) {
     G.S.enemies = [];
     G.update(0.05);
     G.update(0.60);
+    G.update(0.60); /* ink-recall animation finishes before next wave */
     if (wave !== 10) {
-      assert.equal(G.mode, 'upgrade');
-      G.pickAt(0);
-      G.deploy();
       assert.equal(G.mode, 'playing');
+      assert.equal(G.S.stats.wave, wave + 1);
     }
   }
   assert.equal(G.mode, 'over');
@@ -106,10 +105,10 @@ test('all 30 levels, 300 waves, world mechanics, world bosses and Endless', () =
         G.S.enemies = [];
         G.update(0.05);
         G.update(0.60);
+        G.update(0.60);
         if (wave < 10) {
-          assert.equal(G.mode, 'upgrade');
-          G.pickAt(0);
-          G.deploy();
+          assert.equal(G.mode, 'playing','XP rewards no longer forced at wave clearance');
+          assert.equal(G.S.stats.wave,wave+1);
         }
       }
       assert.equal(G.mode, 'over');
@@ -138,18 +137,22 @@ test('original artwork and sound outside the removed weapon stay unchanged', () 
     }
     return h.toString(16).padStart(8, '0');
   };
-  const renderer = file('js/render.js');
-  const rb = renderer.indexOf('  /* Ink Knots — thin, breathing brush threads');
-  const re = renderer.indexOf('  /* spirit scribes — lesser brushes hunting alone */', rb);
-  const call = '    for (const knot of S.knots) drawKnot(ctx, knot, t);';
-  const rc = renderer.indexOf(call, re);
-  assert.ok(rb > 0 && re > rb && rc > re);
-  assert.deepEqual([
-    fnv(renderer.slice(0, rb)),
-    fnv(renderer.slice(re, rc)),
-    fnv(renderer.slice(rc + call.length)),
-  ], ['f174f6ee', 'f3a0b841', '754cf65c']);
-
+  /* Phase 5 deliberately changes stage-long terrain rendering and the
+     protagonist. The actual enemy and projectile painters are frozen. */
+  const renderer=file('js/render.js');
+  const segment=(from,to)=>{
+    const a=renderer.indexOf(from),b=renderer.indexOf(to,a);
+    assert.ok(a>=0&&b>a,'expected legacy art boundaries');
+    return renderer.slice(a,b);
+  };
+  assert.equal(fnv(segment('  function drawEnemy(c, e, t) {',
+    '  /* ---------------- player:')),'44e8cc52');
+  assert.equal(fnv(segment('  /* ---------------- projectiles, zones, fx ---------------- */',
+    '  /* Phase 3 additions reuse')),'06353f91');
+  assert.equal(fnv(segment('  function drawRing(c, r) {',
+    '  function draw(ctx, t) {')),'b8275045');
+  assert.ok(renderer.includes('function paintWeaponImprint('));
+  assert.ok(renderer.includes('stainCells.clear()'));
   const audio = file('js/audio.js');
   const ab = audio.indexOf('    /* ink knots tighten like a quiet plucked thread */');
   const afterTag = '    /* the sniper fires its needle */';

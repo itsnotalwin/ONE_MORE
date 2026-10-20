@@ -77,17 +77,16 @@ const INTRO = (() => {
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const LENGTH=SCENES.reduce((n,s)=>n+s.seconds,0);
   let index=0,elapsed=0,priorFrame=null,dissolve=1,visible=false,lastTime=0;
-  let raf=0,audio=null,soundOn=false,sceneW=1,sceneH=1;
+  let raf=0,audio=null,soundOn=false,sceneW=1,sceneH=1,exitTimer=0;
 
   function selectScene(n){
     const prev=index;
     if(visible&&n!==prev&&sceneW>1){
+      /* Carry the exact outgoing camera frame into the next shot.
+         Previously the film repainted a different end-frame, causing a jump. */
       const plate=document.createElement('canvas');
       plate.width=canvas.width;plate.height=canvas.height;
-      const painter=plate.getContext('2d');
-      painter.setTransform(canvas.width/sceneW,0,0,canvas.height/sceneH,0,0);
-      FILM.scene(painter,sceneW,sceneH,prev,SCENES[prev].seconds,
-        SCENES[prev].seconds,reduced);
+      plate.getContext('2d').drawImage(canvas,0,0);
       priorFrame=plate;
     }
     index=Math.max(0,Math.min(SCENES.length-1,n));elapsed=0;dissolve=0;
@@ -121,7 +120,7 @@ const INTRO = (() => {
     const dt=Math.max(0,Math.min(.08,(now-lastTime)/1000||0));
     lastTime=now;
     if(!document.hidden){
-      elapsed+=dt;dissolve=Math.min(1,dissolve+dt/1.3);
+      elapsed+=dt;dissolve=Math.min(1,dissolve+dt/1.08);
       if(elapsed>=SCENES[index].seconds){
         if(index===SCENES.length-1){finish();return;}
         selectScene(index+1);
@@ -140,9 +139,10 @@ const INTRO = (() => {
     FILM.scene(ctx,sceneW,sceneH,index,elapsed,SCENES[index].seconds,reduced);
     ctx.restore();
     if(priorFrame&&dissolve<1&&!reduced){
+      const p=FILM.ease(0,1,dissolve);
       ctx.save();
       ctx.setTransform(1,0,0,1,0,0);
-      ctx.globalAlpha=Math.pow(1-dissolve,1.4);
+      ctx.globalAlpha=1-p;
       ctx.drawImage(priorFrame,0,0,canvas.width,canvas.height);
       ctx.restore();
     }
@@ -201,7 +201,9 @@ const INTRO = (() => {
   }
   function play(){
     if(visible)return true;
+    clearTimeout(exitTimer);exitTimer=0;
     visible=true;priorFrame=null;
+    stage.classList.remove('is-exiting');
     G.mode='intro';UI.show('intro');
     selectScene(0);
     lastTime=performance.now();
@@ -215,20 +217,43 @@ const INTRO = (() => {
     visible=false;cancelAnimationFrame(raf);stage.setAttribute('aria-hidden','true');
     if(audio)audio.ctx.suspend().catch(()=>{});
     G.mode='title';UI.show('title');
+    if(reduced){priorFrame=null;return;}
+    /* Keep the outgoing ink image over the new menu until it dissolves.
+       The title exists and is interactive as soon as the film is skipped,
+       but the transition doesn't reveal a blank or flashing frame. */
+    stage.classList.remove('hidden');
+    stage.getBoundingClientRect(); /* establish the start of the transition */
+    stage.classList.add('is-exiting');
+    exitTimer=setTimeout(()=>{
+      if(visible)return;
+      stage.classList.add('hidden');
+      stage.classList.remove('is-exiting');
+      priorFrame=null;
+      exitTimer=0;
+    },850);
   }
   function next(){
     if(!visible)return;
     if(index===SCENES.length-1)finish();else selectScene(index+1);
   }
+  /* One chapter per visible page: preserve every word without scrolling. */
+  let archiveIndex = 0;
+  function showArchivePage(index) {
+    archiveIndex = Math.max(0, Math.min(ARCHIVE.length - 1, index));
+    const entry = ARCHIVE[archiveIndex], total = CAMPAIGN.totalCompleted();
+    const unlocked = total >= entry.unlock;
+    $('archiveChapters').innerHTML =
+      '<article class="archive-entry'+(unlocked?'':' sealed')+'"><span class="archive-index">'+
+      String(archiveIndex+1).padStart(2,'0')+'</span><div><h3>'+entry.title+'</h3><p>'+
+      (unlocked?entry.text:'THIS SCROLL IS STILL SEALED. COMPLETE '+entry.unlock+' LEVELS TO UNROLL IT.')+
+      '</p></div></article>';
+    $('archivePage').textContent = String(archiveIndex+1).padStart(2,'0')+' / '+
+      String(ARCHIVE.length).padStart(2,'0');
+    $('archivePrev').disabled = archiveIndex === 0;
+    $('archiveNext').disabled = archiveIndex === ARCHIVE.length - 1;
+  }
   function openArchive(){
-    const total=CAMPAIGN.totalCompleted();
-    $('archiveChapters').innerHTML=ARCHIVE.map((entry,i)=>{
-      const unlocked=total>=entry.unlock;
-      return '<article class="archive-entry'+(unlocked?'':' sealed')+'"><span class="archive-index">'+
-        String(i+1).padStart(2,'0')+'</span><div><h3>'+entry.title+'</h3><p>'+
-        (unlocked?entry.text:'THIS SCROLL IS STILL SEALED. COMPLETE '+entry.unlock+' LEVELS TO UNROLL IT.')+
-        '</p></div></article>';
-    }).join('');
+    showArchivePage(0);
     G.mode='chronicle';UI.show('chronicle');
   }
   function closeArchive(){G.mode='title';UI.show('title');}
@@ -238,7 +263,11 @@ const INTRO = (() => {
       if(k==='Enter'||k==='Space'||k==='ArrowRight'){next();return true;}
       return false;
     }
-    if(G.mode==='chronicle'&&(k==='Escape'||k==='Backspace')){closeArchive();return true;}
+    if(G.mode==='chronicle'){
+      if(k==='Escape'||k==='Backspace'){closeArchive();return true;}
+      if(k==='ArrowRight'||k==='PageDown'){showArchivePage(archiveIndex+1);return true;}
+      if(k==='ArrowLeft'||k==='PageUp'){showArchivePage(archiveIndex-1);return true;}
+    }
     return false;
   }
   $('introSkip').addEventListener('click',finish);
@@ -246,6 +275,8 @@ const INTRO = (() => {
   $('replayIntroBtn').addEventListener('click',play);
   $('chronicleBtn').addEventListener('click',openArchive);
   $('archiveBack').addEventListener('click',closeArchive);
+  $('archivePrev').addEventListener('click',()=>showArchivePage(archiveIndex-1));
+  $('archiveNext').addEventListener('click',()=>showArchivePage(archiveIndex+1));
   window.addEventListener('pagehide',()=>{if(audio)audio.ctx.suspend().catch(()=>{});});
   return {play,finish,next,openArchive,handleKey,SCENES,ARCHIVE};
 })();

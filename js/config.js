@@ -14,6 +14,7 @@ const CFG = {
     fireCd: 0.42,      // s between volleys
     bulletSpeed: 560,  // px/s
     bulletLife: 0.95,  // s aloft (range = speed * life)
+    muzzle: 20,        // ink gun barrel tip, measured from ink-soul center
     spread: 0.13,      // rad between extra droplets
   },
 
@@ -31,6 +32,15 @@ const CFG = {
     surgeEvery: 5,                               // every Nth wave of an area is a SURGE
     surgeMult: 1.5,
     groupInterval: w => Math.max(0.4, 1.45 - w * 0.06),
+    /* Opening levels should last longer, not hit harder: space existing
+       waves into small calm groups, keeping budget, HP and damage intact.
+       Later First Wash levels and every subsequent paper use normal pace. */
+    openingPace: (world, level) =>
+      world !== 0 ? 1 : level === 1 ? 1.65 :
+      level === 2 ? 1.40 : level === 3 ? 1.20 : 1,
+    openingGroup: (world, level) =>
+      world !== 0 ? 1 : level === 1 ? .67 :
+      level === 2 ? .82 : 1,
     groupSize: (w, areaIdx) => 3 + Math.floor(w / 3) + areaIdx,
     concurrentCap: (w, areaIdx) => Math.min(64, 14 + w * 2 + areaIdx * 8),
     hpScale: (base, w, intro) => Math.max(1, Math.round(base * (1 + 0.085 * (w - intro)))),
@@ -46,7 +56,10 @@ const CFG = {
   adrenaline: { mult: 1.22, dur: lv => 1.4 + 0.45 * (lv - 1) },
 
   /* brush skills */
-  orbit:   { radius: lv => 40 + lv * 5, speed: 2.7, dmgCd: 0.45 },
+  /* The Eraser is a wide, damage-ticking absence, not orbiting bullets.
+     Wide radius is earned; one damage every .8s stays below volley DPS. */
+  eraser: { radius: lv => 65 + 35 * (lv - 1), dmgCd: 0.82, erasePeriod: 0.25, skim: 0.13 },
+  orbit:   { radius: lv => 65 + 35 * (lv - 1), dmgCd: 0.82 }, // legacy save-compatible alias
   nova:    { period: lv => 6.6 - 0.9 * (lv - 1), radius: lv => 165 + lv * 38, knock: 330, stun: 0.4 },
   ward:    { cd: 22 },
   slow:    { dur: 1.6, mult: 0.55 },
@@ -54,7 +67,17 @@ const CFG = {
 
   /* new weapons */
   fan:    { period: lv => 3.4 - 0.35 * (lv - 1), count: lv => 4 + lv, speed: 430, life: 0.62, spread: 1.15, dmg: 1 },
-  trail:  { gap: lv => 0.5 - 0.08 * (lv - 1), radius: lv => 26 + lv * 7, life: 2.7, tick: 0.42, dmg: 1 },
+  trail: { gap: lv => [12,10,8][Math.min(3,Math.max(1,lv))-1],
+    radius: lv => [5.5,7,8.5][Math.min(3,Math.max(1,lv))-1],
+    life: lv => [2.6,3,3.4][Math.min(3,Math.max(1,lv))-1],
+    maxPools: lv => [72,90,112][Math.min(3,Math.max(1,lv))-1],
+    tick: .55, dmg: 1, slow: .8 },
+  /* Constant sight field. Rank II wards off one normal ambush on entry. */
+  lantern: { radius: lv => lv===1?300:420, afterglow: .24, rearm: 8, interrupt: .24 },
+  nightStealth: { fade: .55, warn: .60 },
+  crescent: { period: lv => [4.7,4.1,3.5][lv-1], speed: 390, reach: lv => 145+25*lv, dmg: lv => lv>=3?2:1 },
+  mirror: { period: lv => [8,6.5,5][lv-1], range: lv => 92+18*lv, speed: 480, dmg: lv => lv===3?2:1 },
+  shroud: { period: lv => lv===1?12:9.5, dash: lv => lv===1?34:48, decoy: lv => lv===1?.55:.82 },
   spirit: { period: lv => 3.1 - 0.3 * (lv - 1), count: lv => 1 + lv, speed: 300, turn: 7.5, life: 3.2, dmg: 1 },
   /* Ink Knots trades area damage for brief control of a few ink beasts. */
   knot: { period: lv => 7.2 - 0.35 * (lv - 1), range: 440, span: 155,
@@ -115,8 +138,8 @@ const AREAS = [
   },
   {
     id: 'II', name: 'NIGHT SCROLL', kanji: '夜', theme: 'dark',
-    desc: 'The ink deepens. Things move inside it.',
-    mult: { hp: 1.55, sp: 1.05, budget: 1.35 },
+    desc: 'Indigo-dyed night washi. Pale spirits can no longer hide in its grain.',
+    mult: { hp: 1.65, sp: 1.09, budget: 1.48 },
     roster: ['wraith', 'shade', 'moth', 'kage', 'stilt', 'dart', 'pulseling'],
     elite: 'shade',
     mechanic: 'PHANTOM AMBUSH',
@@ -131,6 +154,38 @@ const AREAS = [
   },
 ];
 
+/* Selectable beginning instruments: earned permanently by clearing stages.
+   Combat is still automatic. Rank-ups continue to enhance the chosen
+   instrument, and temporary upgrades reset after each ten-wave level.
+   Unlocks are derived from the existing v1 campaign save, not a new
+   mutable currency or a second progression database. */
+const STARTERS = Object.freeze([
+  {id:'gun', name:'Ink Gun', kanji:'銃', kind:'RANGED',
+   unlock:[0,0], delay:1, tagline:'A sure hand, a clean first mark.',
+   special:'Every fourth volley snaps out an extra quick droplet.',
+   detail:'Fast, accurate ink shots and a fourth-volley double tap.'},
+  {id:'brush', name:'Great Brush', kanji:'筆', kind:'MELEE',
+   unlock:[0,2], delay:1.15, tagline:'Sweep the page, not the enemy.',
+   special:'Every third swing becomes a broad finishing sweep.',
+   detail:'A sweeping close-range arc that knocks ink beasts away.'},
+  {id:'quill', name:'Needle Quill', kanji:'針', kind:'RANGED',
+   unlock:[0,4], delay:1.48, tagline:'A mark that refuses to stop.',
+   special:'Every fourth piercing needle travels further and hits more.',
+   detail:'Slow precision needles that pass through multiple enemies.'},
+  {id:'mallet', name:'Inkstone Mallet', kanji:'硯', kind:'MELEE',
+   unlock:[0,7], delay:1.7, tagline:'The whole paper remembers.',
+   special:'Every third strike releases a wider knockback pulse.',
+   detail:'Heavy, local crushing blows with periodic defensive shock.'},
+  {id:'thread', name:'Silk Spool', kanji:'糸', kind:'RANGED',
+   unlock:[1,2], delay:1.52, tagline:'Tie one fate to another.',
+   special:'Every third cast chains into an additional nearby target.',
+   detail:'A living thread arcs between ink beasts, slowing its victims.'},
+  {id:'cutter', name:'Paper Cutter', kanji:'切', kind:'MELEE',
+   unlock:[1,5], delay:.93, tagline:'Fold. Cut. Unfold.',
+   special:'Every fourth slice releases a returning paper edge.',
+   detail:'Quick close-range slashes and a periodic paper blade throw.'},
+]);
+
 const UPGRADES = [
   { id: 'rapid',  name: 'Quick Hand',   desc: '−15% time between volleys. The brush barely lifts.',         max: 5, apply: s => { s.fireCdMult *= 0.85; } },
   { id: 'heavy',  name: 'Bitter Ink',   desc: '+1 damage per droplet. Dense, dark, final.',                 max: 4, apply: s => { s.dmg += 1; } },
@@ -142,14 +197,43 @@ const UPGRADES = [
   { id: 'adren',  name: 'Red Seal',     desc: 'Every kill presses a seal: a short 1.2× stride surge.',      max: 3, apply: s => { s.adren += 1; } },
   { id: 'shock',  name: 'Ink Burst',    desc: 'Taking a hit splashes everything nearby away. Once per hit.', max: 1, apply: s => { s.shock = true; } },
   { id: 'echo',   name: 'Echo Stroke',  desc: 'A mirrored volley answers behind your back. +1 droplet.',    max: 2, apply: s => { s.echo += 1; } },
-  { id: 'orbit',  name: 'Ink Orbit',    desc: 'A droplet circles the brush, grinding what it touches.',     max: 3, apply: s => { s.orb += 1; } },
+  { id: 'orbit',  name: 'The Eraser',   desc: 'A distant clearing field wipes ink from the paper and gently damages beasts. Radius grows each rank.', max: 3, weapon: true, apply: s => { s.orb += 1; } },
   { id: 'nova',   name: 'Black Tide',   desc: 'Every few breaths the ink surges outward, shoving all back.', max: 3, apply: s => { s.nova += 1; } },
   { id: 'slow',   name: 'Wet Paper',    desc: 'Struck beasts wade through soaked paper — slowed briefly.',  max: 2, apply: s => { s.slow += 1; } },
   { id: 'crit',   name: 'Crimson Tip',  desc: 'One stroke in six bites twice as deep. Deeper per rank.',    max: 2, apply: s => { s.crit += 1; } },
   { id: 'ward',   name: 'Paper Ward',   desc: 'A dry talisman swallows one hit whole, then reforms.',       max: 1, apply: s => { s.ward = true; } },
   /* ---- new weapons ---- */
   { id: 'fan',    name: 'Folded Fan',   desc: 'Every few breaths the fan snaps open — a spray of paper blades.', max: 4, weapon: true, apply: s => { s.fan += 1; } },
-  { id: 'trail',  name: 'Ink Trail',    desc: 'Wherever you walk, the ink you leave still bites. Smears linger.', max: 3, weapon: true, apply: s => { s.trailW += 1; } },
+  { id: 'trail',  name: 'Suiteki Leak', desc: 'An overturned ink vessel leaks a continuous snail-like wet stroke behind you, slowing nearby ink beasts.', max: 3, weapon: true, apply: s => { s.trailW += 1; } },
   { id: 'spirit', name: 'Spirit Scribes',desc: 'Lesser brushes wake and hunt on their own, seeking the nearest blot.', max: 3, weapon: true, apply: s => { s.spirit += 1; } },
   { id: 'knot',   name: 'Ink Knots',     desc: 'Bind a few nearby beasts with living ink. Slow them, then deal 1 delayed damage.', max: 3, weapon: true, apply: s => { s.knot += 1; } },
+  /* Unlocked only when Night Scroll or later is active. Every new art
+     obeys ordinary mastery -> black signature -> optional Vermilion. */
+  { id:'lantern', name:'Ink Lantern', desc:'A continuous pale-ink field reveals night spirits. Rank II widens the field and interrupts a normal ambush on entry.', max:2, world:1, weapon:true, apply:s=>{s.lantern+=1;} },
+  { id:'crescent', name:'Crescent Return', desc:'A crescent-shaped ink blade flies out and returns, cutting twice.', max:3, world:1, weapon:true, apply:s=>{s.crescent+=1;} },
+  { id:'mirror', name:'Mirror Fold', desc:'A folded paper crease catches an ordinary enemy shot and returns a cutting reflection.', max:3, world:1, weapon:true, apply:s=>{s.mirror+=1;} },
+  { id:'shroud', name:'Shroud Step', desc:'After moving steadily, slip forward and leave a false ink-soul behind to mislead beasts.', max:2, world:1, weapon:true, apply:s=>{s.shroud+=1;} },
 ];
+
+/* Terrain painting is a reward for mastering a technique, not something
+   every newly acquired weapon does. Red ink is a separate post-mastery
+   choice, offered in the normal three-card rank-up interface. The starter
+   ink shot is deliberately absent and never marks the paper. */
+const TERRAIN_SKILL_KEYS = Object.freeze({
+  echo:'echo', fan:'fan', trail:'trail', spirit:'spirit', knot:'knot',
+  eraser:'orbit', nova:'nova', ward:'ward', shock:'shock',
+  lantern:'lantern', crescent:'crescent', mirror:'mirror', shroud:'shroud',
+  over:'over', plate:'plate', adren:'adren', crit:'crit', slow:'slow',
+});
+const RED_SEALS = Object.entries(TERRAIN_SKILL_KEYS).map(([mark, skill]) => {
+  const original = UPGRADES.find(u => u.id === skill);
+  return {
+    id:'seal_'+skill, name:original.name+' · Vermilion',
+    desc:'A final red seal. Your mastered '+original.name+
+      ' now stains the paper with deep lacquer-crimson ink.',
+    max:1, seal:true, weapon:!!original.weapon,
+    redSealOf:skill, terrainKind:mark, requires:skill,
+    apply:() => {}, /* chosen flag is stored in stats.levels by deploy() */
+  };
+});
+

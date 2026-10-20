@@ -1,0 +1,236 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+function boot(){
+  const events=[],store=new Map();
+  const localStorage={getItem(k){return store.get(k)||null;},
+    setItem(k,v){store.set(k,String(v));}};
+  const UI=new Proxy({},{get(_o,k){return (...args)=>events.push({k,args});}});
+  const SFX=new Proxy({},{get(){return ()=>{};}});
+  const R={resetStains(){},eraseTerrain(){return 0;}};
+  const context=vm.createContext({localStorage,UI,SFX,R});
+  for(const f of ['js/config.js','js/campaign.js','js/wave-director.js',
+    'js/guardians.js','js/ink-xp.js','js/game.js'])
+    vm.runInContext(read(f),context,{filename:f});
+  return {...vm.runInContext('({G,GUARDIANS,CFG})',context),events};
+}
+function enem(x=110,y=0){
+  return {type:'pulse',x,y,r:12,hp:18,maxHp:18,t:0,seed:.42,
+    speed:0,state:'cruise',stateT:0,hitFlash:0,slowT:0,
+    orbCd:0,kbx:0,kby:0,stun:0,ang:0,elite:false,dirT:0,spawnT:0};
+}
+function safeStage(G){
+  G.startLevel(0,1);
+  G.S.queue=['pulse'];G.S.spawnTimer=99999;
+  G.S.markers=[];G.S.player.fireT=99999;
+}
+test('the ink gun is a distinct drawn instrument with a world-accurate muzzle',()=>{
+  const render=read('js/render.js'),game=read('js/game.js');
+  assert.ok(render.includes('function drawInkGun(c,p,st)'), 'a dedicated hand-held gun is drawn');
+  assert.ok(render.includes('drawInkGun(c,p,st);'), 'the ink gun appears above the living soul');
+  assert.ok(render.includes('c.rotate(p.aim);'), 'barrel tracks the real projectile aim');
+  assert.ok(render.includes('CFG.player.muzzle'), 'muzzle is shared with gameplay geometry');
+  assert.ok(render.includes("if(st?.echo>0)"), 'Echo earns a visible rear nozzle');
+  assert.ok(game.includes('const muzzleX=p.x+Math.cos(p.aim)*CFG.player.muzzle'));
+  assert.ok(!render.includes('p.x * 31 + p.y * 17'),'no world-coordinate sprite jitter');
+});
+test('base and upgraded multiple shots all leave the gun tip, Echo from its rear nozzle',()=>{
+  const {G,CFG}=boot();safeStage(G);
+  const p=G.S.player,st=G.S.stats;
+  st.shots=3;st.echo=2;st.dmg=3;st.pierce=1;
+  G.S.enemies.push(enem(180,80));
+  p.fireT=0;
+  G.update(.025);
+  const shots=G.S.bullets.filter(b=>b.kind==='drop');
+  const echo=G.S.bullets.filter(b=>b.kind==='echo');
+  assert.equal(shots.length,3);
+  assert.equal(echo.length,2);
+  assert.equal(CFG.player.muzzle,20);
+  const angle=Math.atan2(80,180);
+  for(const b of shots){
+    assert.ok(Math.abs(b.prevX-Math.cos(angle)*20)<.001);
+    assert.ok(Math.abs(b.prevY-Math.sin(angle)*20)<.001);
+    assert.equal(b.dmg,3);
+    assert.equal(b.hits,2);
+  }
+  for(const b of echo){
+    assert.ok(Math.abs(b.prevX+Math.cos(angle)*18)<.001);
+    assert.ok(Math.abs(b.prevY+Math.sin(angle)*18)<.001);
+  }
+  assert.ok(shots[0].vx!==shots[2].vx||shots[0].vy!==shots[2].vy,
+    'Twin Stroke retains its spread even though it shares the muzzle');
+  assert.equal(p.r,10,'weapon does not change the hitbox');
+  assert.ok(!G.S.stainQueue.some(mark=>mark.weapon==='shot'),
+    'gun bullets do not start painting the paper');
+});
+test('ink-soul cycles between true flowing running, anticipation and idle without changing hitbox',()=>{
+  const {G}=boot();safeStage(G);
+  const p=G.S.player,r=p.r;
+  assert.equal(p.visualState,'idle');
+  G.S.inputVec.x=1;
+  G.update(.02);
+  assert.equal(p.visualState,'anticipate');
+  for(let i=0;i<8;i++)G.update(.03);
+  assert.equal(p.visualState,'run');
+  assert.ok(p.flowPhase>3,'a repeatable legless two-fold run cycle is advancing');
+  assert.ok(p.visualSpeed>.7);
+  G.S.inputVec.x=0;
+  G.update(.03);
+  assert.equal(p.visualState,'brake');
+  for(let i=0;i<14;i++)G.update(.03);
+  assert.equal(p.visualState,'idle');
+  assert.equal(p.r,r,'animation never alters the physics circle');
+  assert.ok(p.visualSpeed<.06);
+});
+test('hit and meaningful XP absorption trigger bounded independent ink-soul gestures',()=>{
+  const {G}=boot();safeStage(G);
+  const p=G.S.player;
+  G.S.enemies.push(enem(0,0));
+  G.update(.02);
+  assert.ok(p.hitPulse>0,'damage compresses the spirit');
+  G.S.enemies=[];G.S.invulnT=100;
+  G.S.inkDrops.push({x:0,y:0,vx:0,vy:0,value:90,
+    age:0,life:7,seed:2,r:4});
+  const renderer=read('js/render.js');
+  assert.ok(renderer.includes('p.absorbPulse'));
+  assert.ok(renderer.includes('p.rankPulse'));
+  assert.ok(renderer.includes('Math.sin(phase)*sp'),'rendered lower folds consume running phase');
+});
+test('First Wash has a flat ivory tile path and excludes ambient decor',()=>{
+  const render=read('js/render.js'),start=render.indexOf('function buildTile(');
+  const stop=render.indexOf('function ensureTiles(',start);
+  const tile=render.slice(start,stop);
+  assert.ok(tile.includes("if(key==='pale')"));
+  assert.ok(tile.includes('for(let i=0;i<20;i++)'));
+  assert.ok(tile.includes('for(let i=0;i<9;i++)'));
+  assert.ok(tile.indexOf("if(key==='pale')")<tile.indexOf('/* laid lines'));
+  assert.ok(tile.includes('return c;'));
+  assert.ok(render.includes("if(themeKey!=='pale')drawDecor("));
+  assert.ok(render.includes("themeKey==='pale' ? .025 : .17"));
+});
+test('divine Guardian uses the same tapered Bezier for collision and illustration',()=>{
+  const {GUARDIANS:D}=boot(),viewport={width:393,height:852};
+  const p={x:0,y:0,r:10};
+  const one=D.attack(0,1,true,{x:220,y:0},p,viewport,0);
+  assert.equal(one.marks[0].kind,'heavenlyStroke');
+  assert.equal(one.marks[0].points.length,35);
+  assert.ok(one.marks[0].points[0].width<one.marks[0].points[17].width);
+  assert.ok(D.hits(one.marks[0],p));
+  assert.ok(!D.hits(one.marks[0],{x:180,y:155,r:10}));
+  const two=D.attack(0,2,true,{x:220,y:0},p,viewport,2);
+  assert.equal(two.marks.length,2);
+  assert.ok(two.marks[1].delay>0);
+  const three=D.attack(0,3,true,{x:220,y:0},p,viewport,2);
+  assert.equal(three.marks.length,3);
+  assert.ok(three.marks.some(m=>m.style==='hook'));
+  assert.equal(D.attack(1,1,true,{x:0,y:0},p,viewport).marks[0].kind,'line');
+  assert.equal(D.attack(2,1,true,{x:0,y:0},p,viewport).marks[0].kind,'seal');
+  const render=read('js/render.js');
+  assert.ok(render.includes("mark.kind==='heavenlyStroke'"));
+});
+test('Suiteki makes one connected snail trail, not stationary circular puddles',()=>{
+  const {G,CFG}=boot();safeStage(G);
+  G.S.stats.trailW=1;G.S.stats.levels.trail=1;
+  G.S.enemies.push(enem(250,80));
+  G.S.inputVec.x=1;
+  for(let i=0;i<9;i++)G.update(.05);
+  assert.ok(G.S.puddles.length>=5,'wet trail accumulates behind sustained movement');
+  assert.equal(G.S.puddles[0].r,5.5,'thin at first rank');
+  for(let i=0;i<G.S.puddles.length;i++){
+    const pd=G.S.puddles[i];
+    assert.equal(pd.isSuiteki,true);
+    assert.ok(pd.x>pd.x0,'segments follow movement rather than spawn a blob');
+    if(i>0)assert.ok(Math.abs(pd.x0-G.S.puddles[i-1].x)<.001,
+      'neighboring brush segments join seamlessly');
+  }
+  G.S.inputVec.x=0;
+  for(const pd of G.S.puddles)pd.life=.01;
+  G.update(.05);
+  assert.equal(G.S.puddles.length,0);
+  assert.ok(!G.S.stainQueue.some(q=>q.weapon==='trail'),
+    'nonmastered wet ink dries without permanent terrain marks');
+  G.S.stats.trailW=3;G.S.stats.levels.trail=3;
+  G.S.inputVec.x=1;
+  for(let i=0;i<7;i++)G.update(.05);
+  assert.ok(G.S.puddles.length>2);
+  assert.equal(G.S.puddles[0].r,8.5);
+  G.S.inputVec.x=0;
+  for(const pd of G.S.puddles)pd.life=.01;
+  G.update(.05);
+  assert.ok(G.S.stainQueue.some(q=>q.weapon==='trail'&&!q.red),
+    'mastered snail trail leaves black connected marks');
+  G.S.stats.levels.seal_trail=1;
+  G.S.inputVec.x=1;
+  for(let i=0;i<6;i++)G.update(.05);
+  G.S.inputVec.x=0;
+  for(const pd of G.S.puddles)pd.life=.01;
+  G.update(.05);
+  assert.ok(G.S.stainQueue.some(q=>q.weapon==='trail'&&q.red),
+    'a selected post-max seal changes only the dried trail pigment');
+  assert.equal(CFG.trail.gap(1),12);
+  assert.equal(CFG.trail.maxPools(3),112);
+  assert.equal(CFG.trail.tick,.55);
+});
+test('overlapping Suiteki spills share one global damage timer',()=>{
+  const {G}=boot();safeStage(G);
+  const e=enem(130,0);
+  G.S.enemies.push(e);
+  for(let i=0;i<2;i++)G.S.puddles.push({
+    x0:122,y0:0,x:136,y:0,r:8.5,life:1,max:3,
+    sequence:i,seed:i,isSuiteki:true});
+  G.update(.05);
+  assert.equal(e.hp,17);
+  G.update(.05);
+  assert.equal(e.hp,17,'overlap does not stack damage every frame');
+  assert.ok((e.suitekiT||0)>0);
+  assert.ok((e.suitekiNextT||0)>.5);
+});
+
+test('actual player silhouette visibly animates at run speed, not just its clock',()=>{
+  const source=read('js/render.js');
+  const start=source.indexOf('  function inkSoulPath(');
+  const stop=source.indexOf('  function drawEraserField(',start);
+  assert.ok(start>=0&&stop>start);
+  const player={
+    visualSpeed:1,visualMoveX:0,visualMoveY:0,
+    visualState:'run',flowPhase:Math.PI/2,
+  };
+  const paint=new Function('G',source.slice(start,stop)+';return inkSoulPath;')({S:{player}});
+  const spy=()=>({
+    paths:[],beginPath(){},moveTo(...a){this.paths.push(['M',...a]);},
+    bezierCurveTo(...a){this.paths.push(['B',...a]);},
+    quadraticCurveTo(...a){this.paths.push(['Q',...a]);},
+    closePath(){},
+  });
+  const c1=spy(),c2=spy();
+  paint(c1,10,1,0x51a7,false,1);
+  player.flowPhase=3*Math.PI/2;
+  paint(c2,10,1,0x51a7,false,1);
+  /* The first two quadratic curves now form the folded hood; only
+     the final three belong to the animated, connected lower hem. */
+  const tips=commands=>commands.paths.filter(p=>p[0]==='Q').slice(-3);
+  assert.equal(tips(c1).length,3);
+  const delta=(a,b)=>Math.abs(a-b);
+  assert.ok(delta(tips(c1)[0][4],tips(c2)[0][4])>=4.0,
+    'right connected fold travels more than four actual canvas pixels');
+  assert.ok(delta(tips(c1)[1][4],tips(c2)[1][4])>=4.0,
+    'left connected fold visibly alternates out of phase with right');
+  assert.ok(delta(tips(c1)[0][4],tips(c2)[0][4])<6,
+    'the hem moves organically instead of snapping or growing wildly');
+  const head1=c1.paths.slice(0,2),head2=c2.paths.slice(0,2);
+  assert.equal(JSON.stringify(head1),JSON.stringify(head2),
+    'the head stays stable while the lower silhouette runs');
+  player.visualSpeed=0;player.visualState='idle';player.flowPhase=0;
+  const idle1=spy(),idle2=spy();
+  paint(idle1,10,0,0x51a7,false,0);
+  paint(idle2,10,1.1,0x51a7,false,0);
+  assert.notEqual(JSON.stringify(idle1.paths),JSON.stringify(idle2.paths),
+    'idle has a gentle breathing pose, not a frozen still');
+  player.visualSpeed=1;player.visualState='run';
+  const quiet1=spy(),quiet2=spy();
+  player.flowPhase=Math.PI/2;paint(quiet1,10,1,0x51a7,true,1);
+  player.flowPhase=3*Math.PI/2;paint(quiet2,10,1,0x51a7,true,1);
+  assert.equal(JSON.stringify(quiet1.paths),JSON.stringify(quiet2.paths),
+    'reduced-motion preference suppresses repeated gait oscillations');
+});

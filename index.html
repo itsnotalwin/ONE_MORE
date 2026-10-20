@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<!-- Full-bleed iPhone Home Screen app: let the existing canvas draw
+     behind the Dynamic Island without changing any GUI positions. -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ONE MORE" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="./manifest.webmanifest" />
 <title>ONE MORE — An Ink-Born Survival</title>
 <meta name="description" content="An endless sheet of washi. Three worlds, ten levels per world, ten waves per level. Every level is a new run. A monochrome survival painted in living ink." />
 <meta name="theme-color" content="#ede7d9" />
@@ -15,6 +22,9 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Zen+Antique&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./css/style.css" />
 <link rel="stylesheet" href="./css/intro.css" />
+<link rel="stylesheet" href="./css/home.css" />
+<link rel="stylesheet" href="./css/ink-xp.css" />
+<link rel="stylesheet" href="./css/viewport.css" />
 </head>
 <body>
 <!-- hand-wobble filter: gives every ink border a brushed edge -->
@@ -32,7 +42,14 @@
 </svg>
 
 <div id="stage">
+  <div id="firstRunHint" class="first-run-hint hidden" role="status" aria-live="polite" aria-atomic="true">
+    <span class="first-run-seal" aria-hidden="true">一</span>
+    <span><strong>YOUR FIRST STROKE</strong><small>DRAG TO MOVE · ABSORB INK · GROW STRONGER</small></span>
+  </div>
   <canvas id="game"></canvas>
+  <!-- Standalone GLM opening, entirely separate from WATCH FILM/Chronicle. -->
+  <button id="openingSkip" class="opening-skip hidden" type="button"
+    aria-label="Skip the opening and go to the main menu">SKIP OPENING ↗</button>
 
   <!-- ============ IN-RUN HUD ============ -->
   <div id="hud" class="hidden">
@@ -44,7 +61,13 @@
           <span class="hud-area-name" id="hudAreaName">FIRST WASH</span>
           <span class="hud-area-count" id="hudWaveTotal">一 / 十</span>
         </div>
-        <div class="wave-progress"><div class="wave-fill" id="waveFill"></div></div>
+        <div class="hud-progress-row">
+          <div class="wave-progress" aria-label="Wave progress"><div class="wave-fill" id="waveFill"></div></div>
+          <div id="inkMeter" class="ink-meter" role="progressbar" aria-label="Ink experience toward next brush rank" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+            <span id="inkRank" class="ink-meter-rank">BRUSH 01</span>
+            <div class="ink-meter-track"><div class="ink-meter-fill" id="inkFill"></div></div>
+          </div>
+        </div>
       </div>
       <span class="hud-mode" id="hudMode">THE JOURNEY</span>
     </div>
@@ -83,7 +106,7 @@
       <span class="intro-count" id="introCount" aria-label="Film playback time">00:00 / 01:01</span>
       <div class="intro-film-actions">
         <button id="introSound" class="intro-minor" type="button" aria-pressed="false">SOUND OFF</button>
-        <button id="introSkip" class="intro-minor intro-skip" type="button" aria-label="Skip short film and enter game">SKIP FILM ↗</button>
+        <button id="introSkip" class="intro-minor intro-skip" type="button" aria-label="Skip short film and go to the main menu">SKIP FILM ↗</button>
       </div>
     </div>
     <div id="introContent" class="intro-content" aria-live="polite">
@@ -108,85 +131,130 @@
       </header>
       <h2>THE CHRONICLE.</h2>
       <p class="archive-sub">A record of what the paper remembers. New chapters unseal as the journey advances.</p>
-      <div id="archiveChapters" class="archive-chapters"></div>
+      <div id="archiveChapters" class="archive-chapters" aria-live="polite"></div>
+      <nav class="archive-pager" aria-label="Chronicle pages">
+        <button type="button" id="archivePrev">← PREVIOUS</button>
+        <span id="archivePage" aria-live="off">01 / 05</span>
+        <button type="button" id="archiveNext">NEXT →</button>
+      </nav>
       <footer class="archive-foot">墨 / THE ENDLESS PAGE HAS NO LAST WORD</footer>
     </div>
   </section>
 
-  <!-- ============ TITLE SCREEN ============ -->
-  <section id="screenTitle" class="screen screen-title">
-    <!-- the great brush circle, drawn once per visit -->
+  <!-- ============ TITLE / MOBILE-FIRST INK HOME ============ -->
+  <section id="screenTitle" class="screen screen-title" aria-label="ONE MORE main menu">
     <svg class="enso" viewBox="0 0 640 640" aria-hidden="true">
       <path class="enso-main" pathLength="100" d="M560.3 277.6 A 244 244 0 1 0 449.3 526.9" />
       <path class="enso-echo" pathLength="100" d="M539.2 257.2 A 228 228 0 1 0 419.9 524.9" />
       <circle class="enso-seal" cx="546" cy="304" r="7" />
     </svg>
-
-    <header class="masthead">
-      <span class="mast-vert" aria-hidden="true">墨一色</span>
-      <span class="mast-left">THE INK REMEMBERS<br/>EVERY STROKE</span>
-      <span class="mast-mid">SUMI-E SURVIVAL — INK EDITION No.1</span>
-      <span class="mast-right">SINGLE BRUSH<br/>NO MERCY</span>
+    <header class="home-top">
+      <div class="home-brand"><span class="home-brand-seal" aria-hidden="true">一</span><span>ONE MORE <small>AN INK-BORN SURVIVAL</small></span></div>
+      <span class="home-edition">墨 · VOL. 01</span>
     </header>
-    <div class="seal-vert" aria-hidden="true">一</div>
 
-    <div class="title-main">
-      <div class="title-chip">A MONOCHROME SURVIVAL</div>
-      <h1 class="title-word">ONE&nbsp;MORE</h1>
-      <svg class="swash" viewBox="0 0 320 26" aria-hidden="true">
-        <path d="M4 15 C 60 6, 150 4, 316 11 C 230 15, 120 19, 40 18 C 24 17.6, 12 16.6, 4 15 Z" fill="currentColor"/>
-        <circle cx="312" cy="16.5" r="2.4" fill="currentColor"/>
-        <circle cx="296" cy="19" r="1.3" fill="currentColor"/>
-      </svg>
-      <p class="title-sub">No walls. No arena. One endless sheet of washi under your brush.<br/>Three scrolls. Ten levels per scroll. Ten waves per level. Each level begins a new run.</p>
-      <div class="mode-row">
-        <button id="playBtn" class="play-btn">
-          <span class="play-seal" aria-hidden="true">一</span>
-          <span class="play-label">THE JOURNEY — <span id="runNo">RUN 001</span></span>
-        </button>
-        <button id="endlessBtn" class="endless-btn" title="Endless waves across turning sheets">
-          <span class="endless-kanji" aria-hidden="true">無</span>
-          <span class="play-label">THE ENDLESS SCROLL</span>
-        </button>
+    <main class="home-content">
+      <div class="home-hero">
+        <span class="home-eyebrow">THE INK REMEMBERS EVERY STROKE</span>
+        <h1 class="title-word">ONE<span>MORE<span class="home-period">.</span></span></h1>
+        <svg class="swash" viewBox="0 0 320 26" aria-hidden="true">
+          <path d="M4 15 C 60 6, 150 4, 316 11 C 230 15, 120 19, 40 18 C 24 17.6, 12 16.6, 4 15 Z" fill="currentColor"/>
+          <circle cx="312" cy="16.5" r="2.4" fill="currentColor"/>
+        </svg>
+        <p class="home-tagline">One brush. Three scrolls.<br/>Keep the ink alive.</p>
       </div>
-      <p class="mode-note">TEN WAVES A LEVEL · TEN LEVELS A SCROLL · ONE MORE RUN</p>
-      <div class="story-title-actions">
-        <button id="replayIntroBtn" type="button" class="story-title-action">↻ WATCH THE PROLOGUE</button>
-        <span aria-hidden="true" class="story-title-divider">/</span>
-        <button id="chronicleBtn" type="button" class="story-title-action">THE CHRONICLE ↗</button>
+
+      <nav class="home-actions" aria-label="Game modes and information">
+        <button id="playBtn" class="home-play" type="button">
+          <span class="home-play-icon" aria-hidden="true">一</span>
+          <span class="home-play-copy"><strong>BEGIN JOURNEY</strong><small>30 LEVELS · 3 SCROLLS</small></span>
+          <span class="home-play-arrow" aria-hidden="true">↗</span>
+        </button>
+        <button id="endlessBtn" class="home-endless" type="button">
+          <span class="home-endless-kanji" aria-hidden="true">無</span>
+          <span>ENDLESS MODE</span>
+          <span aria-hidden="true">↗</span>
+        </button>
+        <p class="home-progress"><span id="runNo">RUN 001</span><span class="home-progress-divider" aria-hidden="true">·</span><span id="bestLine" class="best-line hidden"></span></p>
+        <div class="home-links">
+          <button id="howToPlayBtn" type="button">HOW TO PLAY</button>
+          <span aria-hidden="true">/</span>
+          <button id="replayIntroBtn" type="button">WATCH FILM</button>
+          <span aria-hidden="true">/</span>
+          <button id="chronicleBtn" type="button">CHRONICLE</button>
+        </div>
+      </nav>
+    </main>
+    <footer class="home-bottom">
+      <span>墨 · A LIVING SHEET OF PAPER</span>
+      <span>DRAG TO MOVE · THE BRUSH FIRES ITSELF</span>
+    </footer>
+    <!-- Keep the enemy vocabulary available for the original UI helpers. -->
+    <div class="home-supplement hidden" aria-hidden="true">
+      <div id="enemyLegend"></div><div id="tickerTrack"></div>
+    </div>
+    <dialog id="howToPlayDialog" class="home-help" aria-labelledby="helpTitle">
+      <div class="home-help-head"><span>墨 / YOUR FIRST STROKE</span><button id="helpClose" type="button" aria-label="Close instructions">✕</button></div>
+      <span class="home-help-mark" aria-hidden="true">一</span>
+      <h2 id="helpTitle">The paper is yours.</h2>
+      <p class="home-help-intro">Every journey is ten waves. Survive, choose a new stroke, and keep drawing.</p>
+      <div class="home-help-steps">
+        <div><span>01</span><p><strong>MOVE</strong>Drag anywhere to guide the brush. On desktop, use WASD or arrows.</p></div>
+        <div><span>02</span><p><strong>FIGHT</strong>The brush fires on its own. Dodge ink beasts and watch their warning marks.</p></div>
+        <div><span>03</span><p><strong>GROW</strong>Absorb ink from fallen beasts to level up and choose upgrades. Survive ten waves to unseal the next level.</p></div>
       </div>
-      <p class="best-line hidden" id="bestLine"></p>
-    </div>
-
-    <div class="title-foot">
-      <div class="beasts-head"><span class="bh-rule"></span>THE FOURTEEN BEASTS · THREE SHEETS · THE INK REMEMBERS<span class="bh-rule"></span></div>
-      <div class="enemy-legend" id="enemyLegend" aria-hidden="true"></div>
-      <div class="controls-line">WASD — MOVE&nbsp;&nbsp;·&nbsp;&nbsp;THE BRUSH FIRES ITSELF&nbsp;&nbsp;·&nbsp;&nbsp;THE SHEET IS ENDLESS — WALK ANYWHERE&nbsp;&nbsp;·&nbsp;&nbsp;P — PAUSE&nbsp;&nbsp;·&nbsp;&nbsp;M — SOUND</div>
-    </div>
-
-    <footer class="ticker" aria-hidden="true"><div class="ticker-track" id="tickerTrack"></div></footer>
+      <nav class="home-help-pager" aria-label="Instruction pages">
+        <button type="button" id="helpPrev">← PREVIOUS</button>
+        <span id="helpPage">01 / 03</span>
+        <button type="button" id="helpNext">NEXT →</button>
+      </nav>
+      <button id="helpDone" class="home-help-start" type="button">I'M READY <span aria-hidden="true">↗</span></button>
+    </dialog>
   </section>
 
-  <!-- ============ SCROLL / LEVEL SELECTION ============ -->
+  <!-- ============ SCROLL / WEAPON / LEVEL SELECTION ============ -->
   <section id="screenSelect" class="screen screen-select hidden">
     <span class="wm wm-select" aria-hidden="true">巻</span>
-    <div class="campaign-panel">
-      <p class="campaign-kicker">THE JOURNEY · CHOOSE YOUR SCROLL</p>
-      <h2 class="campaign-title">THE SCROLLS.</h2>
-      <p class="campaign-intro">TEN LEVELS ON EACH SHEET · TEN WAVES IN EVERY RUN</p>
-      <div class="campaign-worlds" id="campaignWorlds" aria-label="World selection"></div>
-      <div class="campaign-stage-head">
-        <div>
-          <span class="campaign-small-label">THE SELECTED SHEET</span>
-          <h3 id="campaignWorldName">FIRST WASH</h3>
+    <div class="campaign-panel" data-view="scrolls">
+      <header class="campaign-heading">
+        <p class="campaign-kicker">THE JOURNEY · CHOOSE YOUR SCROLL</p>
+        <h2 class="campaign-title">THE SCROLLS.</h2>
+        <p class="campaign-intro">TEN LEVELS ON EACH SHEET · TEN WAVES IN EVERY RUN</p>
+      </header>
+      <nav class="campaign-tabs" role="tablist" aria-label="Choose your journey step">
+        <button id="campaignTabScrolls" type="button" role="tab" data-campaign-view="scrolls" aria-selected="true" aria-controls="campaignScrolls">01 · SCROLL</button>
+        <button id="campaignTabWeapons" type="button" role="tab" data-campaign-view="weapons" aria-selected="false" aria-controls="campaignWeapons">02 · WEAPON</button>
+        <button id="campaignTabLevels" type="button" role="tab" data-campaign-view="levels" aria-selected="false" aria-controls="campaignStages">03 · LEVEL</button>
+      </nav>
+      <section id="campaignScrolls" class="campaign-section" role="tabpanel" aria-labelledby="campaignTabScrolls">
+        <div class="campaign-worlds" id="campaignWorlds" aria-label="World selection"></div>
+        <div class="campaign-stage-head">
+          <div><span class="campaign-small-label">THE SELECTED SHEET</span><h3 id="campaignWorldName">FIRST WASH</h3></div>
+          <span class="campaign-status" id="campaignStatus">0 / 10 LEVELS COMPLETE</span>
         </div>
-        <span class="campaign-status" id="campaignStatus">0 / 10 LEVELS COMPLETE</span>
-      </div>
-      <p class="campaign-mechanic" id="campaignMechanic"></p>
-      <div class="campaign-levels" id="campaignLevels" aria-label="Level selection"></div>
+        <p class="campaign-mechanic" id="campaignMechanic"></p>
+      </section>
+      <section id="campaignWeapons" class="campaign-section" role="tabpanel" aria-labelledby="campaignTabWeapons" hidden>
+        <div class="starter-chest" aria-labelledby="starterTitle">
+          <div class="starter-head">
+            <div><span class="campaign-small-label">AN INSTRUMENT FOR THE LAST STROKE</span>
+            <h3 id="starterTitle">CHOOSE YOUR WEAPON.</h3></div>
+            <span class="starter-unlock-count" id="starterCount">01 / 06 UNSEALED</span>
+          </div>
+          <div id="starterGrid" class="starter-grid" role="group" aria-label="Starter weapon collection"></div>
+          <p class="starter-explain" id="starterExplain">Equipped for this run. Earn new weapons by completing stages, then revisit any unlocked sheet.</p>
+        </div>
+      </section>
+      <section id="campaignStages" class="campaign-section" role="tabpanel" aria-labelledby="campaignTabLevels" hidden>
+        <div class="campaign-stage-head">
+          <div><span class="campaign-small-label">CHOOSE A LEVEL</span><h3>THE NEXT STROKE.</h3></div>
+          <span class="campaign-small-label">TEN WAVES EACH</span>
+        </div>
+        <div class="campaign-levels" id="campaignLevels" aria-label="Level selection"></div>
+      </section>
       <div class="campaign-footer">
-        <span>SEALED LEVELS MAY BE REPLAYED · UNCLEARED LEVELS REMAIN LOCKED</span>
         <button type="button" class="ghost-btn" id="selectBackBtn">BACK TO TITLE</button>
+        <button type="button" class="block-btn campaign-next" id="campaignNextBtn">CHOOSE WEAPON →</button>
       </div>
     </div>
   </section>
@@ -240,6 +308,7 @@
         <div class="over-stats">
           <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">WAVES SURVIVED</span><span class="stat-dots"></span><span class="stat-value" id="statWaves">0</span></div>
           <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">BLOTS CLEANED</span><span class="stat-dots"></span><span class="stat-value" id="statKills">0</span></div>
+          <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">BRUSH RANK</span><span class="stat-dots"></span><span class="stat-value" id="statInkRank">01</span></div>
           <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">TIME IN ARENA</span><span class="stat-dots"></span><span class="stat-value" id="statTime">00:00</span></div>
           <div class="stat-row"><span class="stat-check" aria-hidden="true"></span><span class="stat-name">FINAL SCORE</span><span class="stat-dots"></span><span class="stat-value" id="statScore">0</span></div>
         </div>
@@ -259,10 +328,14 @@
 <script src="./js/campaign.js"></script>
 <script src="./js/audio.js"></script>
 <script src="./js/ui.js"></script>
+<script src="./js/wave-director.js"></script>
+<script src="./js/guardians.js"></script>
+<script src="./js/ink-xp.js"></script>
 <script src="./js/game.js"></script>
 <script src="./js/render.js"></script>
 <script src="./js/film.js"></script>
 <script src="./js/intro.js"></script>
+<script src="./js/opening.js"></script>
 <script src="./js/main.js"></script>
 </body>
 </html>

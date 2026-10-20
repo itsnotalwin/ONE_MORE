@@ -9,12 +9,13 @@
 
 const R = (() => {
   const RED = '#b23a2b';
+  const AWAKEN_RED = '#ac1538'; /* deep vivid lacquer-crimson, mastered arts only */
   const TAU = Math.PI * 2;
 
   /* ---------------- paper themes ---------------- */
   const THEMES = {
     pale: { paper: '#ede7d9', ink: '#1a1714', vig: '58,52,40'  },
-    dark: { paper: '#17130f', ink: '#e9e2d2', vig: '0,0,0'     },
+    dark: { paper: '#242b39', ink: '#fff1da', vig: '8,13,27'    },
     red:  { paper: '#eadbc4', ink: '#1a1714', vig: '122,42,26' },
   };
   let INK = THEMES.pale.ink;
@@ -49,8 +50,14 @@ const R = (() => {
   let lw = 0, lh = 0, ldpr = 1;
   let lastT = 0, lastTrailT = -1;
 
-  /* dried ink lives in world space, each stain its own sprite */
+  /* Stage-bound paper memory: compact cached stamps, indexed by
+     world tile so even a very long wave stays cheap on mobile. */
   let stains = [];
+  const stainCells = new Map();
+  const stampCache = new Map();
+  const STAIN_CELL = 240;
+  const stainCellKey = (x, y) =>
+    Math.floor(x / STAIN_CELL) + ',' + Math.floor(y / STAIN_CELL);
 
   function ensurePatterns(ctx) {
     if (patHatchDark) return;
@@ -101,9 +108,28 @@ const R = (() => {
     p.fillStyle = th.paper;
     p.fillRect(0, 0, TILE, TILE);
 
+    /* THE UNTOUCHED SHEET. Paper I is one flat warm handmade surface:
+       no repeated horizontal laid lines, fake aged washes or kanji.
+       A few almost invisible kozo flecks give it just enough tooth. */
+    if(key==='pale'){
+      for(let i=0;i<20;i++){
+        const x=rnd()*TILE,y=rnd()*TILE,angle=rnd()*TAU;
+        const len=1+rnd()*2;
+        p.strokeStyle='rgba(93,85,66,'+(.012+rnd()*.015)+')';
+        p.lineWidth=.42;
+        p.beginPath();p.moveTo(x,y);
+        p.lineTo(x+Math.cos(angle)*len,y+Math.sin(angle)*len);p.stroke();
+      }
+      for(let i=0;i<9;i++){
+        p.fillStyle='rgba(93,85,66,.02)';
+        p.fillRect(rnd()*TILE,rnd()*TILE,.45+rnd()*.4,.45+rnd()*.4);
+      }
+      return c;
+    }
+
     /* laid lines — grain that tiles cleanly (8 divides 480) */
     p.lineWidth = 1;
-    p.strokeStyle = key === 'dark' ? 'rgba(237,231,217,0.03)' : 'rgba(96,88,70,0.03)';
+    p.strokeStyle = key === 'dark' ? 'rgba(247,231,207,0.065)' : 'rgba(96,88,70,0.03)';
     for (let y = 4; y < TILE; y += 8) {
       p.beginPath(); p.moveTo(0, y + (rnd() - 0.5)); p.lineTo(TILE, y + (rnd() - 0.5)); p.stroke();
     }
@@ -113,8 +139,8 @@ const R = (() => {
       const x = rnd() * TILE, y = rnd() * TILE;
       const a = (rnd() - 0.5) * 0.9 + (rnd() < 0.5 ? 0 : Math.PI / 2);
       const l = 1.5 + rnd() * 3.5;
-      const base = key === 'dark' ? [200, 194, 178] : [70 + rnd() * 40 | 0, 62 + rnd() * 36 | 0, 48 + rnd() * 28 | 0];
-      p.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},${0.03 + rnd() * 0.045})`;
+      const base = key === 'dark' ? [222, 212, 193] : [70 + rnd() * 40 | 0, 62 + rnd() * 36 | 0, 48 + rnd() * 28 | 0];
+      p.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},${key === 'dark' ? 0.075 + rnd() * 0.065 : 0.03 + rnd() * 0.045})`;
       p.lineWidth = 0.7;
       p.beginPath();
       p.moveTo(x, y);
@@ -125,7 +151,7 @@ const R = (() => {
     const dots = Math.round((TILE * TILE) / 2400);
     for (let i = 0; i < dots; i++) {
       p.fillStyle = key === 'dark'
-        ? `rgba(220,214,198,${0.02 + rnd() * 0.05})`
+        ? `rgba(249,234,207,${0.035 + rnd() * 0.055})`
         : `rgba(50,45,36,${0.02 + rnd() * 0.05})`;
       p.beginPath();
       p.arc(rnd() * TILE, rnd() * TILE, 0.3 + rnd() * 0.8, 0, TAU);
@@ -140,14 +166,36 @@ const R = (() => {
         g.addColorStop(0, `rgba(178,58,43,${0.028 + rnd() * 0.035})`);
         g.addColorStop(1, 'rgba(178,58,43,0)');
       } else if (key === 'dark') {
-        g.addColorStop(0, `rgba(237,231,217,${0.016 + rnd() * 0.02})`);
-        g.addColorStop(1, 'rgba(237,231,217,0)');
+        g.addColorStop(0, `rgba(106,127,165,${0.085 + rnd() * 0.045})`);
+        g.addColorStop(.55, 'rgba(67,84,118,0.035)');
+        g.addColorStop(1, 'rgba(67,84,118,0)');
       } else {
         g.addColorStop(0, `rgba(112,102,80,${0.02 + rnd() * 0.022})`);
         g.addColorStop(1, 'rgba(112,102,80,0)');
       }
       p.fillStyle = g;
       p.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    /* Indigo-dyed paper leaves barely-visible dye tide lines and a
+       few kozo fibers. All details are deterministic tile art, not
+       glowing scenery, and remain quieter than the living ivory ink. */
+    if(key==='dark'){
+      for(let i=0;i<5;i++){
+        const x=28+rnd()*(TILE-56),y=25+rnd()*(TILE-50);
+        const length=38+rnd()*106;
+        p.save();p.strokeStyle='rgba(172,192,218,.115)';
+        p.lineWidth=.55+rnd()*.45;p.lineCap='round';
+        p.beginPath();p.moveTo(x,y);
+        p.bezierCurveTo(x+length*.19,y-4,x+length*.68,y+7,
+          x+length,y+(rnd()-.5)*12);p.stroke();p.restore();
+      }
+      /* A tiny pale fiber fleck, seldom repeated across the sheet. */
+      p.save();p.globalAlpha=.16;p.fillStyle='#ded7c6';
+      for(let i=0;i<6;i++){
+        const x=rnd()*TILE,y=rnd()*TILE;
+        p.fillRect(x,y,1.2+rnd()*2,.5);
+      }
+      p.restore();
     }
     /* a couple of dried drips for the red field */
     if (key === 'red') {
@@ -286,6 +334,76 @@ const R = (() => {
     c.restore();
   }
 
+  /* Five seeded variants per existing enemy type. Each beast retains its
+     original sprite/animation, but signs the paper in a different hand.
+     Splatter references: traditional haboku ink breakup, directional
+     dry-brush strokes, pooled pigment and expressive negative space. */
+  const BLOOD_HANDS = {
+    pulse:    {style:'pool',arms:3,scatter:.9,elong:1.0},
+    pulseling:{style:'dots',arms:2,scatter:.65,elong:.68},
+    dart:     {style:'speed',arms:3,scatter:1.6,elong:1.65},
+    spit:     {style:'spray',arms:6,scatter:1.8,elong:.85},
+    split:    {style:'fork',arms:5,scatter:1.35,elong:1.1},
+    slab:     {style:'weight',arms:4,scatter:1.0,elong:1.85},
+    shade:    {style:'ghost',arms:3,scatter:1.7,elong:1.45},
+    wraith:   {style:'mist',arms:5,scatter:1.4,elong:1.3},
+    moth:     {style:'wings',arms:4,scatter:1.3,elong:1.1},
+    titan:    {style:'flood',arms:7,scatter:2.1,elong:1.9},
+    kage:     {style:'slash',arms:4,scatter:1.9,elong:1.7},
+    stilt:    {style:'needle',arms:5,scatter:2.2,elong:1.8},
+    crane:    {style:'feather',arms:5,scatter:2.0,elong:1.5},
+    oni:      {style:'crack',arms:6,scatter:1.45,elong:2.1},
+  };
+  function paintEnemyBlood(c,type,r,seed,variant,color){
+    const hand=BLOOD_HANDS[type]||BLOOD_HANDS.pulse;
+    const v=((variant%5)+5)%5,rnd=mulberry(seed+v*11497);
+    c.save();c.fillStyle=color;c.strokeStyle=color;
+    const ang=(v/5)*TAU; c.rotate(ang);
+    c.scale(hand.elong,1/Math.sqrt(hand.elong));
+    /* Five compositions, not five colorways. They alter the branching,
+       core silhouette, distance and texture with a deterministic seed. */
+    const center=r*(.43+(v%3)*.07);
+    blobPath(c,0,0,center,seed+v*31,.30+v*.033,11);
+    c.globalAlpha=.98;c.fill();
+    const arms=hand.arms+(v%3);
+    for(let i=0;i<arms;i++){
+      let angle=TAU*(i+rnd()*.29)/arms;
+      if(['speed','slash','feather','needle'].includes(hand.style))
+        angle=(rnd()-.5)*1.5+Math.PI*(i%2);
+      if(hand.style==='wings')angle=(i%2?1:-1)*(.35+rnd()*1.1);
+      if(hand.style==='crack')angle+=Math.sin(i*2.3)*.38;
+      const distance=r*hand.scatter*(.56+rnd()*.9);
+      const tx=Math.cos(angle)*distance,ty=Math.sin(angle)*distance;
+      const thick=Math.max(.8,r*(.1+.09*rnd())*(v===4?1.3:1));
+      if(['weight','flood','crack','slash','speed','feather','fork'].includes(hand.style)){
+        inkStroke(c,[{x:Math.cos(angle)*center*.5,y:Math.sin(angle)*center*.5},
+          {x:tx*.62,y:ty*.62},{x:tx,y:ty}],thick,
+          {color,alpha:.85,seed:seed+i+v*17,taper:.73,jit:.08});
+      }
+      c.save();c.translate(tx,ty);c.rotate(angle);
+      c.globalAlpha=.78+rnd()*.21;
+      if(hand.style==='spray'||hand.style==='dots'||hand.style==='mist'){
+        blobPath(c,0,0,r*(.095+rnd()*.14),seed+i*19+v,.29,8);c.fill();
+      }else if(hand.style==='ghost'){
+        c.lineWidth=Math.max(.8,r*.09);c.beginPath();
+        c.arc(0,0,r*(.2+rnd()*.1),.3,2.6);c.stroke();
+      }else{
+        teardrop(c,r*(.07+rnd()*.13));c.fill();
+      }
+      c.restore();
+    }
+    if(hand.style==='pool'||hand.style==='weight'||hand.style==='flood'){
+      c.globalAlpha=.81;
+      blobPath(c,-r*.22,r*.24,r*.4,seed+v*100,.29,9);c.fill();
+    }
+    if(hand.style==='split'||hand.style==='fork'){
+      c.lineWidth=Math.max(.8,r*.12);c.globalAlpha=.8;
+      c.beginPath();c.moveTo(-r*.3,0);c.lineTo(r*.4,r*.45);
+      c.moveTo(-r*.1,-r*.2);c.lineTo(r*.5,-r*.42);c.stroke();
+    }
+    c.restore();
+  }
+
   /* angry paper eyes on an ink body */
   function eyeSlits(c, ang, r, len = 1) {
     c.save();
@@ -305,37 +423,195 @@ const R = (() => {
     c.restore();
   }
 
-  /* ---------------- stains: dried ink, cached as sprites ---------------- */
+  /* ---------------- stage-long washi marks ----------------
+     Both enemy blood and weapon imprints belong to the SAME ink sheet.
+     Sprite shapes are reused by radius, kind and seed variant to avoid
+     allocating thousands of canvases over ten consecutive waves. */
+  function paintWeaponImprint(g, weapon, r, seed, color) {
+    const rnd = mulberry(seed);
+    g.save();
+    g.strokeStyle = color;g.fillStyle=color;g.lineCap='round';
+    switch (weapon) {
+      case 'heaven': { /* the abandoned mark of the Painter's enormous hand */
+        inkStroke(g,[{x:-r*1.8,y:r*.08},{x:-r*.25,y:-r*.12},
+          {x:r*1.75,y:r*.14}],r*.76,
+          {color,alpha:.93,seed,taper:.68,jit:.07});
+        g.globalAlpha=.40;
+        for(let i=0;i<3;i++){
+          const x=r*(rnd()*2-1),y=r*(rnd()-.5);
+          blobPath(g,x,y,r*(.08+rnd()*.09),seed+i,.22,8);g.fill();
+        }
+        break;
+      }
+      case 'shot': /* a pointed drop ends in a light calligraphic fleck */
+        splatPaint(g,0,0,r*.72,seed,.8,color);
+        inkStroke(g,[{x:-r*.5,y:r*.1},{x:r*.55,y:-r*.3},{x:r*1.7,y:-r*.5}],
+          Math.max(1,r*.21),{alpha:.58,color,seed});
+        break;
+      case 'echo': /* mirrored answer of the opposite brush stroke */
+        inkStroke(g,[{x:-r*1.8,y:r*.43},{x:0,y:0},{x:r*1.4,y:-r*.48}],
+          Math.max(1.2,r*.33),{alpha:.83,color,seed});
+        blobPath(g,0,0,r*.35,seed,.22,9);g.globalAlpha=.66;g.fill();break;
+      case 'fan': /* a long folded slash left in the paper */
+        inkStroke(g,[{x:-r*2.0,y:r*.45},{x:-r*.2,y:0},{x:r*2.2,y:-r*.58}],
+          Math.max(1.5,r*.52),{alpha:.75,color,seed,dry:true,dryColor:PAPER});
+        break;
+      case 'orbit': /* compact crescent scuff of a grinding ink bead */
+        g.globalAlpha=.59;g.lineWidth=Math.max(1.2,r*.31);
+        g.beginPath();g.arc(0,0,r*.94,-2.3,1.2);g.stroke();
+        blobPath(g,r*.65,r*.15,r*.32,seed,.24,8);g.fill();break;
+      case 'nova': /* a broken shock ring, not a temporary magic aura */
+      case 'shock':
+        g.globalAlpha=.55;g.lineWidth=Math.max(1.2,r*.13);
+        for(const off of [0,2.4,4.8]){
+          g.beginPath();g.arc(0,0,r*(.7+rnd()*.24),off,off+1.2);g.stroke();
+        }
+        for(let i=0;i<4;i++){
+          const ang=i*TAU/4+rnd()*.3;
+          inkStroke(g,[{x:Math.cos(ang)*r*.65,y:Math.sin(ang)*r*.65},
+            {x:Math.cos(ang)*r*1.35,y:Math.sin(ang)*r*1.35}],
+            Math.max(1,r*.09),{alpha:.29,color,seed:seed+i});
+        }
+        break;
+      case 'trail': { /* one short, joined snail-like dry ink strand */
+        inkStroke(g,[{x:-r*1.12,y:0},{x:-r*.22,y:-r*.035},
+          {x:r*1.10,y:r*.04}],Math.max(2,r*1.06),
+          {alpha:.88,color,seed,jit:.025,dry:false});
+        break;
+      }
+      case 'lantern': { /* restrained concentric paper-light reveal seal */
+        g.globalAlpha=.67;g.lineWidth=Math.max(1,r*.17);
+        for(const a of [.25,2.35,4.47]){
+          g.beginPath();g.arc(0,0,r*.98,a,a+1.35);g.stroke();
+        }
+        g.globalAlpha=.65;
+        blobPath(g,0,0,r*.22,seed,.12,9);g.fill();
+        break;
+      }
+      case 'crescent': {
+        g.lineWidth=Math.max(1.4,r*.42);g.globalAlpha=.78;
+        g.beginPath();g.arc(0,0,r*1.15,-1.4,1.32);g.stroke();
+        g.lineWidth=.9;g.globalAlpha=.36;
+        g.beginPath();g.arc(-r*.28,0,r*.8,-1.18,1.08);g.stroke();
+        break;
+      }
+      case 'mirror': {
+        g.globalAlpha=.77;g.lineWidth=Math.max(1,r*.22);
+        g.beginPath();g.moveTo(-r*.9,-r*.9);
+        g.lineTo(0,r*.85);g.lineTo(r*.9,-r*.65);g.stroke();
+        break;
+      }
+      case 'shroud': {
+        g.globalAlpha=.55;
+        inkStroke(g,[{x:-r*1.0,y:r*.35},{x:0,y:-r*.2},
+          {x:r*.75,y:-r*.48}],r*.38,
+          {alpha:.6,color,seed,jit:.04});
+        break;
+      }
+      case 'spirit': /* little afterimage of a visiting lesser brush */
+        inkStroke(g,[{x:-r*1.5,y:r*.5},{x:-r*.1,y:0},{x:r*1.65,y:-r*.6}],
+          Math.max(1,r*.29),{alpha:.63,color,seed});
+        blobPath(g,r*.55,-r*.26,r*.25,seed,.2,8);g.globalAlpha=.68;g.fill();
+        break;
+      case 'knot': /* three tied calligraphic fibres */
+        for(let k=-1;k<=1;k++){
+          inkStroke(g,[{x:-r*1.2,y:k*r*.45},{x:0,y:k*r*.13},
+            {x:r*1.25,y:-k*r*.45}],Math.max(1,r*.18),
+            {alpha:.52,color,seed:seed+k});
+        }
+        break;
+      case 'ward': /* a stamp's imperfect paper border */
+        g.globalAlpha=.61;g.lineWidth=Math.max(1.2,r*.11);
+        g.strokeRect(-r*.66,-r*.9,r*1.35,r*1.75);
+        inkStroke(g,[{x:-r*.18,y:-r*.6},{x:r*.12,y:r*.57}],
+          Math.max(1.4,r*.18),{alpha:.48,color,seed});
+        break;
+      default:
+        splatPaint(g,0,0,r,seed,.85,color);
+    }
+    g.restore();
+  }
+
   function stampStains(S) {
     if (!S.stainQueue.length) return;
     for (const q of S.stainQueue) {
-      const r = Math.max(2.4, q.r);
-      const scale = 2; /* render sprites at 2x for crisp hidpi */
-      const half = Math.ceil(r * 2.9);
-      const spr = document.createElement('canvas');
-      spr.width = spr.height = half * 2 * scale;
-      const g = spr.getContext('2d');
-      g.setTransform(scale, 0, 0, scale, half * scale, half * scale);
-      splatPaint(g, 0, 0, r, (Math.random() * 1e9) | 0, q.alpha ?? 0.5, q.red ? RED : INK);
-      stains.push({ x: q.x, y: q.y, a: q.alpha ?? 0.5, age: 0, spr, half });
+      const r = Math.max(2.4, Math.min(100, q.r));
+      const weapon=q.kind==='weapon'?q.weapon:'';
+      const bloodType=!weapon?(q.enemyType||'pulse'):'';
+      const bloodVariant=((q.variant??0)%5+5)%5;
+      const radius = Math.max(3,Math.round(r/2)*2);
+      const variant = ((Math.floor(Math.abs(q.x*13+q.y*7))%4)+4)%4;
+      const color=q.red?(weapon?AWAKEN_RED:RED):INK;
+      const key=themeKey+':'+weapon+':'+bloodType+':'+bloodVariant+
+        ':'+radius+':'+variant+':'+color;
+      let sprite = stampCache.get(key);
+      if(!sprite){
+        const half = Math.ceil(radius*3.3+8), scale=2;
+        const spr=document.createElement('canvas');
+        spr.width=spr.height=half*2*scale;
+        const g=spr.getContext('2d');
+        g.setTransform(scale,0,0,scale,half*scale,half*scale);
+        const seed=radius*181+variant*7919;
+        if(weapon)paintWeaponImprint(g,weapon,radius,seed,color);
+        else paintEnemyBlood(g,bloodType,radius,seed,bloodVariant,color);
+        sprite={spr,half};
+        stampCache.set(key,sprite);
+        /* Eviction does not erase existing terrain: records keep the sprite. */
+        if(stampCache.size>260)stampCache.delete(stampCache.keys().next().value);
+      }
+      const mark={
+        x:q.x,y:q.y,spr:sprite.spr,half:sprite.half,
+        angle:weapon?(q.angle||0):(q.angle||0)*.25,
+        /* Dense sumi or vermilion lacquer, never the old gray wash. */
+        a:weapon?Math.max(.92,q.alpha??.94):Math.max(.88,q.alpha??.9),
+        kind:weapon||'blood',
+        enemyType:bloodType,variant:bloodVariant,
+        red:!!q.red,
+      };
+      stains.push(mark);
+      const cell=stainCellKey(mark.x,mark.y);
+      if(!stainCells.has(cell))stainCells.set(cell,[]);
+      stainCells.get(cell).push(mark);
     }
-    S.stainQueue.length = 0;
-    while (stains.length > CFG.world.stainCap) stains.shift();
+    S.stainQueue.length=0;
+    /* No fade and no oldest-first cap. Even the very first blood splatter
+       still exists when the Guardian appears on wave ten. */
   }
 
   function updateStains(dt) {
-    const fade = CFG.world.stainFade;
-    for (let i = stains.length - 1; i >= 0; i--) {
-      const st = stains[i];
-      st.age += dt;
-      if (st.a * (1 - st.age * fade) <= 0.02) {
-        stains[i] = stains[stains.length - 1];
-        stains.pop();
-      }
-    }
+    /* Stage memory is intentionally permanent. Never age away marks. */
   }
 
-  function resetStains() { stains.length = 0; }
+  /* Eraser deletes accumulated blood and weapon paint, not world decor,
+     enemies or the underlying paper. Index updates are localized to the
+     touched spatial cells and queued paint is screened in game.js. */
+  function eraseTerrain(x,y,r){
+    const r2=r*r,removed=new Set();
+    const pad=25;
+    for(let cy=Math.floor((y-r-pad)/STAIN_CELL);
+      cy<=Math.floor((y+r+pad)/STAIN_CELL);cy++){
+      for(let cx=Math.floor((x-r-pad)/STAIN_CELL);
+        cx<=Math.floor((x+r+pad)/STAIN_CELL);cx++){
+        const key=cx+','+cy,list=stainCells.get(key);
+        if(!list)continue;
+        const kept=[];
+        for(const mark of list){
+          if((mark.x-x)**2+(mark.y-y)**2<r2)removed.add(mark);
+          else kept.push(mark);
+        }
+        if(kept.length)stainCells.set(key,kept);
+        else stainCells.delete(key);
+      }
+    }
+    if(removed.size)stains=stains.filter(mark=>!removed.has(mark));
+    return removed.size;
+  }
+
+  function resetStains() {
+    stains.length=0;
+    stainCells.clear();
+    stampCache.clear();
+  }
 
   /* ---------------- ambient paper marks (world decor) ----------------
      faint hairs, flecks and ghost seals scattered across the sheet,
@@ -412,6 +688,46 @@ const R = (() => {
         }
       }
     }
+  }
+
+  /* Separate opacity shell for reappearing Shade. The original painter,
+     procedural ink contours and eye geometry below are untouched. */
+  function drawStealthShade(c,e,t){
+    const progress=e.lanternLit?1:Math.max(0,Math.min(1,e.stateT/CFG.nightStealth.warn));
+    const ease=progress*progress*(3-2*progress),r=e.r;
+    const seed=((e.seed*8191)|0)^(Math.floor(t/CFG.ink.boilRate)*7919);
+    c.save();c.translate(e.x,e.y);c.rotate(e.ang);
+    c.globalAlpha=.07+.83*ease;
+    c.fillStyle=INK;c.strokeStyle=INK;c.lineWidth=1.6;
+    blobPath(c,0,0,r,seed,.3,9);c.fill();
+    blobPath(c,0,0,r*.95,seed^31,.32,9);c.stroke();
+    eyeSlits(c,0,r,.9);
+    c.restore();
+  }
+
+  /* An additive registration mark behind Night Scroll's spectral
+     monsters. The original fourteen enemy painters, their eye shapes
+     and their dissolve animations stay byte-identical. The broken
+     handmade outline makes even an almost-transparent Shade trackable. */
+  function drawNightSighting(c,e){
+    if(themeKey!=='dark')return;
+    const r=e.r;
+    const spectral=['shade','wraith','kage','stilt','moth'].includes(e.type);
+    c.save();c.translate(e.x,e.y);
+    c.strokeStyle='#ffefd1';c.lineCap='round';
+    const shadeFade=e.type==='shade'&&!e.lanternLit?
+      (e.state==='dissolve'?Math.max(.22,1-e.stateT/CFG.nightStealth.fade):
+      e.state==='emerge'?.36+.64*Math.min(1,e.stateT/CFG.nightStealth.warn):1):1;
+    c.globalAlpha=(spectral?.8:.33)*shadeFade;c.lineWidth=spectral?1.5:1.05;
+    const halo=r*(spectral?1.47:1.34);
+    c.beginPath();c.arc(0,0,halo,-.95,.46);
+    c.moveTo(Math.cos(2.2)*halo,Math.sin(2.2)*halo);
+    c.arc(0,0,halo,2.2,3.43);c.stroke();
+    if(spectral){
+      c.fillStyle='#ffefd1';c.globalAlpha=.9;
+      c.beginPath();c.arc(-halo*.92,-halo*.11,1.1,0,TAU);c.fill();
+    }
+    c.restore();
   }
 
   /* ---------------- creatures ---------------- */
@@ -904,6 +1220,23 @@ const R = (() => {
       c.fill();
       c.restore();
     }
+    /* Minimal ink-seal integrity line: phase changes stay legible even
+       with dense enemy crowds. It belongs to the existing enemy drawing. */
+    if (e.guardian) {
+      const width = e.guardian.boss ? 86 : 64;
+      const top = -r - 33;
+      const frac = Math.max(0, Math.min(1, e.hp / e.maxHp));
+      c.save();
+      c.fillStyle = INK;c.globalAlpha = .25;
+      c.fillRect(-width / 2, top, width, 3);
+      c.fillStyle = RED;c.globalAlpha = .95;
+      c.fillRect(-width / 2, top, width * frac, 3);
+      for (let k = 1; k < (e.guardian.boss ? 3 : 2); k++) {
+        c.fillStyle = PAPER;c.globalAlpha = .9;
+        c.fillRect(-width / 2 + width * k / (e.guardian.boss ? 3 : 2) - .6, top, 1.2, 3);
+      }
+      c.restore();
+    }
     c.restore();
   }
 
@@ -921,127 +1254,505 @@ const R = (() => {
     c.closePath();
   }
 
-  /* ---------------- player: the brush spirit ---------------- */
-  function drawPlayer(c, t) {
-    const S = G.S;
-    const p = S.player;
-    const blink = S.invulnT > 0 && Math.floor(t * 18) % 2 === 0;
-    const tick = Math.floor(t / CFG.ink.boilRate);
-    const sd = ((p.x * 31 + p.y * 17) | 0) ^ (tick * 7919);
-    const iv = S.inputVec;
-    const mv = Math.min(1, Math.hypot(iv.x, iv.y));
-
-    /* ink trail: the brush never leaves the paper clean */
-    if (S.mode === 'playing' && mv > 0.15 && t - lastTrailT > CFG.ink.trailGap && !S.reduced) {
-      lastTrailT = t;
-      S.stainQueue.push({ x: p.x + (Math.random() - 0.5) * 6, y: p.y + (Math.random() - 0.5) * 6, r: 2.2, alpha: 0.15 });
+  /* ---------------- player: the awakened brush spirit ---------------- */
+  /* Player and BLOT enemies share the same midpoint blob vocabulary and
+     CFG.ink.boilRate. Two deterministic enemy-style contours are blended
+     between ticks so the living body stays animated without the old jump. */
+  function livingBlobPath(c, r, seed, t, reduced) {
+    const n = 10;
+    const phase = reduced ? 0 : t / CFG.ink.boilRate;
+    const tick = Math.floor(phase), blend = reduced ? 0
+      : (phase - tick) ** 2 * (3 - 2 * (phase - tick));
+    const first = mulberry(seed ^ Math.imul(tick, 7919));
+    const next = reduced ? null : mulberry(seed ^ Math.imul(tick + 1, 7919));
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const ang = i * TAU / n;
+      const r0 = 1 + (first() * 2 - 1) * .17;
+      const r1 = reduced ? r0 : 1 + (next() * 2 - 1) * .17;
+      const rr = r * (r0 + (r1 - r0) * blend);
+      pts.push([Math.cos(ang) * rr, Math.sin(ang) * rr]);
     }
-
-    /* comet tail, streaming behind the motion */
-    if (mv > 0.12) {
-      const a = Math.atan2(-iv.y, -iv.x);
-      const len = 9 + 10 * mv;
-      const sway = Math.sin(t * 9) * 2.2;
-      const x0 = p.x + Math.cos(a) * p.r * 0.5, y0 = p.y + Math.sin(a) * p.r * 0.5;
-      inkStroke(c, [
-        { x: x0, y: y0 },
-        { x: x0 + Math.cos(a) * len * 0.55 - Math.sin(a) * sway, y: y0 + Math.sin(a) * len * 0.55 + Math.cos(a) * sway },
-        { x: x0 + Math.cos(a) * len, y: y0 + Math.sin(a) * len },
-      ], 7, { alpha: blink ? 0.2 : 0.85, taper: 1.1, seed: sd });
-    }
-
-    c.save();
-    c.globalAlpha = blink ? 0.25 : 1;
-    const back = p.recoil > 0 ? p.recoil * 2.4 : 0;
-    c.translate(p.x - Math.cos(p.aim) * back, p.y - Math.sin(p.aim) * back);
-
-    /* adrenaline speed ticks */
-    if (S.adrenT > 0 && !blink) {
-      const ma = Math.atan2(-iv.y || p.aim, -iv.x || p.aim);
-      c.save();
-      c.globalAlpha = 0.4;
-      for (const off of [-0.5, 0.5]) {
-        const a = ma + off;
-        inkStroke(c, [
-          { x: Math.cos(a) * 13, y: Math.sin(a) * 13 },
-          { x: Math.cos(a) * 21, y: Math.sin(a) * 21 },
-        ], 2.2, { alpha: 0.5 });
-      }
-      c.restore();
-    }
-
-    c.fillStyle = INK;
-    blobPath(c, 0, 0, p.r, sd, 0.14, 10);
-    c.fill();
-    if (S.invulnT > 0) {
-      c.globalAlpha = (blink ? 0.25 : 1) * 0.5;
-      c.strokeStyle = INK;
-      c.lineWidth = 1.2;
-      c.beginPath(); c.arc(0, 0, p.r + 4.5, 0, TAU); c.stroke();
-      c.globalAlpha = blink ? 0.25 : 1;
-    }
-
-    const st = S.stats;
-
-    /* ink orbit: droplets circling the brush */
-    if (st && st.orb > 0) {
-      const orbR = CFG.orbit.radius(st.orb);
-      const base = S.clockT || t;
-      c.save();
-      c.globalAlpha = (blink ? 0.2 : 1) * 0.1;
-      c.strokeStyle = INK;
-      c.lineWidth = 1;
-      c.beginPath(); c.arc(0, 0, orbR, 0, TAU); c.stroke();
-      c.restore();
-      for (let i = 0; i < st.orb; i++) {
-        const a = base * CFG.orbit.speed + (i / st.orb) * TAU;
-        const ox = Math.cos(a) * orbR, oy = Math.sin(a) * orbR;
-        c.save();
-        c.translate(ox, oy);
-        c.rotate(a + Math.PI / 2);
-        c.globalAlpha = (blink ? 0.3 : 1) * 0.95;
-        c.fillStyle = INK;
-        teardrop(c, 3.6);
-        c.fill();
-        c.globalAlpha = (blink ? 0.15 : 1) * 0.3;
-        inkStroke(c, [{ x: -6, y: 0 }, { x: -13, y: 0.4 }], 1.8, { alpha: 1 });
-        c.restore();
-      }
-    }
-
-    /* paper ward: a talisman that hangs at the brush's back */
-    if (st && st.ward) {
-      const ready = st.wardCd <= 0;
-      const wa = p.aim + Math.PI;
-      c.save();
-      c.translate(Math.cos(wa) * (p.r + 12), Math.sin(wa) * (p.r + 12) - 2);
-      c.rotate(Math.sin(t * 1.7) * 0.14 - 0.35);
-      c.globalAlpha = (blink ? 0.3 : 1) * (ready ? 0.9 : 0.2);
-      c.strokeStyle = INK;
-      c.lineWidth = 1.4;
-      c.strokeRect(-4, -6.5, 8, 13);
-      if (ready) { c.fillStyle = RED; c.fillRect(-1.6, -1.6, 3.2, 3.2); }
-      c.restore();
-    }
-
-    /* the eye — a single paper slit toward the aim */
-    const ex = Math.cos(p.aim) * p.r * 0.45, ey = Math.sin(p.aim) * p.r * 0.45;
-    const el = (p.recoil > 0.4 ? 2.6 : 4.4);
-    c.strokeStyle = PAPER;
-    c.lineWidth = 1.9;
-    c.lineCap = 'round';
     c.beginPath();
-    c.moveTo(ex - Math.cos(p.aim) * el / 2, ey - Math.sin(p.aim) * el / 2);
-    c.lineTo(ex + Math.cos(p.aim) * el / 2, ey + Math.sin(p.aim) * el / 2);
-    c.stroke();
+    const last = pts[n-1], initial = pts[0];
+    c.moveTo((last[0]+initial[0])*.5,(last[1]+initial[1])*.5);
+    for (let i = 0; i < n; i++) {
+      const q = pts[(i+1)%n];
+      c.quadraticCurveTo(pts[i][0],pts[i][1],
+        (pts[i][0]+q[0])*.5,(pts[i][1]+q[1])*.5);
+    }
+    c.closePath();
+  }
+
+  /* Our protagonist is no longer the brush: a small sentient ink-soul
+     with an asymmetrical floating cloak, a lifted forehead and two
+     living folds instead of a tool handle or attached bristles.
+     Its recognizable face and silhouette stay coherent as it moves. */
+  /* Single continuous ink-soul with a gently trailing hem. Running
+     bends its whole calligraphic silhouette rather than kicking two
+     conspicuous pseudo-legs and shaking the body every few frames. */
+  /* Visible two-beat ink-soul gait. The forehead and single paper eye
+     stay anchored while the TWO CONNECTED LOWER FOLDS exchange weight.
+     At a 10px hitbox, a sub-pixel hem change reads as a frozen sprite,
+     so the folds deliberately sweep ~5px end-to-end at running speed.
+     Everything is derived from smooth phase and smoothed velocity:
+     no frame random, detached feet, body-wide hopping or hitbox edits. */
+  function inkSoulPath(c,r,t,seed,reduced,motion){
+    const p=G.S.player,sp=Math.max(0,Math.min(1,p.visualSpeed||0));
+    const phase=p.flowPhase||0;
+    const step=reduced?0:Math.sin(phase)*sp;
+    const follow=reduced?0:Math.sin(phase-.65)*sp;
+    const lean=-(p.visualMoveX||0)*.095*sp;
+    const tail=(p.visualMoveY||0)*.085*sp;
+    const breath=reduced?0:Math.sin(t*1.9+seed*.001)*.038*(1-sp);
+    const compress=p.visualState==='anticipate'?.055:0;
+    const settle=p.visualState==='brake'?.045:0;
+    const leftFold=step*.25;
+    const rightFold=-step*.25;
+    c.beginPath();
+    /* A deliberate tilted peak identifies the protagonist even
+       as a 20px silhouette: a single folded page-corner hood. */
+    c.moveTo(-r*.34,-r*(1.12+breath-compress));
+    c.quadraticCurveTo(-r*.24,-r*(1.40+breath),-r*.02,-r*(1.53+breath));
+    c.quadraticCurveTo(r*.08,-r*1.19,r*.20,-r*1.30);
+    c.bezierCurveTo(r*.54,-r*1.20,r*.83,-r*1.04,r*.97,-r*.43);
+    c.bezierCurveTo(r*(1.13+lean*.3),r*.08,r*.90,r*.63,r*.53,r*.75);
+    /* Fore-hem tucks in as rear-hem unfurls. At stride extrema the
+       two connected tips move roughly 5px apart relative to one another. */
+    c.quadraticCurveTo(r*(.73+lean*.25+follow*.11),
+      r*(1.17+rightFold*.55-settle),
+      r*(.20+rightFold*.10+lean*.15),
+      r*(1.03+rightFold+tail*.10-settle));
+    c.quadraticCurveTo(-r*.07,
+      r*(.80+follow*.10),
+      -r*(.27-leftFold*.07),
+      r*(1.08+leftFold+tail*.09-settle));
+    c.quadraticCurveTo(-r*(.66+lean*.3-follow*.08),
+      r*(1.24+leftFold*.50-settle),
+      -r*(.70+lean*.3),
+      r*(.68+leftFold*.15));
+    c.bezierCurveTo(-r*(1.10-lean*.3),r*.42,
+      -r*(1.11-lean*.2),-r*.42,-r*.34,-r*(1.12+breath-compress));
+    c.closePath();
+  }
+
+  function drawEraserField(c,S,t){
+    const level=S.stats?.orb||0;if(!level)return;
+    const p=S.player,r=CFG.eraser.radius(level);
+    const mastered=(S.stats?.levels?.seal_orbit||0)>0;
+    c.save();c.translate(p.x,p.y);
+    /* Wash the paper into a faint clearing without an opaque magic aura. */
+    c.globalAlpha=mastered?.055:.034;c.fillStyle=PAPER;
+    c.beginPath();c.arc(0,0,r,0,TAU);c.fill();
+    c.strokeStyle=mastered?AWAKEN_RED:INK;
+    c.lineCap='round';c.lineWidth=mastered?2.1:1.65;
+    c.globalAlpha=mastered?.72:.40;
+    for(let k=0;k<3;k++){
+      const turn=(S.reduced?0:Math.sin(t*.63+k)*.03);
+      c.beginPath();c.arc(0,0,r+(k-1)*2.4,
+        .18+k*2.14+turn,1.70+k*2.14+turn);c.stroke();
+    }
+    /* A feather-thin edge of absence; no rotating projectiles. */
+    c.globalAlpha=mastered?.17:.12;
+    c.lineWidth=.7;c.beginPath();
+    c.arc(0,0,r-6,.25,TAU-.25);c.stroke();
     c.restore();
+  }
+
+  /* The Last Stroke's ink gun. A miniature sumi-e hand-piece with a
+     visible nib/barrel, an ivory inset and a dark ink reservoir. It is
+     rendered in world space rather than the soul's breathing transform:
+     the tip and the basic volley spawn at EXACTLY CFG.player.muzzle.
+     No static sprite, bullet-shaped arm or modern glowing gun asset. */
+  function drawInkGun(c,p,st){
+    c.save();
+    c.translate(p.x,p.y);
+    c.rotate(p.aim); /* true fire direction, not delayed eye tracking */
+    const back=Math.max(0,Math.min(1,p.recoil||0))*1.45;
+    c.translate(-back,0);
+    c.lineJoin='round';c.lineCap='round';
+    /* Living ink holds the carved gun by a short, rooted arm. */
+    c.strokeStyle=PAPER;c.lineWidth=3.25;
+    c.beginPath();c.moveTo(4.3,4.7);c.quadraticCurveTo(7.8,4,9.5,2);
+    c.stroke();
+    c.strokeStyle=INK;c.lineWidth=2.25;c.stroke();
+    /* Ivory rim separates the instrument from the black soul, even
+       at its original 20px diameter and on the inverted night scroll. */
+    c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.35;
+    c.beginPath();
+    c.moveTo(6.1,-3.6);
+    c.quadraticCurveTo(6.8,-4.45,8.8,-4.1);
+    c.lineTo(17.4,-3.15);
+    c.quadraticCurveTo(19.6,-2.85,19.7,-1.4);
+    c.lineTo(19.7,1.8);
+    c.lineTo(9.3,2.9);
+    c.quadraticCurveTo(6.8,3.35,6.1,1.6);
+    c.closePath();c.fill();c.stroke();
+    /* Downward tapered grip, deliberately part of the instrument. */
+    c.beginPath();c.moveTo(9.15,2.75);
+    c.lineTo(8.05,7.25);c.lineTo(5.8,7.65);
+    c.lineTo(5.55,4.85);c.lineTo(6.65,2.35);
+    c.fill();c.stroke();
+    /* Black ink chamber with one restrained paper glint. */
+    c.fillStyle=INK;
+    c.beginPath();c.ellipse(11.7,-.55,3.45,1.85,-.06,0,TAU);
+    c.fill();
+    c.strokeStyle=PAPER;c.lineWidth=.65;
+    c.beginPath();c.moveTo(9.9,-1.12);c.lineTo(12.75,-1.5);c.stroke();
+    /* The tip is a visible ink nib. The shot leaves x=20, y=0. */
+    c.strokeStyle=INK;c.lineWidth=1.65;
+    c.beginPath();c.moveTo(17.7,-.95);c.lineTo(CFG.player.muzzle,-.95);
+    c.moveTo(17.7,1);c.lineTo(CFG.player.muzzle,1);c.stroke();
+    c.beginPath();c.arc(CFG.player.muzzle,0,1.15,-Math.PI/2,Math.PI/2);
+    c.stroke();
+    /* Echo Stroke's mirrored barrel is an earned second outlet,
+       not a mysterious projectile emerging from the soul's back. */
+    if(st?.echo>0){
+      c.globalAlpha=.78;c.lineWidth=1.35;c.strokeStyle=INK;
+      c.fillStyle=PAPER;
+      c.beginPath();c.moveTo(-8.6,-2.35);
+      c.lineTo(-16.8,-2.35);c.lineTo(-18,-.95);
+      c.lineTo(-18,1.3);c.lineTo(-8.6,2.4);c.closePath();
+      c.fill();c.stroke();
+      c.fillStyle=INK;
+      c.beginPath();c.ellipse(-12.7,0,2.1,1.15,0,0,TAU);c.fill();
+    }
+    c.restore();
+  }
+
+  /* Hand-held instruments are real visible extensions of the tiny
+     ink-soul. One clear shape for each weapon, with no sprite atlas and
+     no movement jitter. Aim remains tied to combat rather than gaze. */
+  function drawStarterTool(c,S,t){
+    const p=S.player,id=S.starter||'gun';
+    const snap=Math.min(1,Math.max(0,p.recoil||0));
+    const sway=S.reduced?0:Math.sin(t*1.65)*.025;
+    c.save();c.translate(p.x,p.y);
+    c.rotate(p.aim+sway+(id==='brush'?.34*snap:id==='cutter'?.27*snap:
+      id==='mallet'?.20*snap:0));
+    c.translate(-snap*1.4,0);
+    c.lineJoin='round';c.lineCap='round';
+    /* A small white grip links tool to ink and stays readable on night. */
+    c.strokeStyle=PAPER;c.lineWidth=2.7;
+    c.beginPath();c.moveTo(5.5,2.9);c.lineTo(10.2,2.1);c.stroke();
+    c.strokeStyle=INK;c.lineWidth=1.45;c.stroke();
+    if(id==='brush'){
+      c.strokeStyle=INK;c.lineWidth=3.4;
+      c.beginPath();c.moveTo(7,1);c.lineTo(27,0);c.stroke();
+      c.strokeStyle=PAPER;c.lineWidth=.7;
+      c.beginPath();c.moveTo(10,.15);c.lineTo(23,-.4);c.stroke();
+      c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.15;
+      c.fillRect(23,-3.1,6.5,6.2);c.strokeRect(23,-3.1,6.5,6.2);
+      /* The brush's bold wetted fan tapers to one expressive point. */
+      c.fillStyle=INK;c.beginPath();c.moveTo(29,-5.7);
+      c.quadraticCurveTo(37,-5.1,42,0);
+      c.quadraticCurveTo(37,5.4,29,5.7);c.closePath();c.fill();
+      c.strokeStyle=PAPER;c.globalAlpha=.8;c.lineWidth=.8;
+      c.beginPath();c.moveTo(31,-3);c.lineTo(36,-1.4);c.stroke();
+    }else if(id==='quill'){
+      c.strokeStyle=INK;c.lineWidth=1.9;
+      c.beginPath();c.moveTo(7,0);c.lineTo(28,0);c.stroke();
+      c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.1;
+      c.beginPath();c.moveTo(9,-2.9);
+      c.quadraticCurveTo(18,-8.1,25,-3.7);
+      c.lineTo(30,0);c.lineTo(25,3.7);
+      c.quadraticCurveTo(17,7,9,2.8);c.closePath();c.fill();c.stroke();
+      c.beginPath();c.moveTo(16,0);c.lineTo(36,0);c.stroke();
+      c.fillStyle=INK;c.beginPath();c.moveTo(36,0);c.lineTo(29,-1.4);
+      c.lineTo(29,1.4);c.closePath();c.fill();
+    }else if(id==='mallet'){
+      c.strokeStyle=INK;c.lineWidth=4.1;
+      c.beginPath();c.moveTo(8,0);c.lineTo(30,0);c.stroke();
+      c.fillStyle=INK;
+      c.beginPath();c.moveTo(22,-11);c.lineTo(31,-12.5);
+      c.lineTo(36,-7);c.lineTo(35,8);c.lineTo(24,11);
+      c.lineTo(21,6);c.closePath();c.fill();
+      c.strokeStyle=PAPER;c.lineWidth=1.05;c.globalAlpha=.86;
+      c.beginPath();c.moveTo(26,-8);c.lineTo(28,7);
+      c.moveTo(29,-9);c.lineTo(32,-5);c.stroke();
+    }else if(id==='thread'){
+      c.strokeStyle=INK;c.lineWidth=2;
+      c.beginPath();c.moveTo(8,0);c.lineTo(16,0);c.stroke();
+      c.fillStyle=PAPER;c.lineWidth=1.5;
+      c.beginPath();c.ellipse(21,0,6,7,.12,0,TAU);
+      c.fill();c.stroke();
+      c.strokeStyle=INK;c.lineWidth=.9;
+      for(const dx of [18,20.7,23.4]){
+        c.beginPath();c.moveTo(dx,-4.5);c.lineTo(dx,4.5);c.stroke();
+      }
+      c.beginPath();c.moveTo(27,0);
+      c.bezierCurveTo(33,-6,36,3,40,-2);c.stroke();
+      c.fillStyle=INK;c.beginPath();c.arc(40,-2,1.5,0,TAU);c.fill();
+    }else if(id==='cutter'){
+      c.strokeStyle=INK;c.lineWidth=2.8;
+      c.beginPath();c.moveTo(6,1);c.lineTo(15,0);c.stroke();
+      c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.1;
+      c.beginPath();c.moveTo(12,-3);c.lineTo(25,-8);
+      c.lineTo(37,-1);c.lineTo(19,5);c.closePath();c.fill();c.stroke();
+      c.beginPath();c.moveTo(18,1.5);c.lineTo(33,-1.9);c.stroke();
+      c.fillStyle=INK;c.fillRect(11,-2.2,3.4,4.5);
+    }
+    c.restore();
+  }
+
+  /* Ephemeral ink flourishes are animation, NOT persistent paper stains.
+     There is no gameplay damage in this renderer. */
+  function drawPrimaryFx(c,fx){
+    const fade=Math.max(0,Math.min(1,fx.life/fx.max));
+    const age=1-fade,a=fx.aim,r=fx.reach;
+    c.save();c.strokeStyle=INK;c.fillStyle=INK;c.lineCap='round';
+    if(fx.kind==='thread'){
+      for(const link of fx.segments){
+        c.globalAlpha=.81*fade;c.lineWidth=2.25;
+        c.beginPath();c.moveTo(link.from.x,link.from.y);
+        const mx=(link.from.x+link.to.x)*.5;
+        const my=(link.from.y+link.to.y)*.5;
+        c.quadraticCurveTo(mx-5,my-7,link.to.x,link.to.y);c.stroke();
+        c.globalAlpha=.47*fade;
+        c.beginPath();c.arc(link.to.x,link.to.y,3.3,0,TAU);c.stroke();
+      }
+    }else if(fx.kind==='brush'||fx.kind==='cutter'){
+      const size=fx.kind==='brush'?(fx.special?2.7:1.9):1.15;
+      const sweep=fx.kind==='brush'?r*.84:r*.75;
+      c.globalAlpha=.77*fade;c.lineWidth=fx.kind==='brush'?6:2.8;
+      c.beginPath();
+      const steps=14;
+      for(let j=0;j<=steps;j++){
+        const th=a-size*.5+size*j/steps,rr=sweep+Math.sin(j*.55+fx.seq)*2.2;
+        const x=fx.x+Math.cos(th)*rr,y=fx.y+Math.sin(th)*rr;
+        if(!j)c.moveTo(x,y);else c.lineTo(x,y);
+      }
+      c.stroke();
+      /* Dry-brush flecks appear briefly at the finishing edge. */
+      c.globalAlpha=.35*fade;c.lineWidth=1.2;
+      c.beginPath();
+      for(let j=0;j<=steps;j++){
+        const th=a-size*.5+size*j/steps;
+        const x=fx.x+Math.cos(th)*(sweep+6),y=fx.y+Math.sin(th)*(sweep+6);
+        if(!j)c.moveTo(x,y);else c.lineTo(x,y);
+      }c.stroke();
+    }else if(fx.kind==='mallet'){
+      const mx=fx.x+Math.cos(a)*34,my=fx.y+Math.sin(a)*34;
+      const radius=r*(.4+age*.6);
+      c.lineWidth=fx.special?3:2.3;c.globalAlpha=.73*fade;
+      c.beginPath();c.ellipse(mx,my,radius,radius*.67,a,0,TAU);c.stroke();
+      c.lineWidth=1;c.globalAlpha=.4*fade;
+      for(let i=0;i<5;i++){
+        const th=a+i*TAU/5;
+        c.beginPath();
+        c.moveTo(mx+Math.cos(th)*radius*.7,my+Math.sin(th)*radius*.5);
+        c.lineTo(mx+Math.cos(th)*radius*1.2,my+Math.sin(th)*radius*.84);
+        c.stroke();
+      }
+    }else if(fx.kind==='quill'){
+      c.globalAlpha=.66*fade;c.lineWidth=1.4;
+      const x=fx.x+Math.cos(a)*17,y=fx.y+Math.sin(a)*17;
+      c.beginPath();c.moveTo(x,y);
+      c.lineTo(x+Math.cos(a)*65*age,y+Math.sin(a)*65*age);c.stroke();
+      if(fx.special){c.lineWidth=.7;c.globalAlpha=.36*fade;
+        c.beginPath();c.moveTo(x+Math.cos(a+0.08)*8,y+Math.sin(a+0.08)*8);
+        c.lineTo(x+Math.cos(a+.08)*70*age,y+Math.sin(a+.08)*70*age);c.stroke();}
+    }else if(fx.kind==='gun'){
+      c.globalAlpha=.68*fade;c.lineWidth=1.4;
+      const x=fx.x+Math.cos(a)*CFG.player.muzzle,y=fx.y+Math.sin(a)*CFG.player.muzzle;
+      for(let j=-1;j<=1;j++){
+        const th=a+j*.53,d=fx.special?9:5;
+        c.beginPath();c.moveTo(x+Math.cos(th)*2,y+Math.sin(th)*2);
+        c.lineTo(x+Math.cos(th)*d,y+Math.sin(th)*d);c.stroke();
+      }
+    }
+    c.restore();
+  }
+  function drawPrimaryProjectile(c,b){
+    c.save();c.translate(b.x,b.y);c.rotate(b.ang);
+    c.lineCap='round';c.lineJoin='round';
+    if(b.kind==='needleQuill'){
+      c.strokeStyle=INK;c.lineWidth=1.55;
+      c.beginPath();c.moveTo(-17,0);c.lineTo(16,0);c.stroke();
+      c.fillStyle=INK;c.beginPath();c.moveTo(16,0);
+      c.lineTo(9,-2.4);c.lineTo(9,2.4);c.closePath();c.fill();
+      c.strokeStyle=PAPER;c.lineWidth=.6;
+      c.beginPath();c.moveTo(-5,0);c.lineTo(9,0);c.stroke();
+    }else if(b.kind==='paperEdge'){
+      c.rotate(b.age*10);c.fillStyle=PAPER;c.strokeStyle=INK;c.lineWidth=1.25;
+      c.beginPath();c.moveTo(13,0);c.lineTo(-7,7);
+      c.lineTo(-3,0);c.lineTo(-7,-7);c.closePath();c.fill();c.stroke();
+      c.beginPath();c.moveTo(11,0);c.lineTo(-4,0);c.stroke();
+    }
+    c.restore();
+  }
+
+  function drawPlayer(c,t){
+    const S=G.S,p=S.player,st=S.stats;
+    const seed=p.visualSeed||0x51a7;
+    const aim=p.visualAim==null?p.aim:p.visualAim;
+    const mvx=p.visualMoveX||0,mvy=p.visualMoveY||0;
+    const motion=Math.min(1,Math.hypot(mvx,mvy));
+    const size=p.displayScale||1;
+    const reduced=!!S.reduced;
+    c.save();c.translate(p.x,p.y);
+    const recoil=Math.min(.55,Math.max(0,p.recoil)*.24);
+    c.translate(-Math.cos(aim)*recoil,-Math.sin(aim)*recoil);
+    const speed=Math.max(0,Math.min(1,p.visualSpeed||0));
+    const impulse=reduced?0:Math.min(1,(p.hitPulse||0)/.18);
+    const delight=reduced?0:Math.sin(Math.PI*Math.min(1,(p.rankPulse||0)/.48));
+    const absorb=reduced?0:Math.min(1,(p.absorbPulse||0)/.13);
+    const anticipation=p.visualState==='anticipate'?.012:0;
+    const braking=p.visualState==='brake'?.012:0;
+    c.rotate((p.visualTilt||0)*.42);
+    c.scale(size*(1+speed*.019-impulse*.06+delight*.04-braking),
+      size*(1-speed*.015+impulse*.05+anticipation+absorb*.014));
+    /* Head is planted, gaze steady. No repeated whole-body bounce. */
+    if(!reduced)c.translate(0,Math.sin(t*1.7+seed*.001)*.12*(1-speed)-impulse*.7);
+    c.fillStyle=INK;c.globalAlpha=1;
+    inkSoulPath(c,p.r,t,seed,reduced,motion);
+    c.fill();
+    /* Curved single paper-eye: watchful and curious, not an angry
+       two-slit monster. Its gaze eases with the game's existing aim. */
+    const eyeX=Math.cos(aim)*p.r*.28,eyeY=-p.r*.13+Math.sin(aim)*p.r*.12;
+    c.strokeStyle=PAPER;c.lineWidth=1.9;c.lineCap='round';
+    c.beginPath();c.moveTo(eyeX-2.1,eyeY-.8);
+    c.quadraticCurveTo(eyeX,eyeY+1.1,eyeX+2.5,eyeY-.55);c.stroke();
+    /* Negative-space paper mask details: a single tilted brow cut
+       and tiny cheek seal. They move WITH the hood, not as sprites. */
+    c.globalAlpha=.85;c.lineWidth=.68;
+    c.beginPath();c.moveTo(eyeX-2.5,eyeY-2.5);
+    c.quadraticCurveTo(eyeX-.3,eyeY-3.5,eyeX+2.1,eyeY-2.2);c.stroke();
+    c.globalAlpha=.69;c.fillStyle=PAPER;
+    c.beginPath();c.ellipse(-p.r*.45,p.r*.35,.8,1.45,-.42,0,TAU);c.fill();
+    c.globalAlpha=1;
+    if(S.invulnT>0){
+      c.save();c.globalAlpha=reduced?.35:.28+Math.sin(t*3)*.05;
+      c.lineWidth=1;c.strokeStyle=INK;
+      c.beginPath();c.arc(0,0,p.r*size+4,0,TAU);c.stroke();
+      c.restore();
+    }
+    if(st&&st.ward){
+      const ready=st.wardCd<=0,wa=aim+Math.PI;
+      c.save();c.translate(Math.cos(wa)*(p.r+12),Math.sin(wa)*(p.r+12)-2);
+      c.rotate((reduced?0:Math.sin(t*1.7)*.07)-.35);
+      c.globalAlpha=ready?.9:.2;c.strokeStyle=INK;c.lineWidth=1.4;
+      c.strokeRect(-4,-6.5,8,13);
+      if(ready){c.fillStyle=INK;c.fillRect(-1.6,-1.6,3.2,3.2);}
+      c.restore();
+    }
+    c.restore();
+    if((S.starter||'gun')==='gun')drawInkGun(c,p,st);
+    else drawStarterTool(c,S,t);
+  }
+
+  /* Suiteki is an uninterrupted wet ink thread: connected round-cap
+     segments instead of independent circular black blobs. No shaking,
+     no scattered satellites, no transparent neon effect. */
+  function drawSuiteki(c,pd,t){
+    const fade=Math.min(1,pd.life/.45);
+    c.save();c.lineCap='round';c.lineJoin='round';
+    c.strokeStyle=INK;c.globalAlpha=.52*fade;
+    c.lineWidth=pd.r*1.95;c.beginPath();
+    c.moveTo(pd.x0,pd.y0);c.lineTo(pd.x,pd.y);c.stroke();
+    c.globalAlpha=.76*fade;c.lineWidth=pd.r*1.08;c.beginPath();
+    c.moveTo(pd.x0,pd.y0);c.lineTo(pd.x,pd.y);c.stroke();
+    c.restore();
+  }
+  function drawSuitekiVessel(c,S){
+    if(!S.stats?.trailW||!S.trailFrom)return;
+    const p=S.player,a=p.visualFacing||0;
+    c.save();c.translate(p.x-Math.cos(a)*17,p.y-Math.sin(a)*17);
+    c.rotate(a+.36);c.globalAlpha=.78;
+    c.strokeStyle=INK;c.lineWidth=1.25;c.lineJoin='round';
+    c.beginPath();c.moveTo(-4,-4);c.lineTo(4,-4);
+    c.lineTo(5,2);c.quadraticCurveTo(0,5,-5,2);c.closePath();c.stroke();
+    c.fillStyle=INK;c.beginPath();c.arc(-6,1,1.6,0,TAU);c.fill();
+    c.restore();
+  }
+
+  /* Night Scroll powers are made only from the current paper and ink
+     palette: one suspended lantern, a tapered crescent, a fading soul. */
+  function drawLantern(c,S,t){
+    if(!S.stats?.lantern)return;
+    const p=S.player,lv=S.stats.lantern,radius=CFG.lantern.radius(lv);
+    /* Three broken brush lines, never a bright glow or periodic wave.
+       The inner contours remain legible on narrow phone screens. */
+    c.save();c.translate(p.x,p.y);
+    c.strokeStyle=INK;c.lineCap='round';
+    for(let ring=0;ring<3;ring++){
+      const r=radius*[.36,.69,1][ring];
+      c.globalAlpha=ring===2?.18:.085;
+      c.lineWidth=ring===2?1.2:.75;
+      c.beginPath();
+      for(let a=0;a<4;a++){
+        const drift=S.reduced?0:Math.sin(t*.33+ring+a)*.025;
+        const start=a*TAU/4+.12+drift;
+        c.arc(0,0,r,start,start+.95);
+      }
+      c.stroke();
+    }
+    c.restore();
+    const x=p.x+22,y=p.y-31+(S.reduced?0:Math.sin(t*1.6)*1.7);
+    c.save();c.translate(x,y);
+    c.fillStyle=PAPER;c.strokeStyle=INK;
+    c.lineWidth=1.6;c.globalAlpha=.91;
+    c.beginPath();c.moveTo(-6,-6);c.quadraticCurveTo(0,-9,6,-6);
+    c.lineTo(6,5);c.quadraticCurveTo(0,8,-6,5);c.closePath();
+    c.fill();c.stroke();
+    c.beginPath();c.moveTo(0,-12);c.lineTo(0,-7);c.moveTo(-3,8);
+    c.lineTo(3,8);c.stroke();
+    c.globalAlpha=.74;c.fillStyle=INK;
+    c.beginPath();c.arc(0,0,1.6,0,TAU);c.fill();
+    c.restore();
+  }
+  function drawCrescent(c,b){
+    c.save();c.translate(b.x,b.y);
+    c.rotate(b.ang);c.strokeStyle=INK;c.lineCap='round';
+    c.lineWidth=3.3;c.globalAlpha=.92;
+    c.beginPath();c.arc(0,0,10,-1.18,1.18);c.stroke();
+    c.globalAlpha=.50;c.lineWidth=1.05;
+    c.beginPath();c.arc(-2.4,0,7.2,-1.05,1.05);c.stroke();
+    c.restore();
+  }
+  function drawShroudEcho(c,e){
+    c.save();c.translate(e.x,e.y);
+    c.globalAlpha=.35*(e.life/e.max);c.fillStyle=INK;
+    blobPath(c,0,0,9,0x51a7,.11,10);c.fill();
+    c.strokeStyle=PAPER;c.lineWidth=1.25;
+    c.beginPath();c.moveTo(-2,-2);c.lineTo(2,-2);c.stroke();
+    c.restore();
+  }
+  function drawLanternRevelation(c,e){
+    if((e.lanternReveal||0)>0){
+      c.save();c.strokeStyle=INK;
+      c.globalAlpha=e.lanternLit?.42:.42*Math.min(1,e.lanternReveal/CFG.lantern.afterglow);
+      c.lineWidth=1.1;c.setLineDash([3,5]);
+      c.beginPath();c.arc(e.x,e.y,e.r+4,0,TAU);c.stroke();
+      c.setLineDash([]);c.restore();
+    }
+    /* Explicit stationary warning at the Shade's landing point. */
+    if(e.type==='shade'&&e.state==='emerge'){
+      const progress=Math.max(0,Math.min(1,e.stateT/CFG.nightStealth.warn));
+      c.save();c.translate(e.x,e.y);
+      c.strokeStyle=INK;c.lineWidth=1.4;c.globalAlpha=.34+.43*progress;
+      c.setLineDash([4,5]);c.beginPath();
+      c.arc(0,0,e.r+10,0,TAU);c.stroke();
+      c.setLineDash([]);
+      const aim=e.ang;
+      c.beginPath();c.moveTo(Math.cos(aim)*(e.r+15),Math.sin(aim)*(e.r+15));
+      c.lineTo(Math.cos(aim)*(e.r+22),Math.sin(aim)*(e.r+22));c.stroke();
+      c.restore();
+    }
   }
 
   /* ---------------- projectiles, zones, fx ---------------- */
   function drawBullet(c, b) {
     c.save();
     c.translate(b.x, b.y);
-    if (b.kind === 'blade') { /* a folded paper blade, spinning */
+    if(b.kind==='mirror'){
+      c.rotate(b.ang);c.strokeStyle=INK;c.lineWidth=2.25;
+      c.lineCap='round';c.lineJoin='round';
+      c.beginPath();c.moveTo(-10,-5);c.lineTo(0,5);
+      c.lineTo(11,-5);c.stroke();
+      c.globalAlpha=.58;c.lineWidth=.85;
+      c.beginPath();c.moveTo(-8,-7);c.lineTo(3,2);c.stroke();
+    } else if (b.kind === 'blade') { /* a folded paper blade, spinning */
       c.rotate(b.ang + b.age * b.spin);
       c.fillStyle = INK;
       c.beginPath();
@@ -1199,6 +1910,102 @@ const R = (() => {
       teardrop(c, (2.4 + pr * 2.2) * big);
       c.fill();
       c.restore();
+    }
+    c.restore();
+  }
+
+  /* Phase 3 additions reuse the existing paper/ink brush palette.
+     The original 14 enemy silhouettes and boil animation are unchanged. */
+  function drawGuardianHazard(c, mark, t) {
+    const warning = mark.t > 0;
+    const remain = warning ? Math.max(0, mark.t / mark.maxWarn) : 0;
+    const ink = mark.world === 1 ? INK : INK;
+    const color = mark.world === 2 ? RED : ink;
+    c.save();
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    if(mark.kind==='heavenlyStroke'){
+      const pts=mark.points||[];
+      /* A visible promise on the page, then a rapid brushstroke reveal.
+         This very same sampled curve powers GUARDIANS.hits(). */
+      const reveal=warning?Math.min(1,(1-remain)*1.8):
+        GUARDIANS.strokeReveal(mark);
+      const limit=warning?pts.length:Math.max(2,Math.ceil(reveal*(pts.length-1)));
+      const pigment=INK;
+      for(let j=1;j<Math.min(pts.length,limit+1);j++){
+        const a=pts[j-1],b=pts[j],frac=j/(pts.length-1);
+        if(!warning&&frac>reveal)break;
+        c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);
+        const weight=mark.width*(a.width+b.width)*.5;
+        if(warning){
+          c.strokeStyle=pigment;
+          c.lineWidth=1.2+weight*.07;
+          c.globalAlpha=.22+.37*(1-remain);
+        }else{
+          c.strokeStyle=pigment;
+          c.lineWidth=weight;
+          c.globalAlpha=.93;
+        }
+        c.stroke();
+      }
+      if(!warning&&reveal>.12){
+        /* Split wet/dry edge without making a rectangular highway. */
+        c.globalAlpha=.24;c.strokeStyle=PAPER;c.lineWidth=1.1;
+        c.beginPath();
+        for(let j=1;j<Math.max(2,Math.floor(reveal*pts.length));j+=3){
+          const p=pts[j];
+          j===1?c.moveTo(p.x+1.7,p.y):c.lineTo(p.x+1.7,p.y);
+        }
+        c.stroke();
+      }
+      if(warning&&pts.length){
+        const head=pts[Math.max(0,Math.min(pts.length-1,Math.floor(reveal*(pts.length-1))))];
+        c.globalAlpha=.56;c.fillStyle=pigment;
+        c.beginPath();c.arc(head.x,head.y,2.1+2*(1-remain),0,TAU);c.fill();
+      }
+      c.restore();return;
+    }
+    if (mark.kind === 'seal') {
+      const r = mark.radius;
+      const pulse = 1 + Math.sin(t * 6.5) * .023;
+      c.translate(mark.x, mark.y);
+      c.scale(pulse, pulse);
+      c.beginPath();
+      c.arc(0, 0, r, 0, TAU);
+      c.fillStyle = warning ? color : RED;
+      c.globalAlpha = warning ? .09 + (1 - remain) * .14 : .38;
+      c.fill();
+      c.globalAlpha = warning ? .64 + .20 * (1 - remain) : .88;
+      c.lineWidth = warning ? 2 : 3;
+      c.strokeStyle = warning ? color : RED;
+      c.stroke();
+      c.beginPath();
+      c.arc(0, 0, r * (warning ? 1 - (1 - remain) * .22 : .65), 0, TAU);
+      c.lineWidth = 1.2;
+      c.globalAlpha = warning ? .44 : .65;
+      c.stroke();
+      c.beginPath();c.moveTo(-r * .15, 0);c.lineTo(r * .15, 0);
+      c.moveTo(0, -r * .15);c.lineTo(0, r * .15);c.stroke();
+    } else {
+      const dx = mark.x2 - mark.x1, dy = mark.y2 - mark.y1;
+      const d = Math.hypot(dx, dy) || 1;
+      const nx = -dy / d, ny = dx / d, h = mark.width * .5;
+      c.beginPath();c.moveTo(mark.x1, mark.y1);c.lineTo(mark.x2, mark.y2);
+      c.lineWidth = mark.width;
+      c.strokeStyle = warning ? color : RED;
+      c.globalAlpha = warning ? .075 + (1 - remain) * .11 : .35;
+      c.stroke();
+      c.globalAlpha = warning ? .58 + (1 - remain) * .16 : .92;
+      c.lineWidth = warning ? 1.6 : 2.4;
+      for (const sign of [-1, 1]) {
+        c.beginPath();
+        c.moveTo(mark.x1 + nx * h * sign, mark.y1 + ny * h * sign);
+        c.lineTo(mark.x2 + nx * h * sign, mark.y2 + ny * h * sign);
+        c.stroke();
+      }
+      c.beginPath();c.moveTo(mark.x1, mark.y1);c.lineTo(mark.x2, mark.y2);
+      c.globalAlpha = warning ? .18 + (1 - remain) * .4 : .8;
+      c.setLineDash([7, 12]);c.stroke();c.setLineDash([]);
     }
     c.restore();
   }
@@ -1399,28 +2206,62 @@ const R = (() => {
     }
 
     /* faint marks so the sheet feels hand-made and the motion reads */
-    drawDecor(ctx, vx0, vy0, vx1, vy1);
+    if(themeKey!=='pale')drawDecor(ctx, vx0, vy0, vx1, vy1);
 
-    /* dried ink from every fight before this moment */
-    const cullM = 80;
-    for (const st of stains) {
-      if (st.x < vx0 - cullM || st.x > vx1 + cullM || st.y < vy0 - cullM || st.y > vy1 + cullM) continue;
-      ctx.globalAlpha = Math.max(0, st.a * (1 - st.age * CFG.world.stainFade));
-      ctx.drawImage(st.spr, st.x - st.half, st.y - st.half, st.half * 2, st.half * 2);
+    /* Stage-long paper history, spatially indexed by viewport cells.
+       Old weapon strikes and enemy blood remain through every wave. */
+    const cullM=105;
+    for(let cy=Math.floor((vy0-cullM)/STAIN_CELL);
+      cy<=Math.floor((vy1+cullM)/STAIN_CELL);cy++){
+      for(let cx=Math.floor((vx0-cullM)/STAIN_CELL);
+        cx<=Math.floor((vx1+cullM)/STAIN_CELL);cx++){
+        const list=stainCells.get(cx+','+cy);
+        if(!list)continue;
+        for(const st of list){
+          if(st.x<vx0-cullM||st.x>vx1+cullM||st.y<vy0-cullM||st.y>vy1+cullM)continue;
+          ctx.globalAlpha=st.a;
+          if(st.angle){
+            ctx.save();ctx.translate(st.x,st.y);ctx.rotate(st.angle);
+            ctx.drawImage(st.spr,-st.half,-st.half,st.half*2,st.half*2);
+            ctx.restore();
+          }else ctx.drawImage(st.spr,st.x-st.half,st.y-st.half,st.half*2,st.half*2);
+        }
+      }
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha=1;
 
-    for (const pd of S.puddles) drawPuddle(ctx, pd);
+    if (playing) drawEraserField(ctx,S,t);
+    for (const pd of S.puddles) drawSuiteki(ctx,pd,t);
+    if(playing)drawSuitekiVessel(ctx,S);
     if (!S.reduced) updateAmbient(dt, S);
 
+    for (const mark of S.guardianMarks || []) drawGuardianHazard(ctx, mark, t);
     for (const m of S.markers) drawMarker(ctx, m);
     for (const r of S.rings) drawRing(ctx, r);
-    for (const b of S.bullets) drawBullet(ctx, b);
+    for (const b of S.bullets){
+      if(b.kind==='needleQuill'||b.kind==='paperEdge')
+        drawPrimaryProjectile(ctx,b);
+      else drawBullet(ctx,b);
+    }
+    for(const fx of S.primaryFx||[])drawPrimaryFx(ctx,fx);
+    for (const b of S.crescents||[]) drawCrescent(ctx,b);
+    for (const e of S.shroudEchoes||[])drawShroudEcho(ctx,e);
     for (const b of S.ebullets) drawEBullet(ctx, b);
-    for (const e of S.enemies) drawEnemy(ctx, e, t);
+    for (const e of S.enemies) {
+      if(themeKey==='dark')drawNightSighting(ctx,e);
+      if(e.type==='shade'&&(e.state==='emerge'||
+        (e.state==='dissolve'&&e.lanternLit)))
+        drawStealthShade(ctx,e,t);
+      else drawEnemy(ctx,e,t);
+      drawLanternRevelation(ctx,e);
+    }
     for (const d of S.idle) drawEnemy(ctx, d, t);
+    /* Living splat cores are drawn above dried ink, below the brush.
+       No original creature or player sprite functions are modified. */
+    if (playing) INK_XP.draw(ctx, S, t, INK, PAPER, RED);
     for (const sp of S.spirits) drawSpirit(ctx, sp);
     if (playing) drawPlayer(ctx, t);
+    if (playing) drawLantern(ctx,S,t);
     for (const knot of S.knots) drawKnot(ctx, knot, t);
     for (const p of S.particles) drawParticle(ctx, p);
     for (const p of S.popups) drawPopup(ctx, p);
@@ -1440,7 +2281,7 @@ const R = (() => {
     const lowHp = S.stats && S.stats.hp === 1 && (S.mode === 'playing' || S.mode === 'paused');
     const vg = ctx.createRadialGradient(S.W / 2, S.H / 2, Math.min(S.W, S.H) * 0.42, S.W / 2, S.H / 2, Math.max(S.W, S.H) * 0.74);
     vg.addColorStop(0, `rgba(${th.vig},0)`);
-    vg.addColorStop(1, `rgba(${th.vig},${lowHp ? 0.3 : 0.17})`);
+    vg.addColorStop(1, `rgba(${th.vig},${lowHp ? 0.3 : themeKey==='pale' ? .025 : .17})`);
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, S.W, S.H);
 
@@ -1454,5 +2295,16 @@ const R = (() => {
     }
   }
 
-  return { draw, resetStains };
+  /* A small read-only inspection surface for cross-wave visual QA.
+     It is not part of gameplay or the per-frame paint path. */
+  function terrainStats(){
+    const weapons={};let blood=0;
+    for(const mark of stains){
+      if(mark.kind==='blood')blood++;
+      else weapons[mark.kind]=(weapons[mark.kind]||0)+1;
+    }
+    return {total:stains.length,blood,weapons};
+  }
+
+  return { draw, resetStains, eraseTerrain, terrainStats };
 })();

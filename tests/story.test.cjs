@@ -42,6 +42,8 @@ function harness(reduced=false) {
     performance:{now(){return 0;}},
     requestAnimationFrame(fn){frames.push(fn);return frames.length;},
     cancelAnimationFrame(){},
+    setTimeout(){return 1;},
+    clearTimeout(){},
   });
   for(const p of ['js/film.js','js/intro.js'])vm.runInContext(file(p),context,{filename:p});
   return {
@@ -53,7 +55,7 @@ function harness(reduced=false) {
     get savedProgress(){return savedProgress;}
   };
 }
-test('every page launch starts a skippable automatic short film, not a click-through slideshow',()=>{
+test('the original seven-shot story film still plays from WATCH FILM',()=>{
   const x=harness(),{INTRO,G,nodes,frames}=x;
   assert.equal(INTRO.SCENES.length,7);
   assert.equal(INTRO.SCENES.reduce((a,b)=>a+b.seconds,0),61);
@@ -102,11 +104,23 @@ test('final reel ends at game title; reduced-motion mode still advances the film
 test('story archive remains unlock-gated and original game assets are untouched',()=>{
   const x=harness(),{INTRO,G,nodes}=x;
   x.savedProgress=0;INTRO.openArchive();
+  assert.ok(nodes.get('archiveChapters').innerHTML.includes('Before time had weight'));
+  assert.equal(nodes.get('archivePage').textContent,'01 / 05');
+  INTRO.handleKey('ArrowRight');
+  INTRO.handleKey('ArrowRight');
   assert.ok(nodes.get('archiveChapters').innerHTML.includes('STILL SEALED'));
   x.savedProgress=20;INTRO.openArchive();
+  INTRO.handleKey('ArrowRight');
+  INTRO.handleKey('ArrowRight');
   assert.ok(nodes.get('archiveChapters').innerHTML.includes('Kage and Shade'));
+  assert.equal(nodes.get('archivePage').textContent,'03 / 05');
   x.savedProgress=30;INTRO.openArchive();
+  for(let i=0;i<4;i++)nodes.get('archiveNext').click();
   assert.ok(nodes.get('archiveChapters').innerHTML.includes('At the final seal,'));
+  assert.equal(nodes.get('archivePage').textContent,'05 / 05');
+  assert.equal(nodes.get('archiveNext').disabled,true);
+  nodes.get('archivePrev').click();
+  assert.equal(nodes.get('archivePage').textContent,'04 / 05');
   assert.ok(INTRO.handleKey('Escape'));
   assert.equal(G.mode,'title');
   const html=file('index.html'),js=file('js/intro.js'),main=file('js/main.js');
@@ -114,9 +128,12 @@ test('story archive remains unlock-gated and original game assets are untouched'
   assert.ok(html.indexOf('film.js')<html.indexOf('intro.js'));
   assert.ok(!html.includes('id="introFrames"'));
   assert.ok(!html.includes('id="introStartBtn"'));
-  assert.ok(main.includes('INTRO.play()'),'game entry auto-plays film');
+  assert.ok(main.includes('OPENING.start()'),'game entry auto-plays the separate GLM opening');
+  assert.ok(html.includes('<script src="./js/opening.js"></script>'));
+  assert.ok(html.indexOf('intro.js')<html.indexOf('opening.js'));
+  assert.ok(js.includes("replayIntroBtn"),'WATCH FILM still replays the seven-shot story');
   assert.ok(!js.includes('sessionStorage'),'no once-per-visit shortcuts');
-  assert.ok(!/\.mp4|\.webm/.test(html+js),'no external video needed');
+  assert.ok(!/\.(?:mp4|webm)(?=[\s"'?&#<]|$)/.test(html+js),'no external video needed');
   assert.ok(file('js/render.js').includes('function drawEnemy('));
   assert.ok(file('docs/GAME_BIBLE.md').includes('Sprite sheet inventory: **NONE**'));
 });

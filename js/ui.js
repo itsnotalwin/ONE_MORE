@@ -9,6 +9,7 @@ const UI = (() => {
   const el = {
     hud: $('hud'), hudWave: $('hudWave'), waveFill: $('waveFill'), hudHp: $('hudHp'),
     hudScore: $('hudScore'), hudTime: $('hudTime'), muteBtn: $('muteBtn'),
+    inkMeter: $('inkMeter'), inkRank: $('inkRank'), inkFill: $('inkFill'),
     hudArea: $('hudArea'), hudAreaKanji: $('hudAreaKanji'), hudAreaName: $('hudAreaName'),
     hudWaveTotal: $('hudWaveTotal'), hudMode: $('hudMode'),
     banner: $('waveBanner'), bannerKicker: $('bannerKicker'), bannerTitle: $('bannerTitle'),
@@ -25,7 +26,9 @@ const UI = (() => {
     campaignWorlds: $('campaignWorlds'), campaignLevels: $('campaignLevels'),
     campaignWorldName: $('campaignWorldName'), campaignMechanic: $('campaignMechanic'),
     campaignStatus: $('campaignStatus'),
-    statWaves: $('statWaves'), statKills: $('statKills'), statTime: $('statTime'), statScore: $('statScore'),
+    starterGrid: $('starterGrid'),starterCount: $('starterCount'),
+    starterExplain: $('starterExplain'),
+    statWaves: $('statWaves'), statKills: $('statKills'), statInkRank: $('statInkRank'), statTime: $('statTime'), statScore: $('statScore'),
     newBestBadge: $('newBestBadge'), flash: $('flash'),
   };
 
@@ -85,9 +88,14 @@ const UI = (() => {
     crit: '<path d="M12 4.2c1.5 3.6 2.3 5.7 2.3 8 0 3-1 5.2-2.3 5.2s-2.3-2.2-2.3-5.2c0-2.3.8-4.4 2.3-8z" fill="currentColor"/><circle cx="17.6" cy="6.4" r="2" fill="#b23a2b"/>',
     ward: '<rect x="8" y="4.6" width="8" height="14.8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10.4" r="1.7" fill="#b23a2b"/><path d="M10 15.6h4M10.6 17.6h2.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>',
     fan: '<path d="M12 19.5L4.8 8.2c4.4-2.9 10-2.9 14.4 0L12 19.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 19.5L7.4 7.6M12 19.5l4.6-11.9M12 19.5V6.2" stroke="currentColor" stroke-width="1.2" opacity=".7"/>',
-    trailW: '<path d="M4.5 16.5c2.4-.6 3.4-2.6 3-5 2.6.6 4.4-.6 5-3 2.4.8 4.4 0 5.4-2 1.6 2.6 2 5.6 1 8.6-1.2 3.6-4.4 5.9-8.2 5.7-2.6-.1-4.8-1.6-6.2-4.3z" fill="currentColor" opacity=".85"/><path d="M8 13.4l1.6 1.6M11.6 11l1.5 1.5" stroke="#ede7d9" stroke-width="1.1" stroke-linecap="round"/>',
+    trailW: '<path d="M5 14.5h13l-1.6 4.3H7.2L5 14.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 14.5V7.1c0-1.7 1.4-3 3.2-3h3.6c1.8 0 3.2 1.3 3.2 3v7.4M9 6.4h6M13.5 10.2l4.7-2.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M19 10.5c0 1.5-1.2 2.7-2.4 2.7-1.2 0-2.4-1.2-2.4-2.7 0-1.1 2.4-4 2.4-4s2.4 2.9 2.4 4z" fill="currentColor" opacity=".68"/>',
     spirit: '<path d="M15.5 6.5c2.6 1.2 4 3.6 3.6 6.4-.4 3-2.6 5.3-5.8 5.4-2.8.1-5-1.8-5.2-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8.4 14.2c-.5-2.4.8-4.6 3-5.6 2.4-1 5-.2 6.3 1.8" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".55"/><circle cx="7" cy="17.4" r="2.2" fill="currentColor"/>',
     knot: '<path d="M4 7C7 3 13 4 14 8s-4 8-7 6 0-6 4-5 7 5 9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="7" cy="14" r="2" fill="#b23a2b"/><circle cx="19.6" cy="18" r="1.7" fill="#b23a2b"/>',
+
+    lantern: '<path d="M8 7c2-2 6-2 8 0v9c-2 2-6 2-8 0V7zM12 3v3M9 19h6M12 16v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="12" cy="11.5" r="1.7" fill="currentColor"/>',
+    crescent: '<path d="M17 3.5a8.3 8.3 0 1 0 3 13.4A9.5 9.5 0 0 1 17 3.5z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M18 7l2-1M18.6 12h2.4" stroke="currentColor" stroke-width="1.2"/>',
+    mirror: '<path d="M6 6l6 12 6-12M7.5 7.5l4.5 8 4.5-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>',
+    shroud: '<path d="M9 4.5c3-1.2 6 1.2 6 4v7l-3-1.7L9 16l-2.5-2V9c0-2 .8-3.8 2.5-4.5zM15.5 8.5l3.5-1.5M16 12l4-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
   };
   /* the upgrade is filed under 'trail'; the glyph under 'trailW' — same brush */
   GLYPHS.trail = GLYPHS.trailW;
@@ -110,6 +118,35 @@ const UI = (() => {
     el.tickerTrack.innerHTML = half + half;
   }
 
+  /* The armory is a paper catalogue, not another loot roll. Every
+     unlocked instrument may be carried back to an older stage. */
+  function renderStarters(progress,selected='gun'){
+    if(!el.starterGrid)return;
+    const unlocks=STARTERS.filter(w=>w.unlock[1]===0 ||
+      (progress.completed[w.unlock[0]]||0)>=w.unlock[1]);
+    el.starterCount.textContent=String(unlocks.length).padStart(2,'0')+
+      ' / '+String(STARTERS.length).padStart(2,'0')+' UNSEALED';
+    el.starterGrid.innerHTML=STARTERS.map(w=>{
+      const allowed=unlocks.includes(w),chosen=allowed&&selected===w.id;
+      const detail=w.unlock[1]===0?'STARTING INSTRUMENT':
+        'COMPLETE '+AREAS[w.unlock[0]].name+' · '+String(w.unlock[1]).padStart(2,'0');
+      return `<button type="button" data-starter="${w.id}" class="starter-card${chosen?' selected':''}"
+        ${allowed?'':'disabled'} aria-pressed="${chosen}"
+        aria-label="${w.name}, ${w.kind.toLowerCase()}, ${allowed?(chosen?'equipped':'unlocked'):'locked: '+detail}">
+        <span class="starter-icon" aria-hidden="true">${w.kanji}</span>
+        <span class="starter-copy">
+          <span class="starter-topline">${w.kind} · ${chosen?'EQUIPPED':allowed?'UNSEALED':'SEALED'}</span>
+          <strong>${w.name}</strong>
+          <small>${allowed?w.special:detail}</small>
+        </span>
+        <span class="starter-mark" aria-hidden="true">${chosen?'✓':allowed?'↗':'鎖'}</span>
+      </button>`;
+    }).join('');
+    const active=STARTERS.find(w=>w.id===selected)||STARTERS[0];
+    el.starterExplain.textContent=active.name+' · '+active.detail+
+      '  Unlocked forever. Choose it on any previously reached level.';
+  }
+
   /* Campaign selection is a new screen, built using the existing paper/ink tokens. */
   function renderCampaign(progress, selectedWorld) {
     const worlds = AREAS;
@@ -126,18 +163,41 @@ const UI = (() => {
     const completeCount = progress.completed[selectedWorld];
     el.campaignWorldName.textContent = area.name;
     el.campaignMechanic.textContent = `${area.desc}  ·  ${area.mechanic}`;
-    el.campaignStatus.textContent = `${completeCount} / 10 LEVELS COMPLETE · 10 WAVES EACH`;
+    const nextLevel = Math.min(CAMPAIGN.LEVELS_PER_WORLD, completeCount + 1);
+    const nextChapter = WAVE_DIRECTOR.level(selectedWorld, nextLevel);
+    el.campaignStatus.textContent = completeCount === CAMPAIGN.LEVELS_PER_WORLD
+      ? '10 / 10 LEVELS SEALED · SCROLL COMPLETE'
+      : `${completeCount} / 10 COMPLETE · NEXT: ${nextChapter.title}`;
     el.campaignLevels.innerHTML = Array.from({ length: CAMPAIGN.LEVELS_PER_WORLD }, (_, i) => {
       const level = i + 1;
       const cleared = level <= completeCount;
       const available = CAMPAIGN.canPlay(selectedWorld, level, progress);
       const state = cleared ? 'SEALED' : available ? 'PLAY' : 'LOCKED';
+      const stage = WAVE_DIRECTOR.level(selectedWorld, level);
       return `<button type="button" class="campaign-level${cleared ? ' cleared' : ''}" data-level="${level}"
-        ${available ? '' : 'disabled'} aria-label="Level ${level}, ${state.toLowerCase()}">
+        ${available ? '' : 'disabled'} aria-label="Level ${level}, ${stage.title}, ${state.toLowerCase()}" title="${stage.title} — ${stage.signature.toUpperCase()}">
         <span class="campaign-level-no">${pad2(level)}</span><span class="campaign-level-state">${state}</span>
         ${level === CAMPAIGN.LEVELS_PER_WORLD ? '<span class="campaign-boss-label">守</span>' : ''}
       </button>`;
     }).join('');
+  }
+
+  /* Full-viewport journey pages: switching tabs never resets selections. */
+  function selectCampaignView(view) {
+    const views = ['scrolls', 'weapons', 'levels'];
+    if (!views.includes(view)) return;
+    const panel = document.querySelector('#screenSelect .campaign-panel');
+    panel.dataset.view = view;
+    const panels = {scrolls: 'campaignScrolls', weapons: 'campaignWeapons', levels: 'campaignStages'};
+    for (const key of views) {
+      document.getElementById(panels[key]).hidden = key !== view;
+      const tab = document.querySelector('[data-campaign-view="' + key + '"]');
+      tab.setAttribute('aria-selected', String(key === view));
+      tab.tabIndex = key === view ? 0 : -1;
+    }
+    const next = document.getElementById('campaignNextBtn');
+    next.textContent = view === 'scrolls' ? 'CHOOSE WEAPON →' :
+      view === 'weapons' ? 'CHOOSE LEVEL →' : 'CHANGE SCROLL ↺';
   }
 
   function show(name) {
@@ -157,6 +217,10 @@ const UI = (() => {
     if (!el.hudArea) return;
     el.hudAreaKanji.textContent = area.kanji;
     el.hudAreaName.textContent = area.name;
+    el.inkMeter.classList.toggle('is-night',area.theme==='dark');
+    /* Keep HUD and wave warnings legible on indigo paper too. */
+    el.hud.classList.toggle('is-night',area.theme==='dark');
+    el.banner.classList.toggle('is-night',area.theme==='dark');
     el.hudWaveTotal.textContent = `${toKanji(waveInArea)} / ${toKanji(CFG.wave.wavesPerArea)}${isElite ? ' · 守' : ''}`;
   }
 
@@ -178,8 +242,11 @@ const UI = (() => {
     if (t !== lastTimeStr) { lastTimeStr = t; el.hudTime.textContent = t; }
   }
 
-  function banner(n, surge, isElite, worldBoss = false) {
-    el.bannerKicker.textContent = worldBoss && isElite ? 'THE WORLD GUARDIAN WAKES' : isElite ? 'THE GUARDIAN WAKES' : surge ? 'THE SURGE' : 'INCOMING';
+  function banner(n, surge, isElite, worldBoss = false, cue = null) {
+    el.bannerKicker.textContent = worldBoss && isElite ? 'THE WORLD GUARDIAN WAKES'
+      : isElite ? 'THE GUARDIAN WAKES'
+      : surge ? 'THE SURGE'
+      : cue || 'INCOMING';
     el.bannerTitle.innerHTML =
       `<span class="ban-kanji">${toKanji(n)}</span><span class="ban-lat">WAVE ${pad2(n)}${isElite ? ' — GUARDIAN' : ''}</span>`;
     el.banner.classList.toggle('surge', !!surge || !!isElite);
@@ -215,6 +282,22 @@ const UI = (() => {
     flashTimer = setTimeout(() => el.flash.classList.remove('on'), 130);
   }
 
+  function setInkProgress(rank, current, needed, leveled=false) {
+    const safeRank=Math.max(1,Math.floor(rank));
+    const pct=Math.max(0,Math.min(100,100*current/Math.max(1,needed)));
+    el.inkRank.textContent='BRUSH '+pad2(safeRank);
+    el.inkFill.style.width=pct.toFixed(1)+'%';
+    el.inkMeter.setAttribute('aria-valuemax',String(Math.max(1,needed)));
+    el.inkMeter.setAttribute('aria-valuenow',String(Math.max(0,Math.floor(current))));
+    el.inkMeter.setAttribute('aria-valuetext',
+      'Brush rank '+safeRank+', '+Math.floor(current)+' of '+needed+' ink');
+    if(leveled) {
+      el.inkMeter.classList.remove('is-ranking');
+      void el.inkMeter.offsetWidth;
+      el.inkMeter.classList.add('is-ranking');
+    }
+  }
+
   function setRunNo(n) { el.runNo.textContent = 'RUN ' + pad3(n); }
 
   function setBest(b) {
@@ -232,14 +315,14 @@ const UI = (() => {
       const lv = levels[u.id] || 0;
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'up-card' + (u.weapon ? ' is-weapon' : '');
+      card.className = 'up-card' + (u.weapon ? ' is-weapon' : '') + (u.seal ? ' is-seal' : '');
       const pips = u.patch ? '' : Array.from({ length: u.max }, (_, k) =>
         `<i class="pip${k < lv ? ' on' : ''}"></i>`).join('');
-      const isNew = !u.patch && lv === 0 ? '<span class="up-new">NEW</span>' : '';
-      const isWpn = u.weapon ? '<span class="up-wpn">武</span>' : '';
+      const isNew = u.seal ? '<span class="up-new">VERMILION</span>' : !u.patch && lv === 0 ? '<span class="up-new">NEW</span>' : '';
+      const isWpn = u.seal ? '<span class="up-wpn">朱</span>' : u.weapon ? '<span class="up-wpn">武</span>' : '';
       card.innerHTML =
         `<div class="up-top"><span class="up-no">之${toKanji(i + 1)}</span><span class="up-top-right">${isWpn}${isNew}<span class="up-pips">${pips}</span></span></div>` +
-        `<svg class="up-glyph" viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.id] || GLYPHS.patch}</svg>` +
+        `<svg class="up-glyph" viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.redSealOf || u.id] || GLYPHS.patch}</svg>` +
         `<h3 class="up-name">${u.name}</h3>` +
         `<p class="up-desc">${u.desc}</p>` +
         `<span class="up-check" aria-hidden="true"></span>`;
@@ -255,10 +338,12 @@ const UI = (() => {
     });
   }
 
-  function setDeploy(on, nextArea, waveInArea, cycle) {
+  function setDeploy(on, nextArea, waveInArea, cycle, sameWave=false) {
     el.deployBtn.classList.toggle('is-disabled', !on);
     el.deployBtn.disabled = !on;
-    el.deployBtn.innerHTML = on
+    el.deployBtn.innerHTML = sameWave
+      ? (on ? 'RETURN TO THE INK ↗' : 'SELECT A NEW STROKE')
+      : on
       ? (nextArea
         ? `UNROLL — <span class="kanji-inline">${nextArea.kanji}</span> ${nextArea.name}`
         : `DEPLOY — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span>`)
@@ -267,11 +352,14 @@ const UI = (() => {
         : `DEPLOY — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span>`);
   }
 
-  function setUpgradeHeader(waveInArea, area, globalNext) {
+  function setUpgradeHeader(waveInArea, area, globalNext, source='wave', rank=1) {
     const lastWave = waveInArea >= CFG.wave.wavesPerArea;
-    el.upKicker.innerHTML =
-      `SHEET <span class="kanji-inline">${area.kanji}</span> ${area.name} — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span> CLEARED`;
-    el.upNext.innerHTML = lastWave
+    el.upKicker.innerHTML = source==='ink'
+      ? `INK ABSORBED · BRUSH RANK <span class="kanji-inline">${toKanji(rank)}</span>`
+      : `SHEET <span class="kanji-inline">${area.kanji}</span> ${area.name} — WAVE <span class="kanji-inline">${toKanji(waveInArea)}</span> CLEARED`;
+    el.upNext.innerHTML = source==='ink'
+      ? '<span class="kanji-inline">'+toKanji(rank)+'</span>'
+      : lastWave
       ? '<span class="kanji-inline">?</span>'
       : '<span class="kanji-inline">' + toKanji(waveInArea + 1) + '</span>';
   }
@@ -287,6 +375,10 @@ const UI = (() => {
           : d.level === 10 ? 'This scroll is complete. A new sheet awaits.'
           : `Level ${pad2(d.level)} sealed. The next page is yours.`)
         : `The brush fell on wave ${pad2(d.waves + 1)}. This level remains yours to retry.`;
+      if(d.newlyUnlocked)
+        el.overSub.textContent+='  NEW INSTRUMENT UNSEALED: '+
+          d.newlyUnlocked.name.toUpperCase()+
+          '. Equip it on the scroll selection screen.';
       el.overKicker.textContent = `RUN ${pad3(d.run)} — ${area.name} · LEVEL ${pad2(d.level)}${vict ? ' COMPLETE' : ''}`;
       el.againBtn.textContent = vict
         ? (d.finalCampaign ? 'CHOOSE A SCROLL' : d.level === 10 ? 'ENTER NEXT SCROLL' : 'NEXT LEVEL')
@@ -302,6 +394,7 @@ const UI = (() => {
     el.overRank.textContent = d.rank;
     el.statWaves.innerHTML = `${d.waves} <span class="kanji-inline">${toKanji(d.waves)}</span>`;
     el.statKills.textContent = d.kills.toLocaleString('en-US');
+    el.statInkRank.textContent = pad2(d.inkRank || 1);
     el.statTime.textContent = fmtTime(d.time);
     el.statScore.textContent = d.score.toLocaleString('en-US');
     el.newBestBadge.classList.toggle('hidden', !d.newBest);
@@ -318,15 +411,18 @@ const UI = (() => {
   /* the brush's current loadout, worn on the wrist */
   function setLoadout(levels) {
     if (!el.hudLoadout) return;
-    el.hudLoadout.innerHTML = UPGRADES
+    const starter=STARTERS.find(w=>w.id===G.S.starter)||STARTERS[0];
+    const insignia='<span class="load-item load-primary" title="'+starter.name+
+      ' · '+starter.kind+'"><strong>'+starter.kanji+'</strong></span>';
+    el.hudLoadout.innerHTML = insignia + [...UPGRADES, ...RED_SEALS]
       .filter(u => (levels[u.id] || 0) > 0)
-      .map(u => `<span class="load-item" title="${u.name}"><svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.id] || GLYPHS.patch}</svg><b>${levels[u.id]}</b></span>`)
+      .map(u => `<span class="load-item${u.seal?' is-seal':''}" title="${u.name}"><svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[u.redSealOf || u.id] || GLYPHS.patch}</svg><b>${u.seal?'朱':levels[u.id]}</b></span>`)
       .join('');
   }
 
   return {
-    show, renderCampaign, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
-    setRunNo, setBest, buildLegend, buildTicker, fillUpgrades, markSelected,
+    show, selectCampaignView, renderCampaign, renderStarters, hud, setWave, setProgress, setHp, setScore, setTime, banner, areaBanner, flash,
+    setRunNo, setBest, setInkProgress, buildLegend, buildTicker, fillUpgrades, markSelected,
     setDeploy, setUpgradeHeader, showOver, muteVisual, setLoadout, setArea, setMode, el, toKanji,
   };
 })();

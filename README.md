@@ -7,7 +7,117 @@ The ink remembers every stroke.</p>
 
 > **Released cinematic:** [PR #7](https://github.com/itsnotalwin/ONE_MORE/pull/7) merged the complete seven-shot animated film and Chronicle into `main`. It plays automatically and remains skippable. The previous combined draft PR #5 has been closed.
 
-**Play ONE MORE:** [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/). The Pages test site currently deploys `development`, which includes the same cinematic plus in-progress combat improvements. `main` is the preserved cinematic release baseline; `development` is for all new gameplay work. [Browse the development branch](https://github.com/itsnotalwin/ONE_MORE/tree/development).
+**Play ONE MORE:** [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/). The Pages test site currently deploys `development`, where the GLM-inspired, 17.55-second ink opening now autoplays on launch. The existing seven-shot `THE LAST STROKE` film remains available through WATCH FILM, and the Chronicle is unchanged. `main` is the preserved cinematic release baseline; `development` is for all new gameplay work. [Browse the development branch](https://github.com/itsnotalwin/ONE_MORE/tree/development).
+
+
+
+**Development milestone 01 / Combat Foundations:** Swept bullet/needle/Spirit Scribe collision eliminates frame-skipping hits; piercing shots hit each enemy once; joystick and keyboard state resets when changing screens. These fixes are on **development only**, not merged into the cinematic release in `main`. Automated coverage: [`tests/combat.test.cjs`](tests/combat.test.cjs).
+
+**Development milestone 02 / Wave Director 2.0:** Every Journey level now has an authored stage identity, featured enemy pairing and choreographed spawn formation. Across the 30 levels and 300 waves, encounters vary in group spacing, flanking direction, momentum and roster emphasis instead of simply adding health. Existing Guardian and world-special waves remain, and Endless retains its original random generation. This is **on `development` only**. See [`js/wave-director.js`](js/wave-director.js), [all 30 stages in the Game Bible](docs/GAME_BIBLE.md#wave-director-20--authored-encounter-design-phase-2), and [`tests/wave-director.test.cjs`](tests/wave-director.test.cjs).
+
+**Development milestone 03 / Multi-phase Guardians:** First Wash cracks the paper with ink seams, Night Scroll lashes out with targeted shadow rays, and Cinnabar Field brands the ground with delayed red seals. All three encounters have dodgeable warnings, distinct HP-based phase changes, short impact windows and a restrained, in-world Guardian HP bar. Final Level 10 world bosses have three phases; regular wave-10 Guardians have two. The original enemy art and movement remain intact. Implemented directly in `development`, still under evaluation. See [Guardian architecture and roadmap](docs/GAME_BIBLE.md#guardian-encounters--phase-3-development) and [automated Guardian tests](tests/guardians.test.cjs).
+
+## Ink Absorption: growth from the paper (development)
+
+The old wave-only upgrade reward has been replaced by **recoverable ink XP**. Each defeated enemy leaves its ordinary sumi-e stain behind, plus a small living ink kernel. Wander near the kernel and it spirals into the brush, with hand-drawn lines and a cinnabar center. At the end of each wave, the remaining living ink streams across the sheet to the player rather than being lost off-screen.
+
+Your **BRUSH rank** now fills a compact horizontal cinnabar-red ink gauge **at the top beside the wave progress bar**. The world beneath remembers its black ink marks for all ten waves. Enemy blood and reclaimed XP droplets remain the current world's **black/pale ink**, never red. When it fills, pick one of the existing three-card upgrades and jump back into the *same* fight. Several rank-ups can queue independently. Later worlds and levels yield stronger ink so your development doesn't stall as enemies toughen. Higher brush rank and maximum health subtly refine the brush nib and its ink richness, capped at **1.18× apparent size**, while **the collision hitbox remains unchanged**. New runs start fresh, respecting the ten-wave independent level progression.
+
+Source: [`js/ink-xp.js`](js/ink-xp.js), [`css/ink-xp.css`](css/ink-xp.css), and [XP regression tests](tests/ink-xp.test.cjs). Everything is implemented on `development` only, with desktop/phone-sized automated browser QA. Physical iPhone Safari playtesting and balance tuning remain necessary.
+
+## Phase 7: quiet movement, living ink trail, the Night arts & First Seal rebalance (development)
+
+**The ink-soul now flows instead of running in place.** The old high-frequency alternating leg cycle and squash/bounce were distracting. The new motion keeps the face and forehead stable, uses a restrained directional lean and gentle trailing hem, with a slower movement rhythm. True movement speed, aim, 10px collision radius, level growth and reduced-motion accessibility are unchanged.
+
+**Suiteki Leak is a proper snail trail.** The little ink vessel follows the hero and leaves a continuous narrow black wet ribbon behind every movement, assembled from short joined world-space brush segments. There are no circular puddle bursts. Enemy contact with the temporary wet ribbon slows and takes at most **1 damage per 0.55 seconds per enemy**, regardless of overlapping segments. Rank 1–3 adjusts width and how long the ribbon remains wet, rather than spawning larger pools. It does **not** permanently mark the page below rank 3; rank 3 leaves sparse black dry streaks, and its separately acquired **Vermilion Seal** turns only that dry ink crimson. The original `trail`, `trailW` and `seal_trail` IDs remain save-compatible.
+
+**Paper II: four real, separately upgradable Night Scroll abilities.** The 3-card XP choices now unlock **Ink Lantern** (2 ranks, reveal/interrupt translucent phantoms), **Crescent Return** (3 ranks, curved blade hits on outward and return flight), **Mirror Fold** (3 ranks, catches ordinary globs/needles and sends a weaker counter-stroke, not Guardian attacks) and **Shroud Step** (2 ranks, short automatic displacement after sustained movement with a brief decoy). Each uses procedural ink-and-washi visuals, has cooldowns and mobile-friendly automatic controls, leaves no lasting map mark until max rank, and may take a **separately selected** one-time Vermilion upgrade. They are unavailable on Paper I; one newly eligible art gets preference in Paper II's rank-up menu so it can actually be discovered.
+
+**First Paper's Level 10 boss is meaningfully tougher, not just a redrawn road.** The Heavenly Brushstroke encounter has approximately **53% more HP** than before, reaches its crossing/hook phases at **74% and 40% HP**, casts more often, and summons a couple of small existing BLIP enemies on phase changes. The warning, visible curve/hit collision match, one-hit protection, stage 1–9 Guardian fights and other worlds' bosses remain unchanged.
+
+See the [Phase 7 implementation notes](docs/PHASE-7-NIGHT-ARTS-AND-FIRST-SEAL.md) and [combat tests](tests/night-arsenal.test.cjs). Gameplay changes are on `development` only; `main` remains untouched.
+
+## The ink-soul's hand-held gun (development)
+
+The Last Stroke now has a tiny, procedurally painted **ink gun** with a small reservoir, grip, and visible calligraphic muzzle, rather than firing drops out of its own body. Ordinary volleys, including Twin Stroke and Bitter Ink variants, originate from the barrel tip (`CFG.player.muzzle = 20`), with their existing damage, range tuning, shot spread, fire rate and penetration unchanged. Upgrading Echo Stroke adds a smaller rear nozzle for mirrored shots so those projectiles have an equally legible source.
+
+The gun rotates to the **actual targeting direction** while the ink-soul retains its independent running animation and smooth eye tracking. Everything follows the paper's existing light/dark ink palette, with zero new image assets. Basic shots still never mark the map. Automated regression tests also verify the weapon art and projectile origin in both desktop and phone viewports.
+
+## Six instruments, one living brush-soul (development)
+
+**Choose your starting weapon at the scroll selection screen.** The default **Ink Gun** remains the fast familiar ranged tool, and five other beginning weapons are permanently earned by completing campaign levels. Every unlocked starter is selectable when replaying earlier levels, and the choice persists independently of XP upgrades, deaths and new runs.
+
+| Instrument | Type | Unlock | Special |
+|---|---|---|---|
+| **Ink Gun** | Ranged | Starting weapon | Fourth-volley double-tap |
+| **Great Brush** | Melee | Paper I · level 02 | Third swing becomes an extra-wide calligraphic sweep |
+| **Needle Quill** | Ranged | Paper I · level 04 | Fourth piercing needle gains extra reach and penetration |
+| **Inkstone Mallet** | Melee | Paper I · level 07 | Every third impact becomes a bigger crowd-knockback shock |
+| **Silk Spool** | Ranged control | Paper II · level 02 | Third cast chains into a third slowed target |
+| **Paper Cutter** | Melee | Paper II · level 05 | Every fourth cut launches a returning folded blade |
+
+Each weapon has its own **procedurally drawn held implement, temporary attack animation, cooldown, range and combat role**. No heavy sprite pack was added. The player also has a sharper folded-paper hood and small expressive negative-space facial details to keep the character identifiable at phone resolution. All existing XP upgrades, acquired specials and black-then-optional-Vermilion mastery progression remain, while starter attacks themselves still do not stain the paper.
+
+Full implementation contract: [**Six Beginning Instruments**](docs/STARTER-ARSENAL-DESIGN.md), with regressions in `tests/starter-weapons.test.cjs`.
+
+## Phase 6: a living hero on untouched washi (development)
+
+**Implemented:** the ink-soul now anticipates movement, flows through a two-beat RUN, eases into turns and braking, and reacts to hits, ink absorption and brush-rank gains. Its original movement physics and 10px collision circle have not changed.
+
+**Paper I** is a near-flat warm-ivory Japanese-inspired sheet with no repeated line pattern, background glyphs or ghost decoration. The world's artwork comes from enemy blood and mastered skills rather than preprinted marks. **The First Guardian** now attacks with an enormous tapered divine brushstroke instead of an ink road: a Downstroke, Crossing and Hook use sampled Bézier paths shared by the visible warning, impact and damage test. Telegraph time, HP and damage have not been raised.
+
+**Suiteki Leak** originally replaced Ink Trail with a small pool. **Phase 7 supersedes that behavior** with a narrow continuous, snail-like ink ribbon that follows motion. The same internal IDs and optional Vermilion progression remain.
+
+The original [Phase 6 specification](docs/PHASE-6-LIVING-INK-DESIGN-SPEC.md) remains as its historical design record. The [Phase 7 changes](docs/PHASE-7-NIGHT-ARTS-AND-FIRST-SEAL.md) implement the revised hero motion, trail, world-specific arts and boss balance.
+
+## Paper II readability and opening-stage pacing (development)
+
+- **The Eraser is no longer oversized at rank one.** Clearing radius is 65px, then 100px, and finally 135px, which used to be its initial radius. Its damage/cooldown remain unchanged.
+- **Paper I levels 01–03 are substantially longer without tougher opening enemies.** Spawn groups are smaller and spaced farther apart, while enemy budget, HP, damage and the first Guardian are not changed.
+- **Paper II / Night Scroll has become dyed indigo washi.** Blue-charcoal hand-textured paper, warm ivory creature ink, faint material fibers, a properly inverted HUD, and delicate tracking accents for intentionally semi-transparent phantoms prevent visually invisible attackers. Night Scroll also has stronger HP/speed/encounter budget multipliers than Paper I, without rewriting existing enemy silhouettes.
+- **New Night Scroll powers are playable on Paper II onward.** Ink Lantern, Crescent Return, Mirror Fold and Shroud Step are documented in the [Game Bible](docs/GAME_BIBLE.md) and implemented, together with the First Paper boss balance changes, in Phase 7.
+
+Material reference: [Awagami Factory's indigo-dyed Awa Washi](https://www.awagami.or.jp/indigo/en/about/). No external artwork is copied; the paper grain remains procedural Canvas2D.
+
+## The Eraser and the living paper (development)
+
+**Visual references:** [Ōkami's Celestial Brush](https://en.wikipedia.org/wiki/%C5%8Ckami) for distinct techniques that change the world, [The Unfinished Swan](https://store.steampowered.com/app/1206430/The_Unfinished_Swan/) for readable black paint that transforms a blank landscape, and traditional [haboku ink painting](https://en.wikipedia.org/wiki/Haboku) for wet-to-dry splatters. These are design references, not reused sprites.
+
+**Original enemy silhouettes are unchanged.** Each of the 14 existing enemy types now has its own death-ink composition and **five deterministic splatter variants**. BLOT bleeds pooled drops; STILT flicks needle-thin streaks; MOTH makes wing-like fans; TITAN spills heavy layered washes, and so on. All enemy blood is black/pale sumi ink appropriate to the scroll.
+
+**Terrain effects are earned in two stages.** Acquired weapons work normally at first but leave **no lasting map ink until their ordinary skill reaches its maximum rank**. That unlocks deep **black** marks: Echo and Folded Fan paint flight paths, Spirit Scribes trace movement, Ink Knots print their threads, and Black Tide paints its impact boundary. After mastery, the next XP choice can offer a distinct **Vermilion Seal** card for that particular skill. Choosing it upgrades only that technique's terrain signature to rich lacquer-crimson `#ac1538`. The post-max red upgrade is never automatic, appears at most once per skill, and preserves the three-card choice system. Basic auto-fire shots never paint the map, even when fully upgraded.
+
+**Ink Orbit is now The Eraser**, a round negative-space field that does not have orbiting projectiles. It damages nearby creatures for **1 HP per eligible target every 0.82 seconds** and physically removes enemy blood and weapon marks from the paper every quarter-second. Its radius grows from **65px → 100px → 135px** across three ranks, and at max rank it gains a black boundary. Only after selecting its separate **Vermilion Seal** upgrade does that boundary turn crimson. It does not alter the player's movement, collision size or XP mathematics.
+
+**The protagonist is now a separate flowing ink-soul**, not a paintbrush with bristles: an asymmetric soft hood, two gently moving lower folds and one expressive paper eye. The existing attack effects still paint the map; the enemy animation atlas is preserved.
+
+[Focused terrain/Eraser test suite](tests/terrain-stages.test.cjs) · [Browser visual QA](tests/film-browser.cjs) · [Living Game Bible](docs/GAME_BIBLE.md). Implemented on `development` only; `main` remains untouched.
+
+## Stage-long ink painting and the new protagonist (development)
+
+**Special abilities sign the paper; basic shots never do.** Echo leaves mirrored marks, Folded Fan cuts directional slash marks, The Eraser clears accumulated marks, Black Tide makes broken rings, Suiteki Leak leaves a joined wet ink ribbon, Spirit Scribes leave wisps, Ink Knots knot crossing fibers, Paper Ward stamps a squared seal, and shockwaves make radial hairline marks. Special-technique marks appear in scroll-colored black/pale ink only after maxing the underlying skill. A separate post-max red upgrade can then change that skill's marks to deep lacquer crimson. Enemy blood stays black.
+
+**All weapon marks and enemy blood survive the entire independent ten-wave stage** without fading, including the final Guardian encounter. Only a completed/failed/abandoned stage or fresh run turns the sheet; Endless turns the sheet after each ten-wave region. Terrain marks now reuse cached painted sprites and are indexed in small world-space cells to avoid creating new texture canvases per hit or repainting every distant stain on mobile.
+
+The protagonist is now a distinct **flowing ink-soul**, with a curved paper eye and gently animated lower folds, not an actual brush. The previous extra bristles and loose brush-like appendages are gone. Breathing, smoothed aim and the original movement/collision remain. The horizontal XP gauge and terrain effects are visual changes only; XP rewards and game balance were not retuned.
+
+Source: [`js/game.js`](js/game.js), [`js/render.js`](js/render.js), [`css/ink-xp.css`](css/ink-xp.css). [Stage persistence tests](tests/terrain-stages.test.cjs) and real desktop/mobile browser verification cover the new rendering lifecycle. All implementation is on `development` only; `main` is not merged.
+
+## Phase 4A: the awakened brush and living ink seeds (development)
+
+The original **rounded, living ink blob has been restored** and now uses the same ten-point midpoint outline, 0.17 contour wobble and line-boil timing as the living BLOT enemies. Neighboring animation states blend smoothly so moving doesn't randomly redraw it. The player body is filled with exactly the enemy's active ink color on each scroll, without a red character mark. Aim and tail movement remain smoothly eased, and rank growth is capped at **1.18× apparent scale**. **Combat speed, collision radius, weapon orbits and the original enemy artwork remain unchanged.**
+
+XP pickups are now **tiny rounded living ink blobs**, breathing gently as they glide from enemy splats back toward the player. A faint, very short ink smear conveys speed without turning the pickups into needles. The player's brush is simplified to its round body, paper-colored eye and understated short ink tail. Reward values, leveling thresholds and wave-end recovery remain unchanged.
+
+See the complete [Phase 4A visual specification and acceptance checklist](docs/PHASE-4A-PROGRESSION-VISUAL-POLISH.md). Node gameplay regression tests pass; dedicated desktop and phone Chromium QA produces screenshots for ink seeds, moving brush, awakened rank and Night Scroll, with physical iPhone testing still pending. All source code for this phase is on `development` only.
+
+## Home screen and first-stroke onboarding (development)
+
+The starting experience is mobile-first without replacing the original sumi-e/washi art. The title now has one obvious **BEGIN JOURNEY** action, a quieter **ENDLESS MODE** choice and compact links to **HOW TO PLAY**, the animated film and the Chronicle. A short, optional instruction sheet explains drag/WASD movement, automatic combat, upgrades and ten-wave runs. A small non-blocking hint appears only on the first real gameplay run. Returning players can jump straight into the scroll selection.
+
+The film still autoplays on every page load, as requested. Frame transitions now capture the exact outgoing film image, dissolve using eased interpolation and crossfade the final scene into the home screen instead of cutting hard. Reduced-motion users get a direct transition without unnecessary effects.
+
+Implementation: `css/home.css` (isolated additive title styling), `index.html` (title hierarchy and help sheet), `js/intro.js` (film transition), and `js/main.js` (onboarding controls). The original combat silhouettes, enemy patterns, and campaign unlocks remain unchanged; the new ink pickups and player growth are additive to the renderer. The `main` branch is untouched. These refinements are being tested on **`development` only**.
 
 ## A story hidden beneath the paper
 
@@ -23,7 +133,7 @@ The prologue **automatically starts on every page load, without requiring a tap*
 
 ![The three existing environments in an original editorial SVG triptych, not screenshots](docs/images/three-scrolls.svg)
 
-The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, upgrade picks follow each cleared wave, and permanent campaign unlocks survive failed runs. The short film is entirely separate from gameplay; it does not alter game physics, enemy balance, upgrades, or the protected combat renderer.
+The story works with the existing campaign, not in place of it. The game already has **3 worlds × 10 independent levels × 10 waves**. Every level begins a fresh build, ink XP earns upgrade choices while fighting, and permanent campaign unlocks survive failed runs. The short film is entirely separate from gameplay; it does not alter game physics, enemy balance, upgrades, or the protected combat renderer.
 
 **Living project documents:** [Full GAME BIBLE, story, art/sprite/animation atlas and Kanban roadmap](docs/GAME_BIBLE.md) · [Original style protection contract](DESIGN.md) · [Research notes](docs/RESEARCH.md).
 
@@ -76,8 +186,8 @@ creatures and brush rendering: **SPLIT BLOOM** (FIRST WASH, waves 6/9),
 
 ## How to play
 
-Choose **THE JOURNEY**, select an unlocked scroll, then choose the next
-unlocked level. Survive ten waves to seal it; between waves choose one of three
+Choose **THE JOURNEY**, then use the **SCROLL → WEAPON → LEVEL** tabs to
+pick an unlocked scroll, your starter instrument and the next unlocked level. Survive ten waves to seal it; between waves choose one of three
 brush upgrades. These upgrades reset on every new level, while completed
 levels stay saved in your browser.
 
@@ -113,16 +223,17 @@ SPIT's globs and STILT's needles are dodgable — watch for hollow rings and
 the drawn line. SHADE leaves a stain where it vanished and where it
 reappears; read the paper.
 
-**The brush arts — 19 upgrades**, including four weapons:
+**The brush arts — 23 upgrades**, including eight marked weapons/arts:
 
 - *Strokes*: Quick Hand, Bitter Ink, Twin Stroke, Through Mist, Flick,
-  Fleeting Foot, Thick Ink, Red Seal, Ink Burst, Echo Stroke, Ink Orbit,
+  Fleeting Foot, Thick Ink, Red Seal, Ink Burst, Echo Stroke, The Eraser,
   Black Tide, Wet Paper, Crimson Tip, Paper Ward
 - *Weapons* (marked 武 in vermilion on their cards):
   **Folded Fan** — a snapping spray of paper blades;
-  **Ink Trail** — the smears you leave behind keep biting;
+  **Suiteki Leak** — an ink vessel draws a continuous damaging snail-trail ribbon;
   **Spirit Scribes** — lesser brushes that wake and hunt on their own;
   **Ink Knots** — living brush threads bind a small cluster, slow them, and deal one delayed point of damage per target.
+- *Paper II+ arts*: **Ink Lantern** (phantom reveal), **Crescent Return** (returning blade), **Mirror Fold** (projectile counter), and **Shroud Step** (short misleading afterimage).
 
 ---
 
@@ -162,7 +273,9 @@ one-more/
 │   ├── campaign.js             # persistent world/level unlocks
 │   ├── audio.js                # synthesized ink sound kit (splats, taiko, gong)
 │   ├── ui.js                   # DOM screens, HUD, kanji numerals, upgrade cards
-│   ├── game.js                 # camera, areas, waves, entities, weapons, flow
+│   ├── game.js                 # camera, combat, encounters, weapons, flow
+│   ├── wave-director.js        # authored campaign encounters and spawn formations
+│   ├── guardians.js            # multi-phase boss patterns and safe collision geometry
 │   ├── render.js               # original gameplay renderer
 │   ├── film.js                 # procedural actors, ink animations and live-drawn short film
 │   ├── intro.js                # film timeline, captions, sound + Chronicle
@@ -175,7 +288,9 @@ one-more/
 ├── tests/
 │   ├── progression.test.cjs    # existing campaign regression tests
 │   ├── story.test.cjs          # seven-shot film and archive regression tests
-│   └── film-browser.cjs        # CI-only real Chromium animation QA
+│   ├── film-browser.cjs        # CI-only real Chromium animation QA
+│   ├── wave-director.test.cjs  # 300 encounter legality and pacing checks
+│   └── guardians.test.cjs      # Guardian phases, telegraphs, damage, cleanup
 ├── docs/
 │   ├── GAME_BIBLE.md           # canon lore, technical atlas, roadmap checklist
 │   ├── RESEARCH.md             # art, accessibility, hosting choices
@@ -195,7 +310,7 @@ All balance knobs live in `js/config.js`:
 - `CFG.endless` — how fast the endless paper grows teeth after sheet three
 - `ENEMIES` — hp, speed, size, score and the wave each type enters
 - `UPGRADES` — the pool of strokes and weapons, and their level caps
-- `CFG.world` — spawn padding, stain cap and fade, ambient mark density
+- `CFG.world` — spawn padding and ambient mark density (stage stains now persist independently of the legacy cap/fade knobs)
 - `CFG.ranks` — waves-cleared thresholds for the end-of-run seal
 
 Campaign unlocks (`om_campaign_v1`), high score, run counter and mute preference
@@ -205,7 +320,7 @@ only, and the game is 100% client-side by design.
 
 ## Test
 
-Run `node --test tests/*.test.cjs` (Node.js 18+). The [Film visual QA workflow](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml) additionally uses real desktop/phone-sized Chromium to render the short film and produces **10 real browser screenshots** as a downloadable artifact. Playwright is CI-only; the playable game still has zero third-party runtime dependencies. The suite checks
+Run `node --test tests/*.test.cjs` (Node.js 18+). **Combat Foundations / Phase 1** includes continuous swept projectile hits, pierce-once-per-target rules, hostile-needle and Spirit Scribe collision reliability, and clean keyboard/joystick state on restart, pause and focus loss. See [`tests/combat.test.cjs`](tests/combat.test.cjs); the visuals and weapon damage values remain unchanged. The [Film visual QA workflow](https://github.com/itsnotalwin/ONE_MORE/actions/workflows/film-visual-qa.yml) additionally uses real desktop/phone-sized Chromium to render the short film and produces **10 real browser screenshots** as a downloadable artifact. Playwright is CI-only; the playable game still has zero third-party runtime dependencies. The suite checks
 all 30 stage clears, 300 wave transitions, sequential unlocks, world-specific
 enemy patterns, final bosses, storage fallback, Endless, and frozen original
 renderer/audio/CSS contents. It is a headless logic test; actual browser visual

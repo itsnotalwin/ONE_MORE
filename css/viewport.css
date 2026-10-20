@@ -1,0 +1,264 @@
+/* ONE MORE / viewport-fit screens. Scoped UI changes only.
+   All combat rendering, ink assets, animations and game balance stay intact. */
+html,body{height:100%;overflow:hidden}
+#stage,.screen{height:100%;height:100dvh}
+#screenSelect .campaign-section[hidden],
+.home-help-steps > div[hidden]{display:none!important}
+
+/* The Journey: three small ink sheets, not one long scrollable form. */
+.screen-select{
+  overflow:hidden;padding:clamp(10px,2vh,22px) clamp(12px,3vw,24px);
+  align-items:stretch;justify-content:center;
+}
+.campaign-panel{
+  width:min(920px,100%);height:100%;max-height:780px;margin:auto;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden;
+}
+.campaign-heading{flex:0 0 auto;text-align:center}
+.campaign-title{font-size:clamp(34px,min(7vw,7vh),67px);margin:2px 0 4px}
+.campaign-intro{margin-bottom:0;line-height:1.4}
+.campaign-tabs{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;flex:0 0 auto;margin:clamp(8px,1.8vh,17px) 0 4px;
+}
+.campaign-tabs button{
+  min-height:40px;border-bottom:2px solid var(--ink-25);padding:8px 4px;
+  color:var(--ink-70);font-size:10px;font-weight:600;letter-spacing:.12em;
+}
+.campaign-tabs button[aria-selected="true"]{color:var(--red);border-color:var(--red)}
+.campaign-tabs button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.campaign-section{
+  flex:1;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.7vh,17px);
+}
+#campaignScrolls .campaign-worlds{flex:0 0 auto}
+#campaignScrolls .campaign-stage-head,
+#campaignStages .campaign-stage-head{margin-top:0;flex:0 0 auto;padding-bottom:7px}
+.campaign-mechanic{margin:0;line-height:1.5}
+#campaignStages .campaign-levels{flex:0 0 auto}
+#campaignWeapons .starter-chest{margin:0;min-height:0}
+#campaignWeapons .starter-head{margin-bottom:clamp(5px,1vh,11px)}
+#campaignWeapons .starter-card{min-height:clamp(64px,11vh,94px);padding:9px 10px}
+#campaignWeapons .starter-explain{margin:clamp(5px,1vh,9px) 0 0;line-height:1.35}
+.campaign-footer{
+  flex:0 0 auto;display:flex;flex-direction:row;align-items:center;
+  justify-content:space-between;gap:12px;margin-top:clamp(5px,1.4vh,15px);
+  padding:6px 0 max(4px,env(safe-area-inset-bottom));
+}
+.campaign-footer .ghost-btn{font-size:10px;flex:0 0 auto}
+.campaign-footer .campaign-next{min-height:38px;padding:9px 14px;font-size:10px;letter-spacing:.1em}
+@media(max-width:720px){
+  .screen-select{padding:calc(8px + env(safe-area-inset-top)) 15px max(6px,env(safe-area-inset-bottom))}
+  .campaign-title{font-size:clamp(33px,6.4vh,52px)}
+  .campaign-kicker,.campaign-intro{font-size:8px;letter-spacing:.12em}
+  .campaign-tabs{gap:4px;margin:7px 0 0}
+  .campaign-tabs button{min-height:36px;font-size:9px;letter-spacing:.03em}
+  .campaign-worlds{grid-template-columns:1fr;gap:clamp(4px,1vh,8px)}
+  .campaign-world{padding:clamp(5px,1.1vh,9px) 10px;gap:9px}
+  .campaign-world-kanji{flex:0 0 28px;height:28px;font-size:19px}
+  .campaign-world-copy{gap:2px}
+  .campaign-world-copy strong{font-size:10px}
+  .campaign-world-copy small{font-size:8px}
+  .campaign-stage-head{gap:10px}
+  .campaign-stage-head h3{font-size:clamp(18px,3vh,24px);margin-top:2px}
+  .campaign-small-label,.campaign-status{font-size:8px;letter-spacing:.05em}
+  .campaign-mechanic{font-size:9px}
+  #campaignWeapons .starter-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(4px,1vh,7px)}
+  #campaignWeapons .starter-card{min-height:clamp(59px,9.5vh,79px);padding:6px;gap:5px}
+  #campaignWeapons .starter-copy{gap:2px}
+  #campaignWeapons .starter-copy small{font-size:7.5px;line-height:1.25}
+  #campaignWeapons .starter-topline{font-size:7px}
+  #campaignWeapons .starter-head h3{font-size:clamp(17px,3vh,20px)}
+  #campaignWeapons .starter-explain{font-size:8px}
+  #campaignStages .campaign-levels{gap:clamp(4px,1vh,8px)}
+  #campaignStages .campaign-level{min-height:clamp(52px,11vh,76px);padding:7px}
+  .campaign-footer{flex-direction:row;align-items:center}
+}
+@media(max-height:500px){
+  .screen-select{padding:5px 13px}
+  .campaign-title{font-size:clamp(25px,8vh,38px);line-height:1}
+  .campaign-intro{display:none}
+  .campaign-heading .campaign-kicker{font-size:7px}
+  .campaign-tabs{margin:4px 0 0}
+  .campaign-tabs button{min-height:27px;padding:4px;font-size:9px}
+  .campaign-section{gap:5px}
+  .campaign-world{padding:4px 9px;min-height:0}
+  .campaign-world-kanji{flex-basis:25px;height:25px;font-size:16px}
+  .campaign-stage-head h3{font-size:18px}
+  .campaign-mechanic{font-size:8px;line-height:1.25}
+  #campaignWeapons .starter-head{margin-bottom:3px}
+  #campaignWeapons .starter-head h3{font-size:17px}
+  #campaignWeapons .starter-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  #campaignWeapons .starter-card{min-height:60px;padding:4px 5px}
+  #campaignWeapons .starter-copy small{font-size:7px;line-height:1.15}
+  #campaignWeapons .starter-icon{flex-basis:22px;width:22px;height:22px;font-size:16px}
+  #campaignWeapons .starter-explain{display:none}
+  #campaignStages .campaign-levels{gap:5px}
+  #campaignStages .campaign-level{min-height:42px;padding:5px}
+  #campaignStages .campaign-level-no{font-size:19px}
+  .campaign-footer{margin-top:2px;padding:2px 0}
+  .campaign-footer .campaign-next{min-height:30px;padding:6px 10px}
+}
+@media(max-width:380px) and (max-height:660px){
+  .campaign-kicker{font-size:7px}
+  .campaign-level-state{font-size:7px}
+}
+
+/* Chronicle: full chapter pages, with two controls instead of internal scrolling. */
+.screen-chronicle{display:flex;overflow:hidden;align-items:stretch;justify-content:center}
+.archive-panel{
+  width:min(880px,100%);height:100%;max-height:760px;min-height:0;
+  margin:auto;padding:clamp(14px,3vh,35px) clamp(16px,4vw,30px);
+  display:flex;flex-direction:column;gap:clamp(9px,2vh,18px);overflow:hidden;
+}
+.archive-panel h2{
+  font-size:clamp(32px,min(8vw,8vh),72px);line-height:1.05;margin:0;flex:0 0 auto;
+}
+.archive-sub{font-size:clamp(11px,2vh,14px);line-height:1.4;margin:0;flex:0 0 auto}
+.archive-chapters{
+  flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;
+  border-top:1px solid var(--ink-25);
+}
+.archive-entry{
+  width:100%;grid-template-columns:clamp(33px,7vw,65px) 1fr;
+  gap:clamp(10px,2vw,20px);padding:clamp(12px,2.5vh,25px) 0;
+  border-bottom:1px solid var(--ink-25);
+}
+.archive-index{font-size:clamp(25px,5vh,40px)}
+.archive-entry h3{font-size:clamp(16px,3vh,22px);margin-bottom:clamp(5px,1.2vh,12px)}
+.archive-entry p{font-size:clamp(10px,1.7vh,13px);line-height:1.55;letter-spacing:0}
+.archive-pager{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex:0 0 auto;
+  border-top:1px solid var(--ink-25);padding-top:8px;
+  font:600 10px var(--mono);letter-spacing:.13em;
+}
+.archive-pager button{padding:10px 6px;min-height:40px;color:var(--ink)}
+.archive-pager button:disabled,.home-help-pager button:disabled{opacity:.28;cursor:default}
+.archive-pager span{font-size:10px;color:var(--red)}
+.archive-foot{margin:0;flex:0 0 auto;font-size:8px}
+@media(max-height:520px){
+  .archive-panel{padding:8px 15px;gap:5px}
+  .archive-panel h2{font-size:clamp(25px,8vh,38px)}
+  .archive-sub{display:none}
+  .archive-entry{padding:5px 0}
+  .archive-entry h3{font-size:15px;margin-bottom:4px}
+  .archive-entry p{font-size:10px;line-height:1.25}
+  .archive-pager{padding-top:3px}
+  .archive-pager button{min-height:30px;padding:5px}
+  .archive-foot{display:none}
+}
+
+/* Short manual: one instruction at a time, with back/next, no scroll. */
+dialog.home-help[open]{
+  inset:0;position:fixed;margin:auto;
+  display:flex;flex-direction:column;justify-content:center;
+  width:min(480px,calc(100vw - 20px));max-width:none;
+  height:auto;max-height:calc(100dvh - 20px);
+  overflow:hidden;gap:clamp(6px,1.6vh,13px);
+  padding:clamp(14px,3vh,24px) clamp(16px,4vw,28px);
+}
+.home-help-mark{margin:0}
+.home-help h2{margin:0;font-size:clamp(24px,5vh,38px)}
+.home-help-intro{font-size:clamp(12px,2.3vh,15px);line-height:1.4}
+.home-help-steps{flex:1;min-height:0;margin:0;justify-content:center}
+.home-help-steps > div{padding:clamp(10px,2vh,16px) 0}
+.home-help-pager{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font:600 10px var(--mono);color:var(--red);
+}
+.home-help-pager button{padding:8px 0;color:var(--ink);font-size:10px}
+.home-help-start{min-height:42px;padding:10px 14px;flex:0 0 auto}
+@media(max-height:480px){
+  dialog.home-help[open]{gap:4px;padding:9px 16px}
+  .home-help-mark{display:none}
+  .home-help h2{font-size:23px}
+  .home-help-intro{font-size:11px}
+  .home-help-steps > div{padding:5px 0}
+  .home-help-steps p{font-size:10px;line-height:1.3}
+  .home-help-steps strong{font-size:9px}
+  .home-help-steps > div > span{font-size:18px;flex-basis:23px}
+  .home-help-pager button{padding:4px 0}
+  .home-help-start{min-height:33px;padding:7px 12px}
+}
+
+/* Choice and results must fit too: compress rather than hiding actions. */
+.screen-upgrade .panel{overflow:hidden;max-height:calc(100dvh - 18px)}
+@media(max-height:480px){
+  .screen-upgrade .panel{padding:8px 12px;gap:5px}
+  .screen-upgrade .panel-banner{padding-bottom:4px}
+  .screen-upgrade .pb-kicker{font-size:7px;margin-bottom:2px}
+  .screen-upgrade .pb-title{font-size:19px}
+  .screen-upgrade .pb-step-value{font-size:19px}
+  .screen-upgrade .upgrade-grid{gap:6px}
+  .screen-upgrade .up-card{min-height:0;padding:6px 8px;gap:3px}
+  .screen-upgrade .up-glyph{width:24px;height:24px}
+  .screen-upgrade .up-name{font-size:15px}
+  .screen-upgrade .up-desc{font-size:9px;line-height:1.2}
+  .screen-upgrade .up-check{width:13px;height:13px}
+  .screen-upgrade .deploy-btn{padding:7px 20px}
+  .screen-upgrade .panel-hint{display:none}
+}
+@media(max-width:720px) and (max-height:480px){
+  .screen-upgrade .panel{padding:6px 10px;gap:4px}
+  .screen-upgrade .up-card{
+    grid-template-columns:24px minmax(0,1fr);padding:4px 7px;row-gap:1px;
+  }
+  .screen-upgrade .up-glyph{width:24px;height:24px}
+  .screen-upgrade .up-desc{font-size:8.5px;line-height:1.15}
+  .screen-upgrade .up-name{font-size:14px}
+}
+/* Mid-height portrait phones: keep result actions in view as well. */
+@media(max-height:720px){
+  .screen-over .over-panel{
+    padding:18px 20px;gap:8px;max-height:calc(100dvh - 16px);
+  }
+  .screen-over .over-title{font-size:clamp(28px,6vh,40px)}
+  .screen-over .over-body{margin:3px 0;gap:12px}
+  .screen-over .rank-block{width:65px;height:65px}
+  .screen-over .rank-value{font-size:38px}
+  .screen-over .over-stats{gap:5px}
+  .screen-over .over-actions{gap:6px;margin-top:4px}
+  .screen-over .over-actions .block-btn,
+  .screen-over .over-actions .ghost-btn{padding:9px 12px}
+}
+@media(max-width:480px) and (min-height:481px) and (max-height:720px){
+  .screen-over .over-body{flex-direction:row;align-items:center}
+  .screen-over .rank-block{align-self:center}
+  .screen-over .over-actions{flex-direction:column}
+  .screen-over .stat-row{font-size:9px;letter-spacing:.04em}
+}
+@media(max-height:560px){
+  .screen-over .over-panel{padding:12px 17px;gap:6px;max-height:calc(100dvh - 15px)}
+  .screen-over .over-title{font-size:clamp(26px,7vh,35px)}
+  .screen-over .over-body{flex-direction:row;gap:17px;margin:2px 0}
+  .screen-over .rank-block{width:60px;height:60px;align-self:center}
+  .screen-over .rank-value{font-size:35px}
+  .screen-over .over-stats{gap:4px}
+  .screen-over .stat-row{font-size:9px}
+  .screen-over .over-actions{flex-direction:row;gap:5px;margin-top:0}
+  .screen-over .over-actions .block-btn,.screen-over .over-actions .ghost-btn{font-size:9px;padding:8px 6px}
+}
+@media(max-width:480px) and (max-height:390px){
+  .home-bottom,.home-tagline,.home-eyebrow,.home-progress{display:none}
+  .home-top{padding:4px 15px}
+  .home-content{gap:7px;padding:2px 12px}
+  .screen-title .title-word{font-size:clamp(40px,13vh,56px);margin:0}
+  .screen-title .swash{width:110px;margin:0}
+  .home-actions{gap:4px}
+  .home-play{min-height:44px;padding:5px 12px}
+  .home-play-icon{flex-basis:29px;height:29px;font-size:17px}
+  .home-endless{min-height:33px;padding:5px 12px}
+  .home-links{gap:4px}
+  .home-links button{min-height:24px;padding:3px;font-size:8px}
+}
+@media(min-width:481px) and (max-height:390px){
+  .home-bottom{display:none}
+  .home-top{padding:5px 18px}
+  .home-content{padding:4px 18px;gap:10px}
+  .home-tagline{font-size:12px;margin-top:5px}
+  .screen-title .title-word{font-size:clamp(45px,13vh,60px)}
+  .home-play{min-height:45px;padding:6px}
+  .home-play-icon{flex-basis:30px;height:30px}
+  .home-endless{min-height:32px;padding:6px}
+  .home-links button{min-height:25px}
+}
