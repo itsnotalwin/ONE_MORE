@@ -250,9 +250,11 @@ async function inspect(browser,name,viewport){
     assert.ok(Math.abs(safeHud.topRight.after-safeHud.topRight.before-59)<1);
     assert.ok(Math.abs(safeHud.topLeft.x-safeHud.topLeft.oldX)<1);
     assert.ok(Math.abs(safeHud.topRight.x-safeHud.topRight.oldX)<1);
-    assert.ok(safeHud.hearts>=83,'hearts stay below the translucent status region');
-    assert.ok(safeHud.topLeft.before>=26,'top-left HUD has extra iPhone clearance');
-    assert.ok(safeHud.topRight.before>=24,'hearts start below the translucent system blur');
+    assert.ok(safeHud.hearts>=99,'hearts stay below the translucent status region');
+    assert.ok(Math.abs(safeHud.topLeft.before-42)<2,
+      'top-left HUD is lowered 16px, not moved horizontally');
+    assert.ok(Math.abs(safeHud.topRight.before-40)<2,
+      'hearts and score start 16px lower, below the system blur');
     assert.ok(Math.abs(safeHud.bottomLeft.after-safeHud.bottomLeft.before+34)<1);
     assert.ok(Math.abs(safeHud.bottomRight.after-safeHud.bottomRight.before+34)<1);
     await page.screenshot({path:path.join(out,'phone-23-safe-hud.png')});

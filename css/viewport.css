@@ -283,10 +283,11 @@ html.om-pwa-standalone #stage{top:0;bottom:auto;height:100lvh;
   --om-pwa-fill-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media(max-width:720px){
-  /* Drop only the top HUD 12px below iOS's translucent status strip.
-     Horizontal placements, bottom controls and menu geometry are intact. */
-  .hud-tl{top:calc(26px + var(--om-safe-top));left:14px}
-  .hud-tr{top:calc(24px + var(--om-safe-top));right:14px}
+  /* Keep the status-bar blur above the gameplay HUD on small phones.
+     Move the two top HUD groups only (16px); leave X positions, bottom
+     buttons and the confirmed working canvas/safe-area fix unchanged. */
+  .hud-tl{top:calc(42px + var(--om-safe-top));left:14px}
+  .hud-tr{top:calc(40px + var(--om-safe-top));right:14px}
   .hud-bl{bottom:calc(20px + var(--om-safe-bottom))}
   .hud-br{bottom:calc(16px + var(--om-safe-bottom))}
 }
