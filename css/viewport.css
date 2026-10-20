@@ -263,18 +263,24 @@ dialog.home-help[open]{
   .home-links button{min-height:25px}
 }
 
-/* In installed PWAs, WebKit can report 100dvh excluding its bottom inset
-   while fixed inset:0 still reaches the app's drawable edge. Do not give
-   the canvas a competing explicit height. Overlay layouts stay unchanged. */
+/* WebKit 254868: standalone 100dvh/100% can omit the bottom inset.
+   Use the real home-indicator inset, not screen.height, which also counts
+   the top status bar. Never resize the fixed HUD or menu screens. */
 @media (display-mode: standalone){
-  #stage{height:auto;}
+  html,body{height:100vh}
+  #stage{top:0;bottom:auto;height:100lvh;
+    height:max(100lvh,calc(100dvh + var(--om-pwa-fill-bottom)))}
 }
+html.om-pwa-standalone,html.om-pwa-standalone body{height:100vh}
+html.om-pwa-standalone #stage{top:0;bottom:auto;height:100lvh;
+  height:max(100lvh,calc(100dvh + var(--om-pwa-fill-bottom)))}
 
 /* Dynamic Island / home-indicator padding is applied to HUD anchors only.
    Preserve all original positions inside the usable area, ink canvas full. */
 :root{
   --om-safe-top: env(safe-area-inset-top, 0px);
   --om-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --om-pwa-fill-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media(max-width:720px){
   /* Drop only the top HUD 12px below iOS's translucent status strip.

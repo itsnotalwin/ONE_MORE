@@ -86,7 +86,16 @@ test('original cinematic and combat renderer are not replaced by GLM files',()=>
   assert.equal(manifest.start_url,'./');
   assert.equal(manifest.scope,'./');
   assert.ok(read('css/viewport.css').includes('#stage,.screen{height:100%;height:100dvh}'));
-  assert.ok(read('js/main.js').includes('const w = stage.clientWidth;'),
+  const viewportCss=read('css/viewport.css');
+  assert.ok(main.includes('const w = stage.clientWidth;'),
     'canvas continues to fill the same stage with no button repositioning');
+  assert.ok(main.includes('new ResizeObserver(resize).observe(stage)'),
+    'canvas resizes after late iPhone safe-area changes');
+  assert.ok(!main.includes('window.screen.height-stage.clientHeight'),
+    'no screen.height guess that confuses the top and bottom insets');
+  assert.ok(viewportCss.includes('height:100vh')&&
+    viewportCss.includes('100dvh + var(--om-pwa-fill-bottom)'),
+    'installed app uses root vh and a bottom safe-area correction');
+  assert.ok(viewportCss.includes('--om-pwa-fill-bottom: env(safe-area-inset-bottom, 0px)'));
   assert.ok(!html.includes('src="./js/cutscene.js"'),'GLM gameplay modules not copied');
 });

@@ -750,9 +750,7 @@ async function inspectShort(browser,name,viewport){
 }
 
 async function inspectIOSStandaloneBleed(browser){
-  /* iOS Home Screen exposes a short drawing viewport on some devices
-     while screen.height still reports the full 852px screen. Emulate
-     that exact 59px system gap to catch a clipped bottom sheet. */
+  /* Emulate iOS PWA bottom safe-area gaps of 34 and 59 CSS pixels. */
   const context=await browser.newContext({
     viewport:{width:393,height:793},screen:{width:393,height:852},
     isMobile:true,hasTouch:true,deviceScaleFactor:2,
@@ -763,23 +761,37 @@ async function inspectIOSStandaloneBleed(browser){
   });
   const page=await context.newPage();
   await page.goto(base,{waitUntil:'load'});
-  const data=await page.evaluate(()=>{
-    const stage=document.getElementById('stage').getBoundingClientRect();
-    const canvas=document.getElementById('game').getBoundingClientRect();
-    return {screenHeight:screen.height,innerHeight,
-      stageBottom:stage.bottom,canvasBottom:canvas.bottom,
-      backbufferHeight:G.S.H,stageWidth:stage.width};
-  });
-  assert.equal(data.screenHeight,852,'iPhone screen simulation configured');
-  assert.ok(data.innerHeight<850,'simulate the missing bottom paper strip');
-  assert.ok(data.stageBottom>=851&&data.canvasBottom>=851,
-    'actual ink canvas extends below the 793px layout viewport: '+JSON.stringify(data));
-  assert.ok(data.backbufferHeight>=851,
-    'ink graphics are rendered across the added bottom pixels');
-  assert.equal(data.stageWidth,393,'do not alter horizontal gameplay geometry');
+  const first=await page.evaluate(()=>({
+    standalone:document.documentElement.classList.contains('om-pwa-standalone'),
+    width:document.getElementById('stage').clientWidth,
+    hudTop:document.querySelector('.hud-tr').getBoundingClientRect().top
+  }));
+  assert.ok(first.standalone,'installed iPhone detection is active');
+  assert.equal(first.width,393,'no horizontal geometry changes');
+  for(const gap of [34,59]){
+    await page.evaluate(gap=>
+      document.documentElement.style.setProperty('--om-pwa-fill-bottom',gap+'px'),gap);
+    await page.waitForFunction(gap=>
+      document.getElementById('stage').clientHeight>=793+gap&&
+      G.S.H>=793+gap,gap);
+    const data=await page.evaluate(()=>{
+      const stage=document.getElementById('stage').getBoundingClientRect();
+      const canvas=document.getElementById('game').getBoundingClientRect();
+      return {bottom:stage.bottom,canvasBottom:canvas.bottom,
+        buffer:G.S.H,width:stage.width,
+        hudTop:document.querySelector('.hud-tr').getBoundingClientRect().top};
+    });
+    assert.ok(data.bottom>=793+gap-1&&data.canvasBottom>=793+gap-1,
+      'ink stage fills actual iOS bottom safe area: '+JSON.stringify(data));
+    assert.ok(data.buffer>=793+gap,
+      'ink backbuffer covers added pixels without stretching');
+    assert.equal(data.width,393,'no horizontal layout change');
+    assert.equal(data.hudTop,first.hudTop,'top HUD must not move');
+  }
   await context.close();
-  return {fullScreenBackbuffer:true,mode:'standalone',gapCovered:59};
+  return {fullScreenBackbuffer:true,mode:'standalone',testedGaps:[34,59]};
 }
+
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{

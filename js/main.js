@@ -9,24 +9,17 @@
   const stage = document.getElementById('stage');
 
   /* ---------------- sizing ---------------- */
+  let drawnW=0,drawnH=0,drawnDpr=0;
   function resize() {
-    /* iOS standalone can expose the safe-area paper below its drawable
-       viewport (the flat strip on real iPhones). Extend only the game
-       canvas to the device's physical screen height. Fixed HUD, buttons
-       and menu elements keep their existing screen coordinates. */
     const standalone=window.navigator.standalone===true||
       window.matchMedia('(display-mode: standalone)').matches;
-    const iphone=/iPhone|iPod/.test(window.navigator.userAgent);
-    const portrait=window.innerHeight>window.innerWidth;
-    stage.style.bottom='0px';
-    stage.style.height=standalone&&iphone?'auto':'';
-    const missing=standalone&&iphone&&portrait
-      ?Math.min(96,Math.max(0,window.screen.height-stage.clientHeight))
-      :0;
-    if(missing>0)stage.style.bottom='-'+missing+'px';
+    document.documentElement.classList.toggle('om-pwa-standalone',standalone);
+    /* Stage size comes from CSS + the REAL home-indicator inset. */
     const w = stage.clientWidth;
     const h = stage.clientHeight;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if(w===drawnW&&h===drawnH&&dpr===drawnDpr)return;
+    drawnW=w;drawnH=h;drawnDpr=dpr;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px';
@@ -34,6 +27,9 @@
     G.S.W = w; G.S.H = h; G.S.dpr = dpr;
   }
   window.addEventListener('resize', resize);
+  /* iOS can settle its env() insets after first load. Follow actual CSS
+     size changes without redrawing/backbuffer allocation every frame. */
+  if(typeof ResizeObserver!=='undefined')new ResizeObserver(resize).observe(stage);
   resize();
   G.S.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
