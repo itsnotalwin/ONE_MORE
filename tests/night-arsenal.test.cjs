@@ -49,6 +49,9 @@ test('the entire four-art Night Scroll roster is locked before Paper II',()=>{
 });
 test('continuous Lantern field has no pulse gaps and rank II covers more paper',()=>{
   const {G,CFG}=boot(1),S=G.S,a=enemy('shade',290,0),b=enemy('kage',390,0);
+  /* Hold positions fixed so this measures field continuity, not
+     KAGE's original orbit movement bringing it inside the radius. */
+  a.stun=10;b.stun=10;
   S.enemies=[a,b];S.stats.lantern=1;S.stats.levels.lantern=1;
   assert.equal(CFG.lantern.radius(1),300);assert.equal(CFG.lantern.radius(2),420);
   for(let i=0;i<40;i++)G.update(.05);
