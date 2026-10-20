@@ -66,9 +66,12 @@ test('original cinematic and combat renderer are not replaced by GLM files',()=>
   assert.ok(read('js/render.js').includes('function drawEnemy('));
   assert.ok(html.includes('<script src="./js/opening.js"></script>'));
   assert.ok(html.includes('id="openingSkip"'));
-  assert.ok(html.includes('id="statusBarInk"'),
-    'a standalone-only CSS system-strip tint marker exists');
-  assert.ok(read('css/intro.css').includes('@media(display-mode:standalone)'));
+  assert.ok(!html.includes('id="statusBarInk"'),
+    'no fixed 8px overlay should draw another bar on the app');
+  const home=read('css/home.css');
+  assert.ok(home.includes('.screen-title{background:var(--paper)}'));
+  assert.ok(home.includes('-webkit-mask-image:linear-gradient(to bottom,transparent 0%'),
+    'centre paper texture must fade to the same flat sheet at both iOS edges');
   assert.ok(read('js/main.js').includes('syncSystemBar(m)'));
   assert.ok(read('js/main.js').includes("dark:'#242b39'"),
     'Night Scroll must tint the iPhone status strip to match its paper');

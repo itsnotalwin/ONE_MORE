@@ -57,8 +57,8 @@ async function inspect(browser,name,viewport){
     name+' actual Canvas covers the entire viewport, not merely the menu');
   assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),
     '#131009',name+' dark opening covers phone browser safe-area backing');
-  assert.equal(await page.locator('#statusBarInk').evaluate(el=>el.style.backgroundColor),
-    'rgb(19, 16, 9)',name+' top status sample follows the black opening');
+  assert.equal(await page.evaluate(()=>document.documentElement.style.backgroundColor),
+    'rgb(19, 16, 9)',name+' document colour follows the black opening');
   assert.equal(await page.locator('meta[name="apple-mobile-web-app-capable"]').getAttribute('content'),
     'yes',name+' allows installation as an iPhone Home Screen web app');
   assert.equal(await page.locator('meta[name="apple-mobile-web-app-status-bar-style"]').getAttribute('content'),
@@ -103,8 +103,8 @@ async function inspect(browser,name,viewport){
     name+' flood washes over both top canvas corners: '+JSON.stringify(topCorners));
   assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),
     '#ede7d9',name+' mobile status-bar backing becomes paper after flood');
-  assert.equal(await page.locator('#statusBarInk').evaluate(el=>el.style.backgroundColor),
-    'rgb(237, 231, 217)',name+' top status sample changes with the paper flood');
+  assert.equal(await page.evaluate(()=>document.documentElement.style.backgroundColor),
+    'rgb(237, 231, 217)',name+' document colour changes with the paper flood');
   const skip=await page.locator('#openingSkip').boundingBox();
   assert.ok(skip&&skip.x>=0&&skip.x+skip.width<=viewport.width+2,
     name+' Skip remains within desktop or phone width');
@@ -117,6 +117,26 @@ async function inspect(browser,name,viewport){
   assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),
     '#ede7d9',name+' ordinary game backdrop returns after opening');
   await page.waitForTimeout(150);
+  const homeBleed=await page.evaluate(()=>{
+    const el=document.getElementById('screenTitle');
+    const css=getComputedStyle(el),rim=getComputedStyle(el,'::before');
+    const r=el.getBoundingClientRect();
+    return {background:css.backgroundColor,texture:rim.backgroundImage,
+      fade:rim.webkitMaskImage||rim.maskImage,
+      upper:r.top,lower:r.bottom,width:r.width,
+      underlay:document.documentElement.style.backgroundColor,
+      extraOverlay:document.querySelector('#statusBarInk')};
+  });
+  if(name==='phone'){
+    assert.equal(homeBleed.background,'rgb(237, 231, 217)',
+      'the home page must finish in the same flat paper as the system chrome');
+    assert.ok(homeBleed.fade.includes('linear-gradient')&&
+      homeBleed.fade.includes('transparent 100%'),
+      'the home shading must soften to nothing at both edges');
+    assert.equal(homeBleed.extraOverlay,null,'no extra bar overlay is present');
+  }
+  assert.ok(Math.abs(homeBleed.upper)<2&&Math.abs(homeBleed.lower-viewport.height)<2,
+    name+' home paint still fills the available viewport');
   const homeButton=await page.locator('#playBtn').boundingBox();
   assert.ok(homeButton && homeButton.x>=0 && homeButton.x+homeButton.width<=viewport.width+2,
     name+' primary action is within screen width');
@@ -368,22 +388,22 @@ async function inspect(browser,name,viewport){
   }));
   assert.equal(night.paper,'#fff1da',name+' Night HUD uses bright ivory text');
   assert.ok(night.hud&&night.banner,name+' Night HUD and banners both adopt ivory ink');
-  assert.equal(await page.locator('#statusBarInk').evaluate(el=>el.style.backgroundColor),
-    'rgb(36, 43, 57)',name+' Night Scroll matches indigo status-bar paper');
+  assert.equal(await page.evaluate(()=>document.documentElement.style.backgroundColor),
+    'rgb(36, 43, 57)',name+' Night Scroll matches indigo document paper');
   await page.evaluate(()=>{
     G.S.areaIdx=2;
     UI.setArea(AREAS[2],3,false);
   });
   await page.waitForTimeout(100);
-  assert.equal(await page.locator('#statusBarInk').evaluate(el=>el.style.backgroundColor),
-    'rgb(234, 219, 196)',name+' Cinnabar paper changes status bar sample without moving HUD');
+  assert.equal(await page.evaluate(()=>document.documentElement.style.backgroundColor),
+    'rgb(234, 219, 196)',name+' Cinnabar paper changes document colour without moving HUD');
   await page.evaluate(()=>{
     G.S.areaIdx=0;G.S.inkDrops=[];G.S.enemies=[];
     UI.setArea(AREAS[0],3,false);
   });
   await page.waitForTimeout(100);
-  assert.equal(await page.locator('#statusBarInk').evaluate(el=>el.style.backgroundColor),
-    'rgb(237, 231, 217)',name+' returning to First Wash restores pale strip');
+  assert.equal(await page.evaluate(()=>document.documentElement.style.backgroundColor),
+    'rgb(237, 231, 217)',name+' returning to First Wash restores pale paper');
   /* Exercise an actual 3-phase Guardian using the live game loop,
      retaining the same Canvas render path and mobile-sized viewport. */
   await page.evaluate(()=>{

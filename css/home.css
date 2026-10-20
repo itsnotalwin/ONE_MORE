@@ -224,3 +224,21 @@
   .screen-intro,.screen-intro .intro-content,.screen-intro .intro-filmhead,
   .home-play,.home-endless,.home-links button,.first-run-hint{transition:none!important}
 }
+
+
+/* The Home Screen used to shade its paper right to the viewport bounds,
+   exposing an obvious join to iOS's reserved status/home-indicator areas.
+   Keep the same central washi highlights, taper them to the actual paper
+   colour at BOTH edges. No menu geometry, ink art or buttons change. */
+@media(max-width:720px){
+  .screen-title{background:var(--paper)}
+  .screen-title::before{
+    content:"";position:absolute;inset:0;z-index:0;
+    pointer-events:none;
+    background:
+      radial-gradient(ellipse at 50% 29%,rgba(255,251,238,.56),transparent 57%),
+      radial-gradient(ellipse at 92% 90%,rgba(95,76,54,.10),transparent 53%);
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 22%,#000 70%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0%,#000 22%,#000 70%,transparent 100%);
+  }
+}

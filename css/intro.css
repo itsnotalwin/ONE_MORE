@@ -354,16 +354,4 @@
 body.ink-opening{background-color:#131009}
 
 
-/* Home Screen PWA status-bar color sampler for iOS versions that reserve
-   the Dynamic Island strip. WebKit can sample this real fixed element's
-   background-color but cannot render arbitrary animated Canvas here.
-   It occupies no layout space and never intercepts touches. */
-#statusBarInk{display:none}
-@media(display-mode:standalone){
-  #statusBarInk{
-    display:block;position:fixed;top:0;left:0;right:0;
-    width:100%;height:8px;z-index:45;
-    pointer-events:none;opacity:.12;
-    background-color:#ede7d9;
-  }
-}
+/* Status-bar chrome uses document background; no overlay is painted onto the game. */

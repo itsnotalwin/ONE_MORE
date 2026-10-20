@@ -277,13 +277,11 @@
   document.getElementById('muteBtn').addEventListener('click', toggleMute);
   const openingSkip=document.getElementById('openingSkip');
   const themeColor=document.querySelector('meta[name="theme-color"]');
-  const statusBarInk=document.getElementById('statusBarInk');
   const paperTint={pale:'#ede7d9',dark:'#242b39',red:'#eadbc4'};
   let statusTint=null,openingBackdrop=null;
   function tintSystemBar(color){
     if(statusTint===color)return; /* never churn styles on every animation frame */
     statusTint=color;
-    statusBarInk.style.backgroundColor=color;
     document.body.style.backgroundColor=color;
     document.documentElement.style.backgroundColor=color;
     if(themeColor)themeColor.setAttribute('content',color);
