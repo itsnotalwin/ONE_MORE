@@ -47,21 +47,73 @@ test('the entire four-art Night Scroll roster is locked before Paper II',()=>{
   assert.equal(second.G.S.stats.levels[chosen.id],1,
     'the world-exclusive skill is acquired through normal gameplay');
 });
-test('Ink Lantern reveals translucent phantoms and interrupts only an ambush',()=>{
-  const {G}=boot(1),S=G.S,e=enemy('shade',65,0);
-  e.state='tele';S.enemies=[e];
-  S.stats.lantern=1;S.stats.levels.lantern=1;S.lanternT=0;
+test('continuous Lantern field has no pulse gaps and rank II covers more paper',()=>{
+  const {G,CFG}=boot(1),S=G.S,a=enemy('shade',290,0),b=enemy('kage',390,0);
+  S.enemies=[a,b];S.stats.lantern=1;S.stats.levels.lantern=1;
+  assert.equal(CFG.lantern.radius(1),300);assert.equal(CFG.lantern.radius(2),420);
+  for(let i=0;i<40;i++)G.update(.05);
+  assert.ok(a.lanternLit&&!b.lanternLit);
+  S.stats.lantern=2;S.stats.levels.lantern=2;G.update(.05);
+  assert.ok(b.lanternLit);
+  S.player.x=-800;G.update(.05);
+  assert.equal(a.lanternLit,false);
+  for(let i=0;i<10;i++)G.update(.05);
+  assert.equal(a.lanternReveal,0);
+  assert.equal(S.lanternT,undefined);
+  assert.equal(S.lanternFlash,undefined);
+});
+test('rank II wards off one ordinary stealth attack on entry but not a Guardian',()=>{
+  for(const [type,state] of [['shade','emerge'],['kage','tele']]){
+    const {G}=boot(1),S=G.S,e=enemy(type,200,0);
+    e.state=state;S.enemies=[e];S.stats.lantern=1;
+    G.update(.03);
+    assert.equal(e.state,state);
+    S.stats.lantern=0;G.update(.03);S.stats.lantern=2;
+    S.stats.levels.lantern=2;G.update(.03);
+    assert.equal(e.state,'rest');
+    assert.ok(e.lanternGuardT>7);
+    assert.ok(S.stainQueue.some(m=>m.weapon==='lantern'&&!m.red));
+    e.state=state;G.update(.03);
+    assert.equal(e.state,state);
+    S.player.x=-700;G.update(.03);S.player.x=0;G.update(.03);
+    assert.equal(e.state,state,'re-entry during rearm does not stunlock');
+  }
+  const {G}=boot(1),S=G.S,e=enemy('shade',120,0);
+  e.elite=true;e.state='emerge';S.enemies=[e];S.stats.lantern=2;
+  G.update(.03);assert.equal(e.state,'emerge');
+});
+test('Shade fades into an unmistakable safe warning before pouncing',()=>{
+  const {G,CFG}=boot(1),S=G.S,e=enemy('shade',100,0);
+  S.enemies=[e];S.player.fireT=9999;
+  e.state='dissolve';e.stateT=CFG.nightStealth.fade-.02;
   G.update(.04);
-  assert.ok(e.lanternReveal>2);
-  assert.equal(e.state,'rest');
-  assert.ok(S.lanternFlash>0);
-  assert.ok(!S.stainQueue.some(m=>m.weapon==='lantern'));
-  S.stats.lantern=2;S.stats.levels.lantern=2;S.lanternT=0;
-  G.update(.04);
+  assert.equal(e.state,'emerge');
+  e.x=S.player.x;e.y=S.player.y;
+  const hp=S.stats.hp;
+  G.update(.25);assert.equal(e.state,'emerge');
+  assert.equal(S.stats.hp,hp,'fading spirit cannot cause unseen contact');
+  G.update(.25);assert.equal(e.state,'emerge');
+  G.update(.12);assert.equal(e.state,'pounce');
+});
+test('Lantern terrain stamps stay mastery-gated and Vermilion stays optional',()=>{
+  const {G}=boot(1),S=G.S,e=enemy('shade',75,0);
+  e.state='emerge';S.enemies=[e];S.stats.lantern=1;S.stats.levels.lantern=1;
+  G.update(.02);assert.ok(!S.stainQueue.some(m=>m.weapon==='lantern'));
+  S.stats.lantern=0;G.update(.02);S.stats.lantern=2;
+  S.stats.levels.lantern=2;G.update(.02);
   assert.ok(S.stainQueue.some(m=>m.weapon==='lantern'&&!m.red));
-  S.stats.levels.seal_lantern=1;S.lanternT=0;
-  G.update(.04);
+  S.player.x=700;G.update(.02);S.player.x=0;
+  e.state='emerge';e.lanternGuardT=0;S.stats.levels.seal_lantern=1;
+  G.update(.02);
   assert.ok(S.stainQueue.some(m=>m.weapon==='lantern'&&m.red));
+});
+test('stealth rework retains protected art and has a limited mobile field',()=>{
+  const r=read('js/render.js'),g=read('js/game.js');
+  assert.ok(r.includes('function drawStealthShade('));
+  assert.ok(r.includes('function drawLantern(c,S,t)'));
+  assert.ok(r.includes("e.state==='emerge'"));
+  assert.ok(!r.includes('S.lanternFlash'));
+  assert.ok(!g.includes('igniteLantern'));
 });
 test('Crescent Return actually travels, strikes and begins painting only at max rank',()=>{
   const {G}=boot(1),S=G.S;

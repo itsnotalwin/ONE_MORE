@@ -431,7 +431,7 @@ async function inspect(browser,name,viewport){
     S.stats.mirror=3;S.stats.shroud=2;S.stats.trailW=3;
     for(const [k,v] of [['lantern',2],['crescent',3],['mirror',3],
       ['shroud',2],['trail',3]])S.stats.levels[k]=v;
-    S.lanternT=0;S.crescentT=0;S.mirrorT=0;
+    S.crescentT=0;S.mirrorT=0;
     S.shroudT=0;S.shroudMotion=1.05;S.invulnT=30;
     S.enemies=[{
       type:'shade',x:p.x+225,y:p.y,r:12,hp:350,maxHp:350,
@@ -459,6 +459,24 @@ async function inspect(browser,name,viewport){
   assert.ok(nightArts.lantern===2&&nightArts.shroud===2);
   assert.equal(nightArts.mode,'playing');
   await page.screenshot({path:path.join(out,name+'-17-night-arts-and-snail-trail.png')});
+  /* Real mobile and desktop captures of both always-on Lantern ranks. */
+  await page.evaluate(()=>{
+    const S=G.S,p=S.player;
+    S.stats.crescent=0;S.stats.shroud=0;S.stats.mirror=0;
+    S.stats.trailW=0;S.puddles=[];S.crescents=[];
+    S.enemies=[{type:'shade',x:p.x+110,y:p.y,r:12,hp:60,maxHp:60,
+      t:1,seed:.52,state:'emerge',stateT:.12,ang:Math.PI,hitFlash:0,
+      slowT:0,elite:false,orbCd:0,kbx:0,kby:0,
+      px:0,py:0,stun:0,dirT:0,spawnT:0,speed:0}];
+    S.stats.lantern=1;S.stats.levels.lantern=1;
+  });
+  await page.waitForTimeout(90);
+  assert.equal(await page.evaluate(()=>G.S.enemies[0].lanternLit),true);
+  await page.screenshot({path:path.join(out,name+'-21-lantern-continuous-rank1.png')});
+  await page.evaluate(()=>{G.S.stats.lantern=2;G.S.stats.levels.lantern=2;});
+  await page.waitForTimeout(90);
+  assert.equal(await page.evaluate(()=>G.S.enemies[0].lanternLit),true);
+  await page.screenshot({path:path.join(out,name+'-22-lantern-rank2-shade-warning.png')});
   await page.evaluate(()=>{
     G.startLevel(0,1);
     G.S.queue=['pulse'];G.S.spawnTimer=99999;

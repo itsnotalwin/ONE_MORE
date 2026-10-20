@@ -690,6 +690,21 @@ const R = (() => {
     }
   }
 
+  /* Separate opacity shell for reappearing Shade. The original painter,
+     procedural ink contours and eye geometry below are untouched. */
+  function drawStealthShade(c,e,t){
+    const progress=e.lanternLit?1:Math.max(0,Math.min(1,e.stateT/CFG.nightStealth.warn));
+    const ease=progress*progress*(3-2*progress),r=e.r;
+    const seed=((e.seed*8191)|0)^(Math.floor(t/CFG.ink.boilRate)*7919);
+    c.save();c.translate(e.x,e.y);c.rotate(e.ang);
+    c.globalAlpha=.07+.83*ease;
+    c.fillStyle=INK;c.strokeStyle=INK;c.lineWidth=1.6;
+    blobPath(c,0,0,r,seed,.3,9);c.fill();
+    blobPath(c,0,0,r*.95,seed^31,.32,9);c.stroke();
+    eyeSlits(c,0,r,.9);
+    c.restore();
+  }
+
   /* An additive registration mark behind Night Scroll's spectral
      monsters. The original fourteen enemy painters, their eye shapes
      and their dissolve animations stay byte-identical. The broken
@@ -700,7 +715,10 @@ const R = (() => {
     const spectral=['shade','wraith','kage','stilt','moth'].includes(e.type);
     c.save();c.translate(e.x,e.y);
     c.strokeStyle='#ffefd1';c.lineCap='round';
-    c.globalAlpha=spectral?.8:.33;c.lineWidth=spectral?1.5:1.05;
+    const shadeFade=e.type==='shade'&&!e.lanternLit?
+      (e.state==='dissolve'?Math.max(.22,1-e.stateT/CFG.nightStealth.fade):
+      e.state==='emerge'?.36+.64*Math.min(1,e.stateT/CFG.nightStealth.warn):1):1;
+    c.globalAlpha=(spectral?.8:.33)*shadeFade;c.lineWidth=spectral?1.5:1.05;
     const halo=r*(spectral?1.47:1.34);
     c.beginPath();c.arc(0,0,halo,-.95,.46);
     c.moveTo(Math.cos(2.2)*halo,Math.sin(2.2)*halo);
@@ -1652,7 +1670,24 @@ const R = (() => {
      palette: one suspended lantern, a tapered crescent, a fading soul. */
   function drawLantern(c,S,t){
     if(!S.stats?.lantern)return;
-    const p=S.player,lv=S.stats.lantern;
+    const p=S.player,lv=S.stats.lantern,radius=CFG.lantern.radius(lv);
+    /* Three broken brush lines, never a bright glow or periodic wave.
+       The inner contours remain legible on narrow phone screens. */
+    c.save();c.translate(p.x,p.y);
+    c.strokeStyle=INK;c.lineCap='round';
+    for(let ring=0;ring<3;ring++){
+      const r=radius*[.36,.69,1][ring];
+      c.globalAlpha=ring===2?.18:.085;
+      c.lineWidth=ring===2?1.2:.75;
+      c.beginPath();
+      for(let a=0;a<4;a++){
+        const drift=S.reduced?0:Math.sin(t*.33+ring+a)*.025;
+        const start=a*TAU/4+.12+drift;
+        c.arc(0,0,r,start,start+.95);
+      }
+      c.stroke();
+    }
+    c.restore();
     const x=p.x+22,y=p.y-31+(S.reduced?0:Math.sin(t*1.6)*1.7);
     c.save();c.translate(x,y);
     c.fillStyle=PAPER;c.strokeStyle=INK;
@@ -1664,13 +1699,6 @@ const R = (() => {
     c.lineTo(3,8);c.stroke();
     c.globalAlpha=.74;c.fillStyle=INK;
     c.beginPath();c.arc(0,0,1.6,0,TAU);c.fill();
-    if(S.lanternFlash>0){
-      const a=S.lanternFlash/.48;
-      c.strokeStyle=INK;c.lineWidth=1.3;
-      c.globalAlpha=.31*a;
-      c.beginPath();c.arc(0,0,CFG.lantern.radius(lv)*(1-a*.12),0,TAU);
-      c.stroke();
-    }
     c.restore();
   }
   function drawCrescent(c,b){
@@ -1691,11 +1719,26 @@ const R = (() => {
     c.restore();
   }
   function drawLanternRevelation(c,e){
-    if((e.lanternReveal||0)<=0)return;
-    c.save();c.strokeStyle=INK;c.globalAlpha=.82*Math.min(1,e.lanternReveal/.5);
-    c.lineWidth=1.45;c.setLineDash([3,4]);
-    c.beginPath();c.arc(e.x,e.y,e.r+4,0,TAU);c.stroke();
-    c.setLineDash([]);c.restore();
+    if((e.lanternReveal||0)>0){
+      c.save();c.strokeStyle=INK;
+      c.globalAlpha=e.lanternLit?.42:.42*Math.min(1,e.lanternReveal/CFG.lantern.afterglow);
+      c.lineWidth=1.1;c.setLineDash([3,5]);
+      c.beginPath();c.arc(e.x,e.y,e.r+4,0,TAU);c.stroke();
+      c.setLineDash([]);c.restore();
+    }
+    /* Explicit stationary warning at the Shade's landing point. */
+    if(e.type==='shade'&&e.state==='emerge'){
+      const progress=Math.max(0,Math.min(1,e.stateT/CFG.nightStealth.warn));
+      c.save();c.translate(e.x,e.y);
+      c.strokeStyle=INK;c.lineWidth=1.4;c.globalAlpha=.34+.43*progress;
+      c.setLineDash([4,5]);c.beginPath();
+      c.arc(0,0,e.r+10,0,TAU);c.stroke();
+      c.setLineDash([]);
+      const aim=e.ang;
+      c.beginPath();c.moveTo(Math.cos(aim)*(e.r+15),Math.sin(aim)*(e.r+15));
+      c.lineTo(Math.cos(aim)*(e.r+22),Math.sin(aim)*(e.r+22));c.stroke();
+      c.restore();
+    }
   }
 
   /* ---------------- projectiles, zones, fx ---------------- */
@@ -2206,7 +2249,10 @@ const R = (() => {
     for (const b of S.ebullets) drawEBullet(ctx, b);
     for (const e of S.enemies) {
       if(themeKey==='dark')drawNightSighting(ctx,e);
-      drawEnemy(ctx,e,t);
+      if(e.type==='shade'&&(e.state==='emerge'||
+        (e.state==='dissolve'&&e.lanternLit)))
+        drawStealthShade(ctx,e,t);
+      else drawEnemy(ctx,e,t);
       drawLanternRevelation(ctx,e);
     }
     for (const d of S.idle) drawEnemy(ctx, d, t);

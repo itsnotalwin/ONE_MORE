@@ -33,8 +33,8 @@ const G = (() => {
 
     bullets: [], ebullets: [], enemies: [], markers: [], particles: [], popups: [], rings: [], idle: [],
     puddles: [], spirits: [], knots: [], guardianMarks: [],
-    crescents: [], shroudEchoes: [], lanternFlash: 0,
-    trailFrom: null, trailSeq: 0, mirrorT: 0, lanternT: 0,
+    crescents: [], shroudEchoes: [],
+    trailFrom: null, trailSeq: 0, mirrorT: 0,
     crescentT: 0, shroudT: 0, shroudMotion: 0,
     stainQueue: [], inkDrops: [], inkRecall: false,
     queue: [], waveInitial: 0, waveActive: false, spawnTimer: 0, clearedT: 0,
@@ -431,9 +431,9 @@ const G = (() => {
     S.primaryFx=[];
     S.inkDrops = []; S.inkRecall = false;
     S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
-    S.crescents=[];S.shroudEchoes=[];S.lanternFlash=0;
+    S.crescents=[];S.shroudEchoes=[];
     S.trailFrom=null;S.trailSeq=0;S.mirrorT=0;
-    S.lanternT=0;S.crescentT=0;S.shroudT=0;S.shroudMotion=0;
+    S.crescentT=0;S.shroudT=0;S.shroudMotion=0;
     S.queue = []; S.wavePlan = null; S.waveInitial = 0; S.waveActive = false;
     S.invulnT = 0; S.adrenT = 0; S.shake = 0; S.dyingT = 0; S.novaT = 0;
     S.fanT = 2.2; S.spiritT = 1.6; S.knotT = 3.6; S.trailT = 0;
@@ -512,7 +512,7 @@ const G = (() => {
     S.inkDrops = []; S.inkRecall = false;
     S.puddles = []; S.spirits = []; S.knots = []; S.guardianMarks = [];
     S.crescents=[];S.shroudEchoes=[];S.trailFrom=null;
-    S.lanternFlash=0;S.shroudMotion=0;
+    S.shroudMotion=0;
     UI.hud(false);
     UI.show('title');
     UI.setBest(getBest());
@@ -775,22 +775,28 @@ const G = (() => {
 
   /* Night Scroll arts are deliberately small paper gestures, all
      automatic in the existing one-stick / touch control scheme. */
-  function igniteLantern(){
-    const p=S.player,st=S.stats,range=CFG.lantern.radius(st.lantern);
-    S.lanternFlash=.48;
-    let interrupted=false;
-    for(const e of S.enemies){
-      if(!['shade','wraith','kage','moth','stilt'].includes(e.type))continue;
-      const d=Math.hypot(e.x-p.x,e.y-p.y);
-      if(d>range+e.r)continue;
-      e.lanternReveal=CFG.lantern.reveal;
-      if(!interrupted && ['tele','aim','windup'].includes(e.state)){
-        e.state='rest';e.stateT=0;e.stun=Math.max(e.stun,CFG.lantern.interrupt);
-        interrupted=true;
-      }
-      markWeapon('lantern',e.x,e.y,{r:8,alpha:.88});
+  const LANTERN_SPIRITS=new Set(['shade','wraith','kage','moth','stilt']);
+  function updateLanternSight(e,dt){
+    e.lanternGuardT=Math.max(0,(e.lanternGuardT||0)-dt);
+    const level=S.stats.lantern||0,p=S.player;
+    const inside=level>0&&LANTERN_SPIRITS.has(e.type)&&
+      Math.hypot(e.x-p.x,e.y-p.y)<=CFG.lantern.radius(level)+e.r;
+    const entered=inside&&!e.lanternLit;
+    e.lanternLit=inside;
+    /* Remain revealed for every frame within range, then fade out softly. */
+    e.lanternReveal=inside?CFG.lantern.afterglow:
+      Math.max(0,(e.lanternReveal||0)-dt);
+    /* A single defensive cancel on entering a rank II field, with an 8s
+       rearm per foe. Ordinary attacks, projectiles and bosses continue. */
+    if(level>=2&&entered&&!e.elite&&e.lanternGuardT===0&&(
+      (e.type==='shade'&&['dissolve','emerge'].includes(e.state))||
+      (e.type==='kage'&&e.state==='tele'))){
+      e.state='rest';e.stateT=0;
+      e.stun=Math.max(e.stun,CFG.lantern.interrupt);
+      e.lanternGuardT=CFG.lantern.rearm;
+      markWeapon('lantern',e.x,e.y,{r:8,alpha:.65});
+      SFX.wind();
     }
-    SFX.wind();
   }
 
   function fireCrescent(){
@@ -910,14 +916,6 @@ const G = (() => {
     if (S.invulnT > 0) S.invulnT -= dt;
     if (st.wardCd > 0) st.wardCd -= dt;
     S.mirrorT=Math.max(0,S.mirrorT-dt);
-    S.lanternFlash=Math.max(0,S.lanternFlash-dt);
-    if(st.lantern>0){
-      S.lanternT-=dt;
-      if(S.lanternT<=0){
-        S.lanternT=CFG.lantern.period(st.lantern);
-        igniteLantern();
-      }
-    }
     if(st.crescent>0){
       S.crescentT-=dt;
       if(S.crescentT<=0){
@@ -1487,7 +1485,7 @@ const G = (() => {
       if (e.hitFlash > 0) e.hitFlash -= dt;
       if (e.orbCd > 0) e.orbCd -= dt;
       if (e.slowT > 0) e.slowT -= dt;
-      if((e.lanternReveal||0)>0)e.lanternReveal-=dt;
+      updateLanternSight(e,dt);
       if((e.suitekiT||0)>0)e.suitekiT-=dt;
       if (e.stun > 0) {
         e.stun -= dt;
@@ -1591,7 +1589,7 @@ const G = (() => {
               if (d < 320 && e.stateT > 1.3) { e.state = 'dissolve'; e.stateT = 0; }
             } else if (e.state === 'dissolve') {
               e.stateT += dt;
-              if (e.stateT > 0.55) {
+              if (e.stateT > CFG.nightStealth.fade) {
                 /* the blink: a stain is left where it stood */
                 S.stainQueue.push({ x: e.x, y: e.y, r: e.r * 0.9, alpha: 0.35 });
                 const ba = rand(0, 6.28), bd = rand(56, 96);
@@ -1600,8 +1598,16 @@ const G = (() => {
                 S.stainQueue.push({ x: e.x, y: e.y, r: e.r * 1.1, alpha: 0.4 });
                 S.rings.push({ x: e.x, y: e.y, max: e.r * 2.2, life: 0.3, maxLife: 0.3 });
                 e.ang = Math.atan2(p.y - e.y, p.x - e.x);
-                e.state = 'pounce'; e.stateT = 0;
+                /* Stationary, visible materialization comes before the
+                   original full-speed pounce, preserving its movement. */
+                e.state = 'emerge'; e.stateT = 0;
                 SFX.blink();
+              }
+            } else if (e.state === 'emerge') {
+              e.stateT += dt;
+              if(e.stateT >= CFG.nightStealth.warn){
+                e.ang=Math.atan2(p.y-e.y,p.x-e.x);
+                e.state='pounce';e.stateT=0;
               }
             } else if (e.state === 'pounce') {
               e.stateT += dt;
@@ -1763,6 +1769,8 @@ const G = (() => {
       for (const e of S.enemies) {
         const dx = e.x - p.x, dy = e.y - p.y;
         const rr = e.r + p.r - 2;
+        /* A hidden or reforming Shade may not deal unseen contact damage. */
+        if(e.type==='shade'&&(e.state==='dissolve'||e.state==='emerge'))continue;
         if (dx * dx + dy * dy < rr * rr) { takeHit(); break; }
       }
     }

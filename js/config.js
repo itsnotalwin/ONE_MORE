@@ -72,7 +72,9 @@ const CFG = {
     life: lv => [2.6,3,3.4][Math.min(3,Math.max(1,lv))-1],
     maxPools: lv => [72,90,112][Math.min(3,Math.max(1,lv))-1],
     tick: .55, dmg: 1, slow: .8 },
-  lantern: { period: lv => lv===1?9:7, radius: lv => lv===1?175:225, reveal: 2.5, interrupt: .38 },
+  /* Constant sight field. Rank II wards off one normal ambush on entry. */
+  lantern: { radius: lv => lv===1?300:420, afterglow: .24, rearm: 8, interrupt: .24 },
+  nightStealth: { fade: .55, warn: .60 },
   crescent: { period: lv => [4.7,4.1,3.5][lv-1], speed: 390, reach: lv => 145+25*lv, dmg: lv => lv>=3?2:1 },
   mirror: { period: lv => [8,6.5,5][lv-1], range: lv => 92+18*lv, speed: 480, dmg: lv => lv===3?2:1 },
   shroud: { period: lv => lv===1?12:9.5, dash: lv => lv===1?34:48, decoy: lv => lv===1?.55:.82 },
@@ -207,7 +209,7 @@ const UPGRADES = [
   { id: 'knot',   name: 'Ink Knots',     desc: 'Bind a few nearby beasts with living ink. Slow them, then deal 1 delayed damage.', max: 3, weapon: true, apply: s => { s.knot += 1; } },
   /* Unlocked only when Night Scroll or later is active. Every new art
      obeys ordinary mastery -> black signature -> optional Vermilion. */
-  { id:'lantern', name:'Ink Lantern', desc:'A pale paper lantern reveals night spirits and interrupts a nearby ambush.', max:2, world:1, weapon:true, apply:s=>{s.lantern+=1;} },
+  { id:'lantern', name:'Ink Lantern', desc:'A continuous pale-ink field reveals night spirits. Rank II widens the field and interrupts a normal ambush on entry.', max:2, world:1, weapon:true, apply:s=>{s.lantern+=1;} },
   { id:'crescent', name:'Crescent Return', desc:'A crescent-shaped ink blade flies out and returns, cutting twice.', max:3, world:1, weapon:true, apply:s=>{s.crescent+=1;} },
   { id:'mirror', name:'Mirror Fold', desc:'A folded paper crease catches an ordinary enemy shot and returns a cutting reflection.', max:3, world:1, weapon:true, apply:s=>{s.mirror+=1;} },
   { id:'shroud', name:'Shroud Step', desc:'After moving steadily, slip forward and leave a false ink-soul behind to mislead beasts.', max:2, world:1, weapon:true, apply:s=>{s.shroud+=1;} },
