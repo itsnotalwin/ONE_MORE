@@ -31,10 +31,12 @@ test('transparent animation atlas exists for First Wash, Night Scroll and Cinnab
   }
   const render=read('js/render.js');
   assert.ok(render.includes('function paintHeroSprite('));
-  assert.ok(render.includes('frame*180,row*160,180,160'));
+  assert.ok(render.includes('frame*192,row*192,192,192'),
+    'transparent atlas samples one complete 192px frame');
   assert.ok(render.includes('p.flowPhase'), 'run follows existing animation phase');
-  for(const frames of ['count=6','count=8','count=4','count=2','count=5']){
-    assert.ok(render.includes(frames),frames);
+  for(const frames of ['row=1;count=6','row=2;count=6',
+    'row=3;count=3','row=3;start=3;count=1','row=3;start=4;count=2']){
+    assert.ok(render.includes(frames),frames+' animation retained');
   }
   assert.ok(render.includes('if(!paintHeroSprite(c,p,S,t))'),
     'procedural fallback remains functional');
