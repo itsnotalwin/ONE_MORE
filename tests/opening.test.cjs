@@ -33,6 +33,11 @@ test('GLM opening is independent of gameplay and draws its whole sequence',()=>{
     assert.doesNotThrow(()=>o.draw(x.context,t));
   }
   assert.ok(x.calls()>300,'procedural opening draws real ink geometry');
+  o.seek(1.55);o.draw(x.context,1.55);
+  assert.equal(o.isRimPaper(),false,'top begins as dark void');
+  o.seek(5.15);o.draw(x.context,5.15);
+  assert.equal(o.isRimPaper(),true,'ink wash covers even the top corners');
+  assert.equal(x.G.S.H,580,'canvas changes never resize the gameplay world');
   assert.equal(x.G.S.W,800,'screen dimensions are unchanged');
   assert.equal(x.done(),0,'drawing does not change gameplay screens');
 });

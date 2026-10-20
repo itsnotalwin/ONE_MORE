@@ -60,6 +60,7 @@ const OPENING = (() => {
   let shakeAmp = 0;
   let sealSlammed = false;
   let planW = 0, planH = 0;
+  let rimPaper = false; /* match the phone's status-bar backdrop to the flood */
 
   /* paper canvas cache */
   let paperC = null, paperW = 0, paperH = 0, paperDpr = 0;
@@ -401,7 +402,7 @@ const OPENING = (() => {
   /* ---------------- lifecycle ---------------- */
   function start() {
     T = 0; live = true; ended = false; skipping = false; skipT = 0; shakeAmp = 0;
-    sealSlammed = false; planW = 0; planH = 0;
+    sealSlammed = false; planW = 0; planH = 0; rimPaper = false;
     /* warm the display faces so the captions land crisp */
     try {
       if (document.fonts) {
@@ -488,6 +489,8 @@ const OPENING = (() => {
     const u = Math.min(W, H) / 800;
     const tick = Math.floor(T / 0.115);   /* hand-drawn boil at ~8.7fps */
     const ix = W / 2, iy = H * 0.52;      /* the impact point */
+    /* Bring the drop in from the actual top edge, not 30% down the page. */
+    const dropStartY = 12 * u;
 
     ensurePaper(W, H, dpr);
     if (planW !== W || planH !== H) { plan(W, H); planW = W; planH = H; }
@@ -517,10 +520,11 @@ const OPENING = (() => {
 
     /* ===== the drop ===== */
     if (T < T_IMPACT) {
-      let dx = ix, dy = H * 0.30, r = 8 * u, stretch = 1, alpha = 1;
+      let dx = ix, dy = dropStartY, r = 8 * u, stretch = 1, alpha = 1;
       if (T < T_FALL) {
         const p = clamp01((T - T_DROP_FORM) / (T_FALL - T_DROP_FORM));
         const gath = easeOutCubic(p);
+        dy = dropStartY - (1 - gath) * 20 * u; /* ink enters from above */
         r = (3 + 7 * gath) * u;
         alpha = 0.25 + 0.75 * gath;
         dx += Math.sin(T * 19) * 1.6 * u * (1 - p * 0.55);   /* the tremble before the fall */
@@ -534,14 +538,14 @@ const OPENING = (() => {
         }
       } else {
         const p = clamp01((T - T_FALL) / (T_IMPACT - T_FALL));
-        dy = H * 0.30 + (iy - H * 0.30) * easeInCubic(p);
+        dy = dropStartY + (iy - dropStartY) * easeInCubic(p);
         stretch = 1 + 1.9 * p;
         /* falling echoes */
         for (let k = 1; k <= 2; k++) {
           const ep = clamp01(p - k * 0.09);
           if (ep <= 0) break;
           ctx.save();
-          ctx.translate(dx, H * 0.30 + (iy - H * 0.30) * easeInCubic(ep));
+          ctx.translate(dx, dropStartY + (iy - dropStartY) * easeInCubic(ep));
           ctx.rotate(-Math.PI / 2);
           ctx.scale(1 + 1.9 * ep, 1 / (1 + 1.9 * ep));
           ctx.globalAlpha = 0.15 * (1 - k * 0.3);
@@ -587,7 +591,11 @@ const OPENING = (() => {
     const flooded = T >= T_FLOOD;
     if (flooded) {
       const fp = clamp01((T - T_FLOOD) / (T_FLOOD_END - T_FLOOD));
-      const floodR = easeOutCubic(fp) * Math.hypot(W, H) * 0.62;
+      /* Clear every corner with overscan, so the wash continues past the
+         screen/HUD edges instead of seeming to stop at their border. */
+      const floodMax = Math.hypot(W * 0.5, Math.max(iy, H - iy)) * 1.35 + 12 * u;
+      const floodR = easeOutCubic(fp) * floodMax;
+      rimPaper = floodR > Math.hypot(W * 0.5, iy) + 9 * u;
       ctx.save();
       ctx.beginPath();
       /* a wet, trembling edge */
@@ -626,7 +634,7 @@ const OPENING = (() => {
 
         /* satellite splats tear through ahead of the edge */
         for (const s of satellite) {
-          const dTarget = s.d * Math.hypot(W, H) * 0.62;
+          const dTarget = s.d * floodMax;
           if (floodR < dTarget) continue;
           const ap = clamp01((floodR - dTarget) / (40 * u));
           const x = ix + Math.cos(s.a) * dTarget, y = iy + Math.sin(s.a) * dTarget;
@@ -921,5 +929,6 @@ const OPENING = (() => {
     get onEnd() { return onEnd; },
     set onEnd(fn) { onEnd = fn; },
     isLive: () => live,
+    isRimPaper: () => rimPaper,
   };
 })();

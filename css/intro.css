@@ -348,3 +348,7 @@
   cursor:pointer;
 }
 .opening-skip:focus-visible{outline:2px solid #b23a2b;outline-offset:3px}
+
+/* The phone's safe-area backing follows the full-bleed ink opening.
+   No screen, menu, HUD, button or canvas box geometry is changed. */
+body.ink-opening{background-color:#131009}

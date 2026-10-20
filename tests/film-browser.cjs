@@ -38,6 +38,24 @@ async function inspect(browser,name,viewport){
     'standalone ink opening starts automatically');
   assert.equal(await page.locator('#screenIntro').isVisible(),false,
     'original story film does not play until WATCH FILM');
+  const canvasBounds=await page.locator('#game').boundingBox();
+  assert.ok(canvasBounds&&Math.abs(canvasBounds.y)<2&&
+    Math.abs(canvasBounds.height-viewport.height)<2&&
+    Math.abs(canvasBounds.width-viewport.width)<2,
+    name+' actual Canvas covers the entire viewport, not merely the menu');
+  assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),
+    '#131009',name+' dark opening covers phone browser safe-area backing');
+  await page.evaluate(()=>OPENING.seek(1.55));
+  await page.waitForTimeout(110);
+  const dropAtTop=await page.evaluate(()=>{
+    const c=document.getElementById('game'),g=c.getContext('2d');
+    const x=Math.floor(c.width/2),h=Math.max(8,Math.floor(c.height*.08));
+    const d=g.getImageData(Math.max(0,x-12),0,25,h).data;
+    let bright=0;
+    for(let i=0;i<d.length;i+=4)if(d[i]>160&&d[i+1]>150&&d[i+2]>140)bright++;
+    return bright;
+  });
+  assert.ok(dropAtTop>10,name+' ink droplet enters from top edge, not below the GUI');
   for(const [t,shot] of [[1.8,'01-ink-drop'],[3.2,'02-paper-flood'],
     [7.5,'03-brush-strokes'],[11.8,'04-living-ink'],
     [15.3,'05-ink-spirit'],[16.4,'06-hanko']]){
@@ -47,6 +65,18 @@ async function inspect(browser,name,viewport){
     assert.equal(await page.evaluate(()=>OPENING.isLive()),true,
       name+' GLM opening keeps animating through '+shot);
   }
+  /* Full-bleed paper must cover the upper corners before the flood ends. */
+  await page.evaluate(()=>OPENING.seek(5.15));
+  await page.waitForTimeout(110);
+  const topCorners=await page.evaluate(()=>{
+    const c=document.getElementById('game'),g=c.getContext('2d');
+    const read=x=>Array.from(g.getImageData(x,2,1,1).data).slice(0,3);
+    return [read(2),read(c.width-3)];
+  });
+  assert.ok(topCorners.every(rgb=>rgb[0]>120&&rgb[1]>110&&rgb[2]>100),
+    name+' flood washes over both top canvas corners: '+JSON.stringify(topCorners));
+  assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),
+    '#ede7d9',name+' mobile status-bar backing becomes paper after flood');
   const skip=await page.locator('#openingSkip').boundingBox();
   assert.ok(skip&&skip.x>=0&&skip.x+skip.width<=viewport.width+2,
     name+' Skip remains within desktop or phone width');
@@ -56,6 +86,8 @@ async function inspect(browser,name,viewport){
   await page.waitForFunction(()=>G.mode==='title');
   assert.equal(await page.locator('#screenTitle').isVisible(),true);
   assert.equal(await page.locator('#openingSkip').isVisible(),false);
+  assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),
+    '#ede7d9',name+' ordinary game backdrop returns after opening');
   await page.waitForTimeout(150);
   const homeButton=await page.locator('#playBtn').boundingBox();
   assert.ok(homeButton && homeButton.x>=0 && homeButton.x+homeButton.width<=viewport.width+2,

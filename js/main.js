@@ -276,6 +276,14 @@
   document.getElementById('deployBtn').addEventListener('click', () => G.deploy());
   document.getElementById('muteBtn').addEventListener('click', toggleMute);
   const openingSkip=document.getElementById('openingSkip');
+  const themeColor=document.querySelector('meta[name="theme-color"]');
+  let openingBackdrop=null;
+  function setOpeningBackdrop(dark){
+    if(openingBackdrop===dark)return; /* just two state changes, no per-frame DOM churn */
+    openingBackdrop=dark;
+    document.body.classList.toggle('ink-opening',dark);
+    if(themeColor)themeColor.setAttribute('content',dark?'#131009':'#ede7d9');
+  }
   openingSkip.addEventListener('click',()=>OPENING.skip());
   window.addEventListener('pointerdown',()=>{
     if(G.mode==='opening')OPENING.skip(); /* tap anywhere: original GLM behavior */
@@ -297,6 +305,7 @@
   /* The compact GLM prologue opens the game. The separate seven-shot
      original film still plays from the existing WATCH FILM button. */
   OPENING.onEnd=()=>{
+    setOpeningBackdrop(false);
     openingSkip.classList.add('hidden');
     G.mode='title';
     UI.show('title');
@@ -308,6 +317,7 @@
     UI.hud(false);
     G.mode='opening';
     openingSkip.classList.remove('hidden');
+    setOpeningBackdrop(true);
     OPENING.start();
   }
 
@@ -330,8 +340,10 @@
     if (m === 'opening'){
       OPENING.update(dt);
       ctx.setTransform(G.S.dpr,0,0,G.S.dpr,0,0);
-      if(G.mode==='opening')OPENING.draw(ctx,now/1000);
-      else R.draw(ctx,now/1000);
+      if(G.mode==='opening'){
+        OPENING.draw(ctx,now/1000);
+        if(OPENING.isRimPaper())setOpeningBackdrop(false);
+      }else R.draw(ctx,now/1000);
       return;
     }
     if (m === 'playing') G.update(dt);
