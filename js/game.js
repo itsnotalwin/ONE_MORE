@@ -129,10 +129,11 @@ const G = (() => {
     return { cycle, waveInArea, themeIdx, area, hp, sp, budget, effectiveWave: w, isElite: waveInArea === per };
   }
 
-  /* a birth point just past the edge of the eye — measured to the
-     view RECTANGLE, so spawns always land off-screen on every side */
+  /* Spawn beyond the actual camera rectangle, but close enough to
+     enter the sheet promptly on a phone. Preserve offscreen warnings
+     and the authored spawn-side choreography. */
   function edgePoint(sideHint) {
-    const pad = CFG.world.spawnPad;
+    const pad = Math.max(45, CFG.world.spawnPad * .55);
     for (let tries = 0; tries < 10; tries++) {
       const a = (sideHint != null && tries < 2)
         ? sideHint * (Math.PI / 2) + rand(-0.35, 0.35)
@@ -140,8 +141,8 @@ const G = (() => {
       const cx = Math.cos(a), cy = Math.sin(a);
       const ax = Math.abs(cx) > 1e-4 ? (S.W / 2 + pad) / Math.abs(cx) : Infinity;
       const ay = Math.abs(cy) > 1e-4 ? (S.H / 2 + pad) / Math.abs(cy) : Infinity;
-      const t = Math.min(ax, ay) + rand(10, 130);
-      return { x: S.player.x + cx * t, y: S.player.y + cy * t };
+      const t = Math.min(ax, ay) + rand(8, 40);
+      return { x: S.cam.x + cx * t, y: S.cam.y + cy * t };
     }
   }
 

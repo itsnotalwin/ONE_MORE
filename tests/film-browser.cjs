@@ -228,6 +228,37 @@ async function inspect(browser,name,viewport){
   await page.screenshot({path:path.join(out,name+'-08-wave-director-levels.png')});
   await page.click('#campaignLevels button[data-level="1"]');
   await page.waitForFunction(()=>G.mode==='playing');
+  if(name==='phone'){
+    /* Simulate real iPhone cutout + home indicator. Chromium otherwise
+       reports safe-area-inset-* as zero on the Playwright runner. */
+    const safeHud=await page.evaluate(()=>{
+      const nodes=['.hud-tl','.hud-tr','.hud-bl','.hud-br'];
+      const before=nodes.map(s=>document.querySelector(s).getBoundingClientRect());
+      document.documentElement.style.setProperty('--om-safe-top','59px');
+      document.documentElement.style.setProperty('--om-safe-bottom','34px');
+      const after=nodes.map(s=>document.querySelector(s).getBoundingClientRect());
+      const hp=document.getElementById('hudHp').getBoundingClientRect();
+      return {
+        topLeft:{before:before[0].top,after:after[0].top,x:after[0].x,oldX:before[0].x},
+        topRight:{before:before[1].top,after:after[1].top,x:after[1].x,oldX:before[1].x},
+        bottomLeft:{before:before[2].bottom,after:after[2].bottom},
+        bottomRight:{before:before[3].bottom,after:after[3].bottom},
+        hearts:hp.top,
+      };
+    });
+    assert.ok(Math.abs(safeHud.topLeft.after-safeHud.topLeft.before-59)<1);
+    assert.ok(Math.abs(safeHud.topRight.after-safeHud.topRight.before-59)<1);
+    assert.ok(Math.abs(safeHud.topLeft.x-safeHud.topLeft.oldX)<1);
+    assert.ok(Math.abs(safeHud.topRight.x-safeHud.topRight.oldX)<1);
+    assert.ok(safeHud.hearts>=59,'hearts must stay below the Dynamic Island');
+    assert.ok(Math.abs(safeHud.bottomLeft.after-safeHud.bottomLeft.before+34)<1);
+    assert.ok(Math.abs(safeHud.bottomRight.after-safeHud.bottomRight.before+34)<1);
+    await page.screenshot({path:path.join(out,'phone-23-safe-hud.png')});
+    await page.evaluate(()=>{
+      document.documentElement.style.removeProperty('--om-safe-top');
+      document.documentElement.style.removeProperty('--om-safe-bottom');
+    });
+  }
   assert.equal(await page.locator('#firstRunHint').isVisible(),true,
     'first play teaches movement without blocking game input');
   /* Wave progress and XP now sit beside each other on the top HUD.

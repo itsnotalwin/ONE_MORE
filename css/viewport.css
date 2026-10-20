@@ -262,3 +262,10 @@ dialog.home-help[open]{
   .home-endless{min-height:32px;padding:6px}
   .home-links button{min-height:25px}
 }
+
+/* In installed PWAs, WebKit can report 100dvh excluding its bottom inset
+   while fixed inset:0 still reaches the app's drawable edge. Do not give
+   the canvas a competing explicit height. Overlay layouts stay unchanged. */
+@media (display-mode: standalone){
+  #stage{height:auto;}
+}

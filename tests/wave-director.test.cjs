@@ -188,3 +188,25 @@ test('campaign UI exposes level identity and wave warning cue without new artwor
   assert.ok(file('js/render.js').includes('function drawEnemy('));
   assert.ok(!file('js/wave-director.js').includes('document.createElement'));
 });
+
+test('mobile wave telegraphs spawn near the actual camera edge, never inside it',()=>{
+  const x=harness();
+  assert.ok(x.G.startLevel(0,1));
+  const S=x.G.S;
+  S.W=393;S.H=852;
+  S.player.x=150;S.player.y=-60;
+  S.cam.x=55;S.cam.y=-15; // active camera lag must not make markers visible
+  S.wavePlan=null;S.waveActive=true;
+  for(let n=0;n<20;n++){
+    S.queue=Array(6).fill('pulse');S.markers=[];S.enemies=[];
+    S.spawnTimer=0;
+    x.G.update(.001);
+    assert.ok(S.markers.length>0,'wave must create a real warning marker');
+    for(const m of S.markers){
+      const outside=Math.max(Math.abs(m.x-S.cam.x)-S.W/2,
+        Math.abs(m.y-S.cam.y)-S.H/2);
+      assert.ok(outside>=44,'warning marker stays offscreen: '+outside);
+      assert.ok(outside<96,'enemies approach promptly on phones: '+outside);
+    }
+  }
+});

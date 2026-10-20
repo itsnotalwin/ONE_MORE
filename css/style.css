@@ -19,6 +19,10 @@
   --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
   --rough: url(#inkrough);
   --rough-soft: url(#inkrough-soft);
+  /* iPhone PWA insets. Keeps the original HUD offsets inside the
+     usable screen while ink itself can continue under system chrome. */
+  --om-safe-top: env(safe-area-inset-top, 0px);
+  --om-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 *, *::before, *::after{ box-sizing: border-box; margin: 0; padding: 0; }
@@ -861,8 +865,10 @@ button{ font-family: inherit; color: inherit; background: none; border: none; cu
   .over-body{ flex-direction: column; align-items: flex-start; gap: 30px; }
   .rank-block{ align-self: center; }
   .over-actions{ flex-direction: column; }
-  .hud-tl{ top: 14px; left: 14px; }
-  .hud-tr{ top: 12px; right: 14px; }
+  .hud-tl{ top: calc(14px + var(--om-safe-top)); left: 14px; }
+  .hud-tr{ top: calc(12px + var(--om-safe-top)); right: 14px; }
+  .hud-bl{ bottom: calc(20px + var(--om-safe-bottom)); }
+  .hud-br{ bottom: calc(16px + var(--om-safe-bottom)); }
   .wave-progress{ width: 72px; }
   .hud-area-name{ display: none; }
   .hud-mode{ display: none; }
