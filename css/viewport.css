@@ -269,3 +269,16 @@ dialog.home-help[open]{
 @media (display-mode: standalone){
   #stage{height:auto;}
 }
+
+/* Dynamic Island / home-indicator padding is applied to HUD anchors only.
+   Preserve all original positions inside the usable area, ink canvas full. */
+:root{
+  --om-safe-top: env(safe-area-inset-top, 0px);
+  --om-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media(max-width:720px){
+  .hud-tl{top:calc(14px + var(--om-safe-top));left:14px}
+  .hud-tr{top:calc(12px + var(--om-safe-top));right:14px}
+  .hud-bl{bottom:calc(20px + var(--om-safe-bottom))}
+  .hud-br{bottom:calc(16px + var(--om-safe-bottom))}
+}
