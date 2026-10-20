@@ -923,6 +923,7 @@ const OPENING = (() => {
     seek(t) {
       if (!live) return;
       T = Math.max(0, t);
+      rimPaper = false; /* seeking backwards must recompute the flood rim */
       skipping = false; skipT = 0;
       sealSlammed = T >= T_SLAM;
     },
