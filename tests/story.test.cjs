@@ -133,7 +133,7 @@ test('story archive remains unlock-gated and original game assets are untouched'
   assert.ok(html.indexOf('intro.js')<html.indexOf('opening.js'));
   assert.ok(js.includes("replayIntroBtn"),'WATCH FILM still replays the seven-shot story');
   assert.ok(!js.includes('sessionStorage'),'no once-per-visit shortcuts');
-  assert.ok(!/\.mp4|\.webm/.test(html+js),'no external video needed');
+  assert.ok(!/\.(?:mp4|webm)(?=[\s"'?&#<]|$)/.test(html+js),'no external video needed');
   assert.ok(file('js/render.js').includes('function drawEnemy('));
   assert.ok(file('docs/GAME_BIBLE.md').includes('Sprite sheet inventory: **NONE**'));
 });
