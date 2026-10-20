@@ -1582,42 +1582,46 @@ const R = (() => {
     c.restore();
   }
 
-  /* The new hand-painted protagonist is a six-row Canvas atlas.
-     Load each world palette once. If loading fails, retain the original
-     procedural brush soul instead of breaking the game. */
+  /* Transparent, hand-cleaned 6x4 brush-spirit atlas. These frames have
+     true alpha (no washi tile or background rectangles). Load one image
+     per palette and keep the existing procedural soul as a safe fallback. */
   const heroImages={pale:null,dark:null};
   if(typeof Image!=='undefined'){
     for(const key of ['pale','dark']){
       const image=new Image();
       image.decoding='async';
-      image.src='./assets/hero-atlas'+(key==='dark'?'-night':'')+'.webp';
+      image.src='./assets/hero-atlas'+(key==='dark'?'-night':'')+'.webp?v=clean2';
       heroImages[key]=image;
     }
   }
   function paintHeroSprite(c,p,S,t){
     const image=heroImages[S.areaIdx===1?'dark':'pale'];
-    if(!image||!image.complete||!image.naturalWidth)return false;
+    /* An outdated cached six-row sheet must never draw as square tiles. */
+    if(!image||!image.complete||image.naturalWidth!==1152||image.naturalHeight!==768)
+      return false;
     const moving=(p.visualSpeed||0)>.27;
     const melee=S.primaryFx&&S.primaryFx.some(f=>
       ['brush','mallet','cutter'].includes(f.kind)&&f.life>0);
     const attack=(p.recoil||0)>.12||melee;
-    let row=0,count=6,fps=4;
-    if(S.mode==='dying'){row=5;count=5;fps=8;}
-    else if((p.hitPulse||0)>.01){row=4;count=2;fps=8;}
-    else if(S.shroudMotion>.1&&moving){row=3;count=4;fps=13;}
+    /* Row 0 idle (6), row 1 running (6), row 2 attacking (6);
+       row 3 combines dash (0..2), hurt (3) and defeat (4..5).
+       Source frames stay in their own 192px cell: never sample adjacent art. */
+    let row=0,start=0,count=6,fps=4;
+    if(S.mode==='dying'){row=3;start=4;count=2;fps=8;}
+    else if((p.hitPulse||0)>.01){row=3;start=3;count=1;fps=8;}
+    else if(S.shroudMotion>.1&&moving){row=3;count=3;fps=13;}
     else if(attack){row=2;count=6;fps=13;}
-    else if(moving){row=1;count=8;fps=10;}
-    /* RUN advances from the existing locomotion phase, not a separate
-       gameplay clock. The movement speed/hitbox remain exactly as before. */
-    const phase=row===1?(p.flowPhase||0)/ (Math.PI*2)*count:
-      row===5?Math.max(0,(1-(S.dyingT||0)/1.1))*count:t*fps;
-    const frame=Math.max(0,Math.floor(phase))%count;
+    else if(moving){row=1;count=6;fps=10;}
+    /* Keep the original locomotion phase, attack timings, flip and hitbox. */
+    const phase=row===1?(p.flowPhase||0)/(Math.PI*2)*count:
+      row===3&&start===4?Math.max(0,(1-(S.dyingT||0)/1.1))*count:t*fps;
+    const frame=start+Math.max(0,Math.floor(phase))%count;
     const face=Math.cos(moving?p.visualFacing:p.visualAim);
     const flip=face<-.15?-1:1;
     c.save();
     c.scale(flip,1);
     c.globalAlpha=1;
-    c.drawImage(image,frame*180,row*160,180,160,-23,-23,46,42);
+    c.drawImage(image,frame*192,row*192,192,192,-23,-23,46,42);
     c.restore();
     return true;
   }

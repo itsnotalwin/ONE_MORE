@@ -45,6 +45,40 @@ async function inspect(browser,name,viewport){
     assert.equal(result.status,200,name+' can load '+url);
     assert.ok(result.size>10000,name+' has nontrivial art for '+url);
   }
+  /* Catch the actual iPhone bug: every atlas tile must have transparent
+     corners, rather than a painted/off-white rectangular background. */
+  const cleanAtlas=await page.evaluate(async()=>{
+    const results=[];
+    for(const suffix of ['', '-night']){
+      const image=new Image();
+      image.src='./assets/hero-atlas'+suffix+'.webp?v=clean2';
+      await image.decode();
+      const canvas=document.createElement('canvas');
+      canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+      const cx=canvas.getContext('2d',{willReadFrequently:true});
+      cx.drawImage(image,0,0);
+      const pixels=cx.getImageData(0,0,canvas.width,canvas.height).data;
+      const alpha=(x,y)=>pixels[(y*canvas.width+x)*4+3];
+      let badCorners=0,solidSamples=0;
+      for(let row=0;row<4;row++)for(let col=0;col<6;col++){
+        const left=col*192,top=row*192;
+        for(const [x,y] of [[3,3],[188,3],[3,188],[188,188]]){
+          if(alpha(left+x,top+y)>8)badCorners++;
+        }
+        for(let y=16;y<176;y+=16)for(let x=16;x<176;x+=16){
+          if(alpha(left+x,top+y)>220)solidSamples++;
+        }
+      }
+      results.push({w:image.naturalWidth,h:image.naturalHeight,
+        badCorners,solidSamples});
+    }
+    return results;
+  });
+  for(const a of cleanAtlas){
+    assert.deepEqual([a.w,a.h],[1152,768],name+' four-row hero atlas dimensions');
+    assert.equal(a.badCorners,0,name+' hero tiles must never have visible square edges');
+    assert.ok(a.solidSamples>200,name+' hero atlas must contain real painted frames');
+  }
   await page.waitForFunction(()=>G.mode==='opening');
   assert.equal(await page.locator('#openingSkip').isVisible(),true,
     'standalone ink opening starts automatically');
