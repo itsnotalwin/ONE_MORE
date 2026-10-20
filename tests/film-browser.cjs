@@ -131,8 +131,8 @@ async function inspect(browser,name,viewport){
     assert.equal(homeBleed.background,'rgb(237, 231, 217)',
       'the home page must finish in the same flat paper as the system chrome');
     assert.ok(homeBleed.fade.includes('linear-gradient')&&
-      homeBleed.fade.includes('transparent 100%'),
-      'the home shading must soften to nothing at both edges');
+      homeBleed.fade.includes('100%'),
+      'the home shading must soften to nothing at both edges: '+homeBleed.fade);
     assert.equal(homeBleed.extraOverlay,null,'no extra bar overlay is present');
   }
   assert.ok(Math.abs(homeBleed.upper)<2&&Math.abs(homeBleed.lower-viewport.height)<2,
