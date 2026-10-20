@@ -1,5 +1,5 @@
 'use strict';
-/* Browser smoke QA: a real Chromium rendering of the original short film.
+/* Browser smoke QA: the compact GLM opening and preserved original short film.
    No Playwright dependency is required to run ONE MORE itself. */
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
@@ -33,34 +33,30 @@ async function inspect(browser,name,viewport){
   page.on('pageerror',e=>errors.push(String(e)));
   const response=await page.goto(base,{waitUntil:'load'});
   assert.equal(response.status(),200);
-  await page.waitForFunction(()=>G.mode==='intro');
-  assert.equal(await page.locator('#screenIntro').isVisible(),true,'autoplay film visible');
-  assert.equal(await page.locator('#introStartBtn').count(),0,'not a click-to-play cover');
-  assert.equal(await page.locator('#introFrames').count(),0,'not a slideshow');
-  await page.waitForTimeout(1350);
-  await page.screenshot({path:path.join(out,name+'-01-opening.png')});
-  await page.evaluate(()=>INTRO.next());
-  await page.waitForTimeout(1100);
-  await page.screenshot({path:path.join(out,name+'-02-creation.png')});
-  await page.evaluate(()=>{INTRO.next();INTRO.next();});
-  await page.waitForTimeout(1500);
-  await page.screenshot({path:path.join(out,name+'-04-erasure.png')});
-  await page.evaluate(()=>INTRO.next());
-  await page.waitForTimeout(1100);
-  await page.screenshot({path:path.join(out,name+'-05-survivor.png')});
-  await page.evaluate(()=>{INTRO.next();INTRO.next();});
-  await page.waitForTimeout(4900);
-  await page.screenshot({path:path.join(out,name+'-07-title-reveal.png')});
-  const rect=await page.locator('#introContent').boundingBox();
-  assert.ok(rect.x>=-2&&rect.x+rect.width<=viewport.width+2,
-    name+' caption remains in viewport');
-  const skip=await page.locator('#introSkip').boundingBox();
-  assert.ok(skip.x>=0&&skip.x+skip.width<=viewport.width+2,
-    name+' Skip remains on screen');
-  await page.click('#introSkip');
+  await page.waitForFunction(()=>G.mode==='opening');
+  assert.equal(await page.locator('#openingSkip').isVisible(),true,
+    'standalone ink opening starts automatically');
+  assert.equal(await page.locator('#screenIntro').isVisible(),false,
+    'original story film does not play until WATCH FILM');
+  for(const [t,shot] of [[1.8,'01-ink-drop'],[3.2,'02-paper-flood'],
+    [7.5,'03-brush-strokes'],[11.8,'04-living-ink'],
+    [15.3,'05-ink-spirit'],[16.4,'06-hanko']]){
+    await page.evaluate(t=>OPENING.seek(t),t);
+    await page.waitForTimeout(110);
+    await page.screenshot({path:path.join(out,name+'-'+shot+'.png')});
+    assert.equal(await page.evaluate(()=>OPENING.isLive()),true,
+      name+' GLM opening keeps animating through '+shot);
+  }
+  const skip=await page.locator('#openingSkip').boundingBox();
+  assert.ok(skip&&skip.x>=0&&skip.x+skip.width<=viewport.width+2,
+    name+' Skip remains within desktop or phone width');
+  assert.ok(skip.y>=0&&skip.y+skip.height<=viewport.height+2,
+    name+' Skip remains within desktop or phone height');
+  await page.click('#openingSkip');
   await page.waitForFunction(()=>G.mode==='title');
   assert.equal(await page.locator('#screenTitle').isVisible(),true);
-  await page.waitForTimeout(950); // film-to-home ink dissolve
+  assert.equal(await page.locator('#openingSkip').isVisible(),false);
+  await page.waitForTimeout(150);
   const homeButton=await page.locator('#playBtn').boundingBox();
   assert.ok(homeButton && homeButton.x>=0 && homeButton.x+homeButton.width<=viewport.width+2,
     name+' primary action is within screen width');
@@ -560,7 +556,7 @@ async function inspectShort(browser,name,viewport){
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(String(e)));
   await page.goto(base,{waitUntil:'load'});
-  await page.click('#introSkip');
+  await page.click('#openingSkip');
   await page.waitForFunction(()=>G.mode==='title');
   await assertViewportFit(page,'.home-content',viewport,name+' title');
   await page.click('#howToPlayBtn');

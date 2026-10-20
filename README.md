@@ -7,7 +7,7 @@ The ink remembers every stroke.</p>
 
 > **Released cinematic:** [PR #7](https://github.com/itsnotalwin/ONE_MORE/pull/7) merged the complete seven-shot animated film and Chronicle into `main`. It plays automatically and remains skippable. The previous combined draft PR #5 has been closed.
 
-**Play ONE MORE:** [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/). The Pages test site currently deploys `development`, which includes the same cinematic plus in-progress combat improvements. `main` is the preserved cinematic release baseline; `development` is for all new gameplay work. [Browse the development branch](https://github.com/itsnotalwin/ONE_MORE/tree/development).
+**Play ONE MORE:** [itsnotalwin.github.io/ONE_MORE](https://itsnotalwin.github.io/ONE_MORE/). The Pages test site currently deploys `development`, where the GLM-inspired, 17.55-second ink opening now autoplays on launch. The existing seven-shot `THE LAST STROKE` film remains available through WATCH FILM, and the Chronicle is unchanged. `main` is the preserved cinematic release baseline; `development` is for all new gameplay work. [Browse the development branch](https://github.com/itsnotalwin/ONE_MORE/tree/development).
 
 
 

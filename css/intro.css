@@ -329,3 +329,22 @@
   .screen-intro .intro-content,.screen-intro .intro-line,
   .screen-intro .intro-second{transition:none}
 }
+
+/* GLM opening runs on the existing game canvas, not on the story film.
+   A single accessible touch target; nothing moves or scrolls in the UI. */
+.opening-skip{
+  position:absolute;
+  top:calc(16px + env(safe-area-inset-top));
+  right:calc(16px + env(safe-area-inset-right));
+  z-index:38;
+  min-height:44px;
+  padding:11px 14px;
+  background:rgba(237,231,217,.94);
+  border:1px solid rgba(26,23,20,.3);
+  color:#1a1714;
+  font:600 10px 'IBM Plex Mono',monospace;
+  letter-spacing:.12em;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.opening-skip:focus-visible{outline:2px solid #b23a2b;outline-offset:3px}

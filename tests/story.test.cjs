@@ -55,7 +55,7 @@ function harness(reduced=false) {
     get savedProgress(){return savedProgress;}
   };
 }
-test('every page launch starts a skippable automatic short film, not a click-through slideshow',()=>{
+test('the original seven-shot story film still plays from WATCH FILM',()=>{
   const x=harness(),{INTRO,G,nodes,frames}=x;
   assert.equal(INTRO.SCENES.length,7);
   assert.equal(INTRO.SCENES.reduce((a,b)=>a+b.seconds,0),61);
@@ -128,7 +128,10 @@ test('story archive remains unlock-gated and original game assets are untouched'
   assert.ok(html.indexOf('film.js')<html.indexOf('intro.js'));
   assert.ok(!html.includes('id="introFrames"'));
   assert.ok(!html.includes('id="introStartBtn"'));
-  assert.ok(main.includes('INTRO.play()'),'game entry auto-plays film');
+  assert.ok(main.includes('OPENING.start()'),'game entry auto-plays the separate GLM opening');
+  assert.ok(html.includes('<script src="./js/opening.js"></script>'));
+  assert.ok(html.indexOf('intro.js')<html.indexOf('opening.js'));
+  assert.ok(js.includes("replayIntroBtn"),'WATCH FILM still replays the seven-shot story');
   assert.ok(!js.includes('sessionStorage'),'no once-per-visit shortcuts');
   assert.ok(!/\.mp4|\.webm/.test(html+js),'no external video needed');
   assert.ok(file('js/render.js').includes('function drawEnemy('));

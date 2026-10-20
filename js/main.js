@@ -119,6 +119,7 @@
   window.addEventListener('keydown', e => {
     const k = e.code;
     if(helpDialog.open)return; /* keep modal button/keyboard behavior native */
+    if (G.mode==='opening') { e.preventDefault(); OPENING.skip(); return; }
     if (INTRO.handleKey(k)) { e.preventDefault(); return; }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(k)) e.preventDefault();
     SFX.ensure();
@@ -274,6 +275,11 @@
   document.getElementById('pauseMenuBtn').addEventListener('click', goMenu);
   document.getElementById('deployBtn').addEventListener('click', () => G.deploy());
   document.getElementById('muteBtn').addEventListener('click', toggleMute);
+  const openingSkip=document.getElementById('openingSkip');
+  openingSkip.addEventListener('click',()=>OPENING.skip());
+  window.addEventListener('pointerdown',()=>{
+    if(G.mode==='opening')OPENING.skip(); /* tap anywhere: original GLM behavior */
+  });
 
   window.addEventListener('blur', () => { clearInput(); pause(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
@@ -288,7 +294,22 @@
   G.initAttract();
   UI.show('title');
   G.mode = 'title';
-  INTRO.play(); /* cinematic always plays on startup; replay on title */
+  /* The compact GLM prologue opens the game. The separate seven-shot
+     original film still plays from the existing WATCH FILM button. */
+  OPENING.onEnd=()=>{
+    openingSkip.classList.add('hidden');
+    G.mode='title';
+    UI.show('title');
+  };
+  if(G.S.reduced){
+    OPENING.onEnd(); /* honor the user's reduced-motion preference */
+  }else{
+    UI.show(null);
+    UI.hud(false);
+    G.mode='opening';
+    openingSkip.classList.remove('hidden');
+    OPENING.start();
+  }
 
   /* ---------------- main loop ---------------- */
   let last = performance.now();
@@ -303,8 +324,16 @@
     if (lastMode === 'playing' && m !== 'playing') clearInput();
     lastMode = m;
     vec();
-    /* Film has its own canvas: don't spend battery painting hidden gameplay. */
+    /* The seven-shot story film keeps its own canvas. The compact
+       opening is drawn on the ordinary game canvas without gameplay. */
     if (m === 'intro' || m === 'chronicle') return;
+    if (m === 'opening'){
+      OPENING.update(dt);
+      ctx.setTransform(G.S.dpr,0,0,G.S.dpr,0,0);
+      if(G.mode==='opening')OPENING.draw(ctx,now/1000);
+      else R.draw(ctx,now/1000);
+      return;
+    }
     if (m === 'playing') G.update(dt);
     else if (m === 'dying') G.updateDying(dt);
     else if (m === 'title' || m === 'select' || m === 'over') G.updateIdle(dt);
