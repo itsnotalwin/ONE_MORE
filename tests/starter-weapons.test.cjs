@@ -84,6 +84,56 @@ test('default gun preserves basic bullet, muzzle and learned damage upgrades',()
   assert.ok(!o.S.stainQueue.some(q=>q.kind==='weapon'),
     'even enhanced gun never stamps the map');
 });
+/* Shoot a stationary 4px-radius Blot through the real automatic fire
+   and swept projectile collision path, without changing enemy AI or game
+   balance. Compare all earned Twin Stroke ranks to the unupgraded gun. */
+function twinStrokeTrial(distance,shots){
+  const o=run('gun',distance),S=o.S,e=S.enemies[0];
+  e.r=4;e.hp=100;e.maxHp=100;e.stun=100;
+  S.stats.shots=shots;S.player.fireT=0;
+  o.G.update(.001);
+  const fired=S.bullets.filter(b=>b.kind==='drop');
+  assert.equal(fired.length,shots,'each rank adds exactly one droplet');
+  assert.ok(fired.some(b=>Math.abs(b.ang-S.player.aim)<1e-10),
+    'one shot must remain aimed exactly at the enemy');
+  for(const b of fired){
+    assert.equal(b.dmg,1,'damage per droplet unchanged');
+    assert.equal(b.life,o.CFG.player.bulletLife,'lifetime unchanged');
+    assert.ok(Math.abs(Math.hypot(b.vx,b.vy)-o.CFG.player.bulletSpeed)<1e-8,
+      'projectile speed unchanged');
+    assert.ok(Math.abs(b.x-(S.player.x+o.CFG.player.muzzle+
+      b.vx*.001))<1e-6,'all gun shots leave the original muzzle');
+  }
+  assert.equal(S.player.fireT,o.CFG.player.fireCd,
+    'Twin Stroke cannot change the gun fire rate');
+  S.player.fireT=9999;
+  for(let i=0;i<25;i++){
+    /* Remove only knockback drift so each angle can be tested against
+       the same stationary small hitbox rather than combat displacement. */
+    e.x=distance;e.y=0;e.kbx=0;e.kby=0;
+    o.G.update(.04);
+  }
+  return {hits:100-e.hp,angles:fired.map(b=>b.ang)};
+}
+for(const [label,distance] of [
+  ['close',55],['medium',240],['distant',480],
+]){
+  test('Twin Stroke '+label+' accuracy against a 4px enemy at '+distance+'px',()=>{
+    assert.equal(twinStrokeTrial(distance,1).hits,1,'original aimed shot hits');
+    for(const shots of [2,3,4]){
+      const result=twinStrokeTrial(distance,shots);
+      assert.equal(result.hits,shots,
+        'rank '+(shots-1)+' additional droplets must not straddle the small target');
+      assert.equal(result.angles.length,shots);
+    }
+  });
+}
+test('Twin Stroke keeps its close fan and narrows only when needed',()=>{
+  const near=twinStrokeTrial(55,3),far=twinStrokeTrial(480,3);
+  const width=angles=>Math.max(...angles)-Math.min(...angles);
+  assert.ok(width(near)>.25,'close-up brush-fan identity remains visible');
+  assert.ok(width(far)<.03,'long-range small-enemy shots converge');
+});
 test('Great Brush deals actual melee damage and earns wider third sweep',()=>{
   const o=run('brush',64);
   const first=o.S.enemies[0].hp;

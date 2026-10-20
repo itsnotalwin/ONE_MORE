@@ -1077,19 +1077,24 @@ const G = (() => {
     SFX.nova();
   }
 
-  function fireVolley() {
+  function fireVolley(target) {
     const p = S.player, st = S.stats;
     const n = st.shots;
-    const spread = CFG.player.spread * (n - 1);
     const spd = CFG.player.bulletSpeed * st.bulletSpeedMult;
-    /* A single hand-held ink gun fires the entire spread from its
-       actual visible muzzle. Aim controls direction, spread only changes
-       trajectories, never mysteriously moves the origin through the
-       ink-soul. No projectile stats or terrain rules change. */
+    /* One centered droplet always retains the original gun's accuracy.
+       Narrow extra fan lanes for small/distant targets so the upgraded
+       droplets can actually connect. The full spread remains up close;
+       the muzzle, damage, fire speed and projectile art are unchanged. */
     const muzzleX=p.x+Math.cos(p.aim)*CFG.player.muzzle;
     const muzzleY=p.y+Math.sin(p.aim)*CFG.player.muzzle;
+    const widestLane=Math.max(1,Math.floor(n/2));
+    const distance=target?Math.hypot(target.x-muzzleX,target.y-muzzleY):0;
+    const maxAngle=target
+      ?Math.atan2((target.r+3)*.65,Math.max(1,distance))
+      :Infinity;
+    const spacing=Math.min(CFG.player.spread,maxAngle/widestLane);
     for (let i = 0; i < n; i++) {
-      const off = n === 1 ? 0 : -spread / 2 + (spread * i) / (n - 1);
+      const off=(i-Math.floor(n/2))*spacing;
       const a = p.aim + off;
       S.bullets.push({
         x: muzzleX, y: muzzleY,
@@ -1229,7 +1234,7 @@ const G = (() => {
       :id==='quill'?n%4===0
       :id==='cutter'?n%4===0:n%3===0;
     if(id==='gun'){
-      fireVolley();
+      fireVolley(target);
       if(empowered){
         const a=p.aim,velocity=CFG.player.bulletSpeed*st.bulletSpeedMult;
         S.bullets.push({x:p.x+Math.cos(a)*CFG.player.muzzle,
