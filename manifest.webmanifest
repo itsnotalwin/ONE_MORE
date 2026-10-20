@@ -1,0 +1,11 @@
+{
+  "name": "ONE MORE",
+  "short_name": "ONE MORE",
+  "description": "An ink-born survival on an endless sheet of washi.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ede7d9",
+  "theme_color": "#ede7d9",
+  "orientation": "any"
+}

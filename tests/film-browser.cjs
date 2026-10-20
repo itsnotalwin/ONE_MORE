@@ -45,6 +45,18 @@ async function inspect(browser,name,viewport){
     name+' actual Canvas covers the entire viewport, not merely the menu');
   assert.equal(await page.locator('meta[name="theme-color"]').getAttribute('content'),
     '#131009',name+' dark opening covers phone browser safe-area backing');
+  assert.equal(await page.locator('meta[name="apple-mobile-web-app-capable"]').getAttribute('content'),
+    'yes',name+' allows installation as an iPhone Home Screen web app');
+  assert.equal(await page.locator('meta[name="apple-mobile-web-app-status-bar-style"]').getAttribute('content'),
+    'black-translucent',name+' uses transparent iOS status-bar mode');
+  const manifest=await page.evaluate(async()=>{
+    const href=document.querySelector('link[rel="manifest"]')?.getAttribute('href');
+    if(!href)return null;
+    const response=await fetch(href);
+    return response.ok?response.json():null;
+  });
+  assert.equal(manifest?.display,'standalone',name+' installable app keeps game full-bleed');
+  assert.equal(manifest?.start_url,'./',name+' manifest remains within ONE_MORE Pages scope');
   await page.evaluate(()=>OPENING.seek(1.55));
   await page.waitForTimeout(110);
   const dropAtTop=await page.evaluate(()=>{

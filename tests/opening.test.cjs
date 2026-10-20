@@ -67,5 +67,17 @@ test('original cinematic and combat renderer are not replaced by GLM files',()=>
   assert.ok(html.includes('<script src="./js/opening.js"></script>'));
   assert.ok(html.includes('id="openingSkip"'));
   assert.ok(html.includes('id="replayIntroBtn"'));
+  assert.ok(html.includes('name="apple-mobile-web-app-capable" content="yes"'));
+  assert.ok(html.includes('name="apple-mobile-web-app-status-bar-style" content="black-translucent"'),
+    'iOS standalone must extend the actual canvas behind the Dynamic Island');
+  assert.ok(html.includes('viewport-fit=cover'));
+  assert.ok(html.includes('rel="manifest" href="./manifest.webmanifest"'));
+  const manifest=JSON.parse(read('manifest.webmanifest'));
+  assert.equal(manifest.display,'standalone');
+  assert.equal(manifest.start_url,'./');
+  assert.equal(manifest.scope,'./');
+  assert.ok(read('css/viewport.css').includes('#stage,.screen{height:100%;height:100dvh}'));
+  assert.ok(read('js/main.js').includes('const w = stage.clientWidth;'),
+    'canvas continues to fill the same stage with no button repositioning');
   assert.ok(!html.includes('src="./js/cutscene.js"'),'GLM gameplay modules not copied');
 });
